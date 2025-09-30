@@ -166,8 +166,21 @@ const requestPasswordResetOtpController = catchAsync(async (req: Request, res: R
     return sendResponse(res, {
         statusCode: httpStatus.OK,
         success: true,
-        message: result.message,
+        message: result.message, // "An OTP has been sent to your email"
         data: null,
+    });
+});
+
+const verifyOtpController = catchAsync(async (req: Request, res: Response) => {
+    const { email, otp } = req.body;
+
+    const result = await authServices.verifyOtp(email, otp);
+
+    return sendResponse(res, {
+        statusCode: httpStatus.OK,
+        success: true,
+        message: result.message || "OTP verified successfully",
+        data: { resetToken: result.resetToken }, // send short-lived reset token
     });
 });
 
@@ -183,9 +196,9 @@ const resendPasswordResetOtpController = catchAsync(async (req: Request, res: Re
     });
 });
 
-const resetPasswordWithOtpController = catchAsync(async (req: Request, res: Response) => {
-    const { email, otp, newPassword } = req.body;
-    const result = await authServices.resetPasswordWithOtp(email, otp, newPassword);
+const resetPasswordWithTokenController = catchAsync(async (req: Request, res: Response) => {
+    const { resetToken, newPassword } = req.body;
+    const result = await authServices.resetPasswordWithToken(resetToken, newPassword);
 
     return sendResponse(res, {
         statusCode: httpStatus.OK,
@@ -229,7 +242,8 @@ export const authControllers = {
     refreshAccessToken,
     logout,
     requestPasswordResetOtpController,
+    verifyOtpController,
     resendPasswordResetOtpController,
-    resetPasswordWithOtpController,
+    resetPasswordWithTokenController,
     changePasswordController,
 };
