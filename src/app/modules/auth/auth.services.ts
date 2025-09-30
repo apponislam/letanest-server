@@ -94,10 +94,10 @@ const verifyEmailService = async (userId: string, token: string) => {
 
 const loginUser = async (data: LoginInput) => {
     const user = await UserModel.findOne({ email: data.email }).select("+password");
-    if (!user) throw new ApiError(httpStatus.UNAUTHORIZED, "Invalid credentials");
+    if (!user) throw new ApiError(httpStatus.UNAUTHORIZED, "Incorrect email or password. Please try again.");
 
     const isMatch = await bcrypt.compare(data.password, user.password);
-    if (!isMatch) throw new ApiError(httpStatus.UNAUTHORIZED, "Invalid credentials");
+    if (!isMatch) throw new ApiError(httpStatus.UNAUTHORIZED, "Incorrect email or password. Please try again.");
 
     user.lastLogin = new Date();
     await user.save();
@@ -155,7 +155,7 @@ const refreshToken = async (token: string) => {
 
 const requestPasswordResetOtp = async (email: string) => {
     const user = await UserModel.findOne({ email });
-    if (!user) throw new ApiError(httpStatus.NOT_FOUND, "User not found");
+    if (!user) throw new ApiError(httpStatus.NOT_FOUND, "We could not find an account with this email");
 
     const { otp, expiry } = generateOtp();
     user.resetPasswordOtp = otp;
@@ -163,12 +163,29 @@ const requestPasswordResetOtp = async (email: string) => {
     await user.save();
 
     await sendOtpEmail({ to: user.email, name: user.name, otp });
-    return { message: "OTP sent to email" };
+    return { message: "An OTP has been sent to your email" };
+};
+
+const verifyOtp = async (email: string, otp: string) => {
+    const user = await UserModel.findOne({ email });
+    if (!user) throw new ApiError(httpStatus.NOT_FOUND, "We could not find an account with this email");
+
+    if (!user.resetPasswordOtp || user.resetPasswordOtp !== otp) {
+        throw new ApiError(httpStatus.BAD_REQUEST, "The OTP you entered is invalid");
+    }
+
+    if (!user.resetPasswordOtpExpiry || user.resetPasswordOtpExpiry < new Date()) {
+        throw new ApiError(httpStatus.BAD_REQUEST, "The OTP has expired, please request a new one");
+    }
+
+    const resetToken = jwt.sign({ userId: user._id, email: user.email }, config.jwt_password_reset_secret as string, { expiresIn: "10m" });
+
+    return { message: "OTP verified successfully", resetToken };
 };
 
 const resendPasswordResetOtp = async (email: string) => {
     const user = await UserModel.findOne({ email });
-    if (!user) throw new ApiError(httpStatus.NOT_FOUND, "User not found");
+    if (!user) throw new ApiError(httpStatus.NOT_FOUND, "We could not find an account with this email");
 
     const { otp, expiry } = generateOtp();
     user.resetPasswordOtp = otp;
@@ -176,16 +193,21 @@ const resendPasswordResetOtp = async (email: string) => {
     await user.save();
 
     await sendOtpEmail({ to: user.email, name: user.name, otp });
-    return { message: "OTP resent to email" };
+    return { message: "A new OTP has been sent to your email" };
 };
 
-const resetPasswordWithOtp = async (email: string, otp: string, newPassword: string) => {
-    const user = await UserModel.findOne({ email });
+const resetPasswordWithToken = async (resetToken: string, newPassword: string) => {
+    let payload: any;
+    try {
+        payload = jwt.verify(resetToken, config.jwt_password_reset_secret as string);
+    } catch (err) {
+        throw new ApiError(httpStatus.BAD_REQUEST, "Invalid or expired password reset token");
+    }
+
+    const user = await UserModel.findById(payload.userId);
     if (!user) throw new ApiError(httpStatus.NOT_FOUND, "User not found");
 
-    if (!user.resetPasswordOtp || user.resetPasswordOtp !== otp) throw new ApiError(httpStatus.BAD_REQUEST, "Invalid OTP");
-    if (!user.resetPasswordOtpExpiry || user.resetPasswordOtpExpiry < new Date()) throw new ApiError(httpStatus.BAD_REQUEST, "OTP expired");
-
+    // Update password
     user.password = await bcrypt.hash(newPassword, Number(config.bcrypt_salt_rounds));
     user.resetPasswordOtp = undefined;
     user.resetPasswordOtpExpiry = undefined;
@@ -215,7 +237,8 @@ export const authServices = {
     getMeService,
     refreshToken,
     requestPasswordResetOtp,
+    verifyOtp,
     resendPasswordResetOtp,
-    resetPasswordWithOtp,
+    resetPasswordWithToken,
     changePassword,
 };
