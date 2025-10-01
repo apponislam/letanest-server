@@ -2,98 +2,37 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.UserModel = void 0;
 const mongoose_1 = require("mongoose");
+const auth_interface_1 = require("./auth.interface");
 const userSchema = new mongoose_1.Schema({
-    serialId: { type: String, unique: true, index: true },
-    name: {
-        type: String,
-        required: [true, "Name is required"],
-    },
-    email: {
-        type: String,
-        required: [true, "Email is required"],
-        unique: true,
-    },
-    password: {
-        type: String,
-        required: function () {
-            return this.accountType === "email";
-        },
-        validate: {
-            validator: function (value) {
-                if (this.accountType === "email") {
-                    return !!value && value.length > 0;
-                }
-                return true;
-            },
-            message: "Password is required for email accounts",
-        },
-    },
+    name: { type: String, required: [true, "Name is required"] },
+    email: { type: String, required: [true, "Email is required"], unique: true },
+    password: { type: String, required: [true, "Password is required"] },
     phone: { type: String },
     profileImg: { type: String },
     role: {
         type: String,
-        enum: {
-            values: ["user", "admin", "moderator", "super_admin"],
-            message: "Role must be either user, admin, or moderator",
-        },
-        default: "user",
+        enum: Object.values(auth_interface_1.roles),
+        default: auth_interface_1.roles.GUEST,
     },
     isActive: { type: Boolean, default: true },
     lastLogin: { type: Date },
-    accountType: {
-        type: String,
-        enum: {
-            values: ["email", "google", "facebook", "github", "apple"],
-            message: "Account type must be email, google, facebook, github, or apple",
-        },
-        default: "email",
-    },
-    isEmailVerified: {
-        type: Boolean,
-        default: function () {
-            return this.accountType === "email" ? false : undefined;
-        },
-    },
-    verificationToken: {
-        type: String,
-        default: function () {
-            return this.accountType === "email" ? undefined : undefined;
-        },
-    },
-    verificationTokenExpiry: {
-        type: Date,
-        default: function () {
-            return this.accountType === "email" ? undefined : undefined;
-        },
-    },
-    profile: { type: mongoose_1.Schema.Types.ObjectId, ref: "Profile" },
-    realtimeLocation: { type: mongoose_1.Schema.Types.ObjectId, ref: "RealtimeLocation" },
-    resetPasswordOtp: { type: String },
-    resetPasswordOtpExpiry: { type: Date },
+    // Email verification
+    isEmailVerified: { type: Boolean, default: false },
+    verificationToken: { type: String, default: undefined },
+    verificationTokenExpiry: { type: Date, default: undefined },
+    // OTP / password reset
+    resetPasswordOtp: { type: String, default: undefined },
+    resetPasswordOtpExpiry: { type: Date, default: undefined },
 }, {
     timestamps: true,
     versionKey: false,
     toJSON: {
-        transform: function (doc, ret) {
+        transform: (_doc, ret) => {
             if (ret.password)
                 delete ret.password;
-            if (ret.__v)
-                delete ret.__v;
             return ret;
         },
     },
-});
-userSchema.pre("save", function (next) {
-    const user = this;
-    if (user.accountType !== "email") {
-        user.isEmailVerified = undefined;
-        user.verificationToken = undefined;
-        user.verificationTokenExpiry = undefined;
-    }
-    else if (user.isEmailVerified === undefined) {
-        user.isEmailVerified = false;
-    }
-    next();
 });
 // Remove password after save for safety
 userSchema.post("save", function (doc, next) {
