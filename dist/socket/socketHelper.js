@@ -38,7 +38,6 @@ exports.getIO = exports.initSocket = void 0;
 //     return io;
 // };
 const socket_io_1 = require("socket.io");
-const realtimeLocationSocket_1 = require("../app/modules/realTimeLocation/realtimeLocationSocket");
 let io;
 const initSocket = (server) => {
     io = new socket_io_1.Server(server, {
@@ -46,7 +45,6 @@ const initSocket = (server) => {
     });
     io.on("connection", (socket) => {
         console.log("⚡ Client connected:", socket.id);
-        (0, realtimeLocationSocket_1.locationSocketHandler)(io, socket);
     });
     return io;
 };

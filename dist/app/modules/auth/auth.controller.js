@@ -99,67 +99,6 @@ const login = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, 
         },
     });
 }));
-// --- GOOGLE CALLBACK ---
-const googleCallback = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    const { user, accessToken, refreshToken } = req.user;
-    console.log(user, accessToken, refreshAccessToken);
-    res.cookie("refreshToken", refreshToken, {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === "production",
-        sameSite: "strict",
-        maxAge: 30 * 24 * 60 * 60 * 1000,
-    });
-    (0, sendResponse_1.default)(res, {
-        statusCode: 200,
-        success: true,
-        message: "Google login successful",
-        data: { user, accessToken, refreshToken },
-    });
-}));
-// --- FACEBOOK CALLBACK ---
-const facebookCallback = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    const result = req.user;
-    // Type guard
-    if ("requiresEmail" in result && result.requiresEmail) {
-        return (0, sendResponse_1.default)(res, {
-            statusCode: 200,
-            success: true,
-            message: "Facebook login requires email",
-            data: result,
-        });
-    }
-    // After guard, TS knows result is ISocialUser
-    const user = result;
-    res.cookie("refreshToken", user.refreshToken, {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === "production",
-        sameSite: "strict",
-        maxAge: 30 * 24 * 60 * 60 * 1000,
-    });
-    (0, sendResponse_1.default)(res, {
-        statusCode: 200,
-        success: true,
-        message: "Facebook login successful",
-        data: {
-            user,
-            accessToken: user.accessToken,
-            refreshToken: user.refreshToken,
-        },
-    });
-}));
-// --- COMPLETE FACEBOOK LOGIN ---
-const facebookComplete = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    const { email, profile } = req.body;
-    if (!email)
-        throw new Error("Email is required to complete Facebook login");
-    const result = yield auth_services_1.authServices.completeFacebookLoginWithEmail(profile, email);
-    (0, sendResponse_1.default)(res, {
-        statusCode: 200,
-        success: true,
-        message: "Facebook login completed successfully",
-        data: result,
-    });
-}));
 const getMeController = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     var _a;
     if (!((_a = req.user) === null || _a === void 0 ? void 0 : _a._id)) {
@@ -213,8 +152,18 @@ const requestPasswordResetOtpController = (0, catchAsync_1.default)((req, res) =
     return (0, sendResponse_1.default)(res, {
         statusCode: http_status_1.default.OK,
         success: true,
-        message: result.message,
+        message: result.message, // "An OTP has been sent to your email"
         data: null,
+    });
+}));
+const verifyOtpController = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const { email, otp } = req.body;
+    const result = yield auth_services_1.authServices.verifyOtp(email, otp);
+    return (0, sendResponse_1.default)(res, {
+        statusCode: http_status_1.default.OK,
+        success: true,
+        message: result.message || "OTP verified successfully",
+        data: { resetToken: result.resetToken }, // send short-lived reset token
     });
 }));
 const resendPasswordResetOtpController = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
@@ -227,9 +176,9 @@ const resendPasswordResetOtpController = (0, catchAsync_1.default)((req, res) =>
         data: null,
     });
 }));
-const resetPasswordWithOtpController = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    const { email, otp, newPassword } = req.body;
-    const result = yield auth_services_1.authServices.resetPasswordWithOtp(email, otp, newPassword);
+const resetPasswordWithTokenController = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const { resetToken, newPassword } = req.body;
+    const result = yield auth_services_1.authServices.resetPasswordWithToken(resetToken, newPassword);
     return (0, sendResponse_1.default)(res, {
         statusCode: http_status_1.default.OK,
         success: true,
@@ -263,14 +212,12 @@ exports.authControllers = {
     resendVerifyEmailController,
     verifyEmailController,
     login,
-    googleCallback,
-    facebookCallback,
-    facebookComplete,
     getMeController,
     refreshAccessToken,
     logout,
     requestPasswordResetOtpController,
+    verifyOtpController,
     resendPasswordResetOtpController,
-    resetPasswordWithOtpController,
+    resetPasswordWithTokenController,
     changePasswordController,
 };
