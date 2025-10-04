@@ -1,7 +1,8 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-const roles = {
-    GUEST: "GUEST",
+exports.roles = void 0;
+exports.roles = {
     HOST: "HOST",
     ADMIN: "ADMIN",
+    GUEST: "GUEST",
 };

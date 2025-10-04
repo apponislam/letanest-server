@@ -3,23 +3,40 @@ import ApiError from "../../../errors/ApiError";
 import { roles, TermsAndConditionsModel } from "./public.model";
 
 const createTermsService = async (data: any, userId: string) => {
-    data.createdBy = userId;
+    const { id, ...cleanData } = data;
 
-    // Admin can only have one T&C per role
-    if (data.creatorType === roles.ADMIN) {
-        const existing = await TermsAndConditionsModel.findOne({ creatorType: roles.ADMIN });
+    cleanData.createdBy = userId;
+
+    // EXTREMELY IMPORTANT: Remove ALL id fields that might cause conflicts
+    const finalData = { ...cleanData };
+    delete finalData.id;
+    delete finalData._id;
+    delete finalData.__id;
+    delete finalData.$id;
+
+    console.log("🔍 Final data before create:", finalData);
+
+    if (finalData.creatorType === roles.ADMIN) {
+        const existing = await TermsAndConditionsModel.findOne({
+            creatorType: roles.ADMIN,
+            target: finalData.target,
+        });
+
+        console.log("🔍 Existing admin terms check:", {
+            creatorType: roles.ADMIN,
+            target: finalData.target,
+            found: existing,
+        });
+
         if (existing) {
-            throw new ApiError(httpStatus.BAD_REQUEST, "Admin T&C already exists");
+            throw new ApiError(httpStatus.BAD_REQUEST, `Admin T&C for ${finalData.target} already exists`);
         }
     }
 
-    // Validate propertyId if host T&C is property-specific
-    if (data.creatorType === roles.HOST && data.hostTarget === "property" && !data.propertyId) {
-        throw new ApiError(httpStatus.BAD_REQUEST, "PropertyId is required for property-specific T&C");
-    }
+    // ... rest of your host logic
 
-    const term = await TermsAndConditionsModel.create(data);
-    return term;
+    console.log("✅ Creating new terms with final data:", finalData);
+    return TermsAndConditionsModel.create(finalData);
 };
 
 const getAllTermsService = async () => {
@@ -30,6 +47,10 @@ const getTermByIdService = async (id: string) => {
     const term = await TermsAndConditionsModel.findById(id).populate("createdBy", "name email");
     if (!term) throw new ApiError(httpStatus.NOT_FOUND, "Terms & Conditions not found");
     return term;
+};
+
+const getDefaultHostTermsService = async () => {
+    return TermsAndConditionsModel.findOne({ creatorType: roles.HOST, hostTarget: "default" }).populate("createdBy", "name email");
 };
 
 const updateTermService = async (id: string, data: any) => {
@@ -44,8 +65,8 @@ const deleteTermService = async (id: string) => {
     return term;
 };
 
-const getTermsByCreatorTypeService = async (creatorType: string) => {
-    return TermsAndConditionsModel.find({ creatorType }).populate("createdBy", "name email");
+const getTermsByTargetService = async (target: string) => {
+    return TermsAndConditionsModel.find({ target }).populate("createdBy", "name email");
 };
 
 const getPropertyTermsService = async (propertyId: string) => {
@@ -58,8 +79,9 @@ export const termsService = {
     createTermsService,
     getAllTermsService,
     getTermByIdService,
+    getDefaultHostTermsService,
     updateTermService,
     deleteTermService,
-    getTermsByCreatorTypeService,
+    getTermsByTargetService,
     getPropertyTermsService,
 };
