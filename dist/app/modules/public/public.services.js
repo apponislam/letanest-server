@@ -8,6 +8,17 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
+var __rest = (this && this.__rest) || function (s, e) {
+    var t = {};
+    for (var p in s) if (Object.prototype.hasOwnProperty.call(s, p) && e.indexOf(p) < 0)
+        t[p] = s[p];
+    if (s != null && typeof Object.getOwnPropertySymbols === "function")
+        for (var i = 0, p = Object.getOwnPropertySymbols(s); i < p.length; i++) {
+            if (e.indexOf(p[i]) < 0 && Object.prototype.propertyIsEnumerable.call(s, p[i]))
+                t[p[i]] = s[p[i]];
+        }
+    return t;
+};
 var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
@@ -17,20 +28,32 @@ const http_status_1 = __importDefault(require("http-status"));
 const ApiError_1 = __importDefault(require("../../../errors/ApiError"));
 const public_model_1 = require("./public.model");
 const createTermsService = (data, userId) => __awaiter(void 0, void 0, void 0, function* () {
-    data.createdBy = userId;
-    // Admin can only have one T&C per role
-    if (data.creatorType === public_model_1.roles.ADMIN) {
-        const existing = yield public_model_1.TermsAndConditionsModel.findOne({ creatorType: public_model_1.roles.ADMIN });
+    const { id } = data, cleanData = __rest(data, ["id"]);
+    cleanData.createdBy = userId;
+    // EXTREMELY IMPORTANT: Remove ALL id fields that might cause conflicts
+    const finalData = Object.assign({}, cleanData);
+    delete finalData.id;
+    delete finalData._id;
+    delete finalData.__id;
+    delete finalData.$id;
+    console.log("🔍 Final data before create:", finalData);
+    if (finalData.creatorType === public_model_1.roles.ADMIN) {
+        const existing = yield public_model_1.TermsAndConditionsModel.findOne({
+            creatorType: public_model_1.roles.ADMIN,
+            target: finalData.target,
+        });
+        console.log("🔍 Existing admin terms check:", {
+            creatorType: public_model_1.roles.ADMIN,
+            target: finalData.target,
+            found: existing,
+        });
         if (existing) {
-            throw new ApiError_1.default(http_status_1.default.BAD_REQUEST, "Admin T&C already exists");
+            throw new ApiError_1.default(http_status_1.default.BAD_REQUEST, `Admin T&C for ${finalData.target} already exists`);
         }
     }
-    // Validate propertyId if host T&C is property-specific
-    if (data.creatorType === public_model_1.roles.HOST && data.hostTarget === "property" && !data.propertyId) {
-        throw new ApiError_1.default(http_status_1.default.BAD_REQUEST, "PropertyId is required for property-specific T&C");
-    }
-    const term = yield public_model_1.TermsAndConditionsModel.create(data);
-    return term;
+    // ... rest of your host logic
+    console.log("✅ Creating new terms with final data:", finalData);
+    return public_model_1.TermsAndConditionsModel.create(finalData);
 });
 const getAllTermsService = () => __awaiter(void 0, void 0, void 0, function* () {
     return public_model_1.TermsAndConditionsModel.find().populate("createdBy", "name email");
@@ -40,6 +63,9 @@ const getTermByIdService = (id) => __awaiter(void 0, void 0, void 0, function* (
     if (!term)
         throw new ApiError_1.default(http_status_1.default.NOT_FOUND, "Terms & Conditions not found");
     return term;
+});
+const getDefaultHostTermsService = () => __awaiter(void 0, void 0, void 0, function* () {
+    return public_model_1.TermsAndConditionsModel.findOne({ creatorType: public_model_1.roles.HOST, hostTarget: "default" }).populate("createdBy", "name email");
 });
 const updateTermService = (id, data) => __awaiter(void 0, void 0, void 0, function* () {
     const term = yield public_model_1.TermsAndConditionsModel.findByIdAndUpdate(id, data, { new: true });
@@ -53,8 +79,8 @@ const deleteTermService = (id) => __awaiter(void 0, void 0, void 0, function* ()
         throw new ApiError_1.default(http_status_1.default.NOT_FOUND, "Terms & Conditions not found");
     return term;
 });
-const getTermsByCreatorTypeService = (creatorType) => __awaiter(void 0, void 0, void 0, function* () {
-    return public_model_1.TermsAndConditionsModel.find({ creatorType }).populate("createdBy", "name email");
+const getTermsByTargetService = (target) => __awaiter(void 0, void 0, void 0, function* () {
+    return public_model_1.TermsAndConditionsModel.find({ target }).populate("createdBy", "name email");
 });
 const getPropertyTermsService = (propertyId) => __awaiter(void 0, void 0, void 0, function* () {
     const term = yield public_model_1.TermsAndConditionsModel.findOne({ propertyId }).populate("createdBy", "name email");
@@ -66,8 +92,9 @@ exports.termsService = {
     createTermsService,
     getAllTermsService,
     getTermByIdService,
+    getDefaultHostTermsService,
     updateTermService,
     deleteTermService,
-    getTermsByCreatorTypeService,
+    getTermsByTargetService,
     getPropertyTermsService,
 };
