@@ -32,6 +32,19 @@ export interface IUser {
     resetPasswordOtp?: string;
     resetPasswordOtpExpiry?: Date;
 
+    //Verification
+    isVerifiedByAdmin?: boolean;
+    verificationStatus?: string;
+
+    //other profile details
+    address?: {
+        street: string;
+        country: string;
+        city: string;
+        zip: string;
+    };
+    gender?: "Male" | "Female" | "Other";
+
     // Audit
     createdAt?: Date;
     updatedAt?: Date;
