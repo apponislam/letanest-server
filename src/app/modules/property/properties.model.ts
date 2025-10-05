@@ -39,7 +39,7 @@ const PropertySchema = new Schema<IProperty>(
         status: {
             type: String,
             enum: ["draft", "pending", "published", "archived", "rejected", "under_review"],
-            default: "draft",
+            default: "pending",
         },
     },
     {
