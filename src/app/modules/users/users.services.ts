@@ -1,5 +1,7 @@
+import { Types } from "mongoose";
 import { IUser } from "../auth/auth.interface";
 import { UserModel } from "../auth/auth.model";
+import { IUpdateUserProfile } from "./user.interface";
 
 interface IUserQuery {
     page?: number;
@@ -40,7 +42,23 @@ const getSingleUserService = async (id: string): Promise<IUser | null> => {
     return await UserModel.findById(id).select("-password");
 };
 
+const updateUserProfileService = async (userId: Types.ObjectId, updateData: IUpdateUserProfile, profileImg?: Express.Multer.File): Promise<IUser | null> => {
+    const updateFields: any = {
+        name: `${updateData.firstName} ${updateData.lastName}`,
+        phone: updateData.phone,
+        address: updateData.address,
+        gender: updateData.gender,
+    };
+
+    if (profileImg) {
+        updateFields.profileImg = `/uploads/profile/${profileImg.filename}`;
+    }
+
+    return await UserModel.findByIdAndUpdate(userId, updateFields, { new: true, runValidators: true }).select("-password");
+};
+
 export const userServices = {
     getAllUsersService,
     getSingleUserService,
+    updateUserProfileService,
 };

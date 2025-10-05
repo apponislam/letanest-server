@@ -147,7 +147,7 @@ const refreshToken = async (token: string) => {
         role: user.role,
     };
 
-    const newAccessToken = jwtHelper.generateToken(jwtPayload, config.jwt_refresh_secret as string, config.jwt_refresh_expire as string);
+    const newAccessToken = jwtHelper.generateToken(jwtPayload, config.jwt_access_secret as string, config.jwt_access_expire as string);
 
     const { password, ...userWithoutPassword } = user.toObject();
     return { accessToken: newAccessToken, user: userWithoutPassword };
