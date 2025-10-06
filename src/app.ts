@@ -5,6 +5,7 @@ import router from "./app/routes";
 import path from "path";
 import notFound from "./errors/notFound";
 import globalErrorHandler from "./errors/globalErrorhandler";
+import { webhookController } from "./app/modules/subscription/webhook.controller";
 
 const app: Application = express();
 
@@ -16,6 +17,8 @@ const corsOptions = {
 };
 
 app.use(cors(corsOptions));
+
+app.post("/api/v1/subscription/webhook", express.raw({ type: "application/json" }), webhookController.handleWebhook);
 
 app.use("/uploads", express.static(path.join(process.cwd(), "uploads")));
 app.use(express.json());

@@ -14,11 +14,7 @@ export default {
     jwt_refresh_expire: process.env.JWT_REFRESH_EXPIRE,
     jwt_password_reset_secret: process.env.JWT_PASSWORD_RESET_SECRET,
     client_url: process.env.CLIENT_URL,
-    google_client_id: process.env.GOOGLE_CLIENT_ID,
-    google_client_secret: process.env.GOOGLE_CLIENT_SECRET,
     callback_url: process.env.CALLBACK_URL,
-    facebook_app_id: process.env.FACEBOOK_APP_ID,
-    facebook_app_secret: process.env.FACEBOOK_APP_SECRET,
     mail: {
         smtp_host: process.env.SMTP_HOST,
         smtp_port: process.env.SMTP_PORT,
@@ -27,7 +23,7 @@ export default {
     },
     superAdminPassword: process.env.SUPERADMINPASSWORD,
     superAdminEmail: process.env.SUPERADMINEMAIL,
-    // stripe_publishable_key: process.env.STRIPE_PUBLISHABLE_KEY,
-    // stripe_secret_key: process.env.STRIPE_SECRET_KEY,
-    // stripe_webhook_secret: process.env.STRIPE_WEBHOOK_SECRET,
+    stripe_publishable_key: process.env.STRIPE_PUBLISHABLE_KEY,
+    stripe_secret_key: process.env.STRIPE_SECRET_KEY,
+    stripe_webhook_secret: process.env.STRIPE_WEBHOOK_SECRET,
 };
