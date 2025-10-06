@@ -1,4 +1,3 @@
-// controllers/verification.controller.ts
 import { Request, Response } from "express";
 import { Types } from "mongoose";
 import catchAsync from "../../../utils/catchAsync";

@@ -23,7 +23,7 @@ const userSchema = new Schema<IUser>(
 
         //Verification
         isVerifiedByAdmin: { type: Boolean, default: false },
-        verificationStatus: { type: String, enum: ["pending", "approved", "rejected"], default: null },
+        verificationStatus: { type: String, enum: ["pending", "approved", "rejected", "under_review"], default: null },
 
         //other profile details
         gender: {

@@ -128,7 +128,7 @@ const getMeService = async (userId: string | Types.ObjectId) => {
 const refreshToken = async (token: string) => {
     if (!token) throw new ApiError(httpStatus.UNAUTHORIZED, "Refresh token is required");
 
-    const decoded = jwt.verify(token, process.env.JWT_REFRESH_SECRET!) as {
+    const decoded = jwt.verify(token, config.jwt_refresh_secret!) as {
         _id: string;
         name: string;
         email: string;

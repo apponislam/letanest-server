@@ -96,21 +96,54 @@ const getAllVerifications = async (query: IVerificationQuery) => {
 };
 
 const updateVerificationStatus = async (id: string, statusData: IStatusUpdate): Promise<IVerification | null> => {
-    const verification = await Verification.findById(id);
-    if (!verification) {
-        throw new ApiError(httpStatus.NOT_FOUND, "Verification not found");
+    const session = await mongoose.startSession();
+    session.startTransaction();
+
+    try {
+        const verification = await Verification.findById(id).session(session);
+        if (!verification) {
+            throw new ApiError(httpStatus.NOT_FOUND, "Verification not found");
+        }
+
+        const updateData: any = {
+            status: statusData.status,
+            reviewedAt: new Date(),
+        };
+
+        if (statusData.reviewNotes) {
+            updateData.reviewNotes = statusData.reviewNotes;
+        }
+
+        const updatedVerification = await Verification.findByIdAndUpdate(id, updateData, { new: true, runValidators: true, session }).populate("userId", "email firstName lastName");
+
+        if (!updatedVerification) {
+            throw new ApiError(httpStatus.INTERNAL_SERVER_ERROR, "Failed to update verification");
+        }
+
+        const userUpdateData: any = {
+            verificationStatus: statusData.status,
+        };
+
+        if (statusData.status === "approved") {
+            userUpdateData.isVerifiedByAdmin = true;
+        } else {
+            userUpdateData.isVerifiedByAdmin = false;
+        }
+
+        const updatedUser = await UserModel.findByIdAndUpdate(updatedVerification.userId._id, userUpdateData, { new: true, runValidators: true, session });
+
+        if (!updatedUser) {
+            throw new ApiError(httpStatus.INTERNAL_SERVER_ERROR, "Failed to update user verification status");
+        }
+
+        await session.commitTransaction();
+        return updatedVerification;
+    } catch (error) {
+        await session.abortTransaction();
+        throw error;
+    } finally {
+        session.endSession();
     }
-
-    const updateData: any = {
-        status: statusData.status,
-        reviewedAt: new Date(),
-    };
-
-    if (statusData.reviewNotes) {
-        updateData.reviewNotes = statusData.reviewNotes;
-    }
-
-    return await Verification.findByIdAndUpdate(id, updateData, { new: true, runValidators: true }).populate("userId", "email firstName lastName");
 };
 
 const deleteVerification = async (id: string, userId?: Types.ObjectId): Promise<IVerification | null> => {

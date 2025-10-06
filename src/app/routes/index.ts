@@ -4,6 +4,7 @@ import { publicRoute } from "../modules/public/public.routes";
 import { userRoutes } from "../modules/users/users.routes";
 import { propertyRoutes } from "../modules/property/properties.routes";
 import { verificationRoutes } from "../modules/verification/verification.routes";
+import { subscriptionRoutes } from "../modules/subscription/subscription.routes";
 
 const router = express.Router();
 
@@ -27,6 +28,10 @@ const moduleRoutes = [
     {
         path: "/verifications",
         route: verificationRoutes,
+    },
+    {
+        path: "/subscriptions",
+        route: subscriptionRoutes,
     },
 ];
 
