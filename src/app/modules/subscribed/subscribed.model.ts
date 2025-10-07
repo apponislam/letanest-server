@@ -1,0 +1,47 @@
+import { Schema, model } from "mongoose";
+import { IUserSubscription } from "./subscribed.interface";
+
+const userSubscriptionSchema = new Schema<IUserSubscription>(
+    {
+        user: {
+            type: Schema.Types.ObjectId,
+            ref: "User",
+            required: true,
+        },
+        subscription: {
+            type: Schema.Types.ObjectId,
+            ref: "Subscription",
+            required: true,
+        },
+        stripeSubscriptionId: { type: String },
+        stripeCustomerId: { type: String },
+        stripePriceId: { type: String, required: true },
+        status: {
+            type: String,
+            enum: ["active", "canceled", "past_due", "unpaid", "incomplete"],
+            required: true,
+        },
+        currentPeriodStart: { type: Date, required: true },
+        currentPeriodEnd: { type: Date, required: true },
+        cancelAtPeriodEnd: { type: Boolean, default: false },
+
+        // For free tiers
+        isFreeTier: { type: Boolean, default: false },
+
+        // Usage tracking
+        bookingCount: { type: Number, default: 0 },
+        freeBookingCount: { type: Number, default: 0 },
+    },
+    {
+        timestamps: true,
+    }
+);
+
+// Add indexes for better performance
+userSubscriptionSchema.index({ user: 1 });
+userSubscriptionSchema.index({ subscription: 1 });
+userSubscriptionSchema.index({ stripeSubscriptionId: 1 });
+userSubscriptionSchema.index({ status: 1 });
+userSubscriptionSchema.index({ user: 1, status: 1 });
+
+export const UserSubscription = model<IUserSubscription>("UserSubscription", userSubscriptionSchema);

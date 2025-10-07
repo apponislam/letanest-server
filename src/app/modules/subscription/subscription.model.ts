@@ -1,4 +1,3 @@
-// models/subscription.model.ts
 import { Schema, model } from "mongoose";
 import { ISubscription } from "./subscription.interface";
 
@@ -20,7 +19,7 @@ const subscriptionSchema = new Schema<ISubscription>(
         },
         level: {
             type: String,
-            enum: ["free", "premium", "silver", "gold"],
+            enum: ["free", "premium", "gold"],
             required: true,
         },
         billingPeriod: {
@@ -32,9 +31,15 @@ const subscriptionSchema = new Schema<ISubscription>(
         // Pricing
         cost: { type: Number, required: true, default: 0 },
         currency: { type: String, required: true, default: "gbp" },
-        bookingFee: { type: Schema.Types.Mixed, required: true },
-        commission: { type: Number },
+
+        // Guest specific
+        bookingFee: { type: Schema.Types.Mixed },
         bookingLimit: { type: Number },
+
+        // Host specific
+        commission: { type: Schema.Types.Mixed }, // Can be number or string
+        freeBookings: { type: Number }, // For host free tier (10 free bookings)
+        listingLimit: { type: Number }, // Maximum property listings allowed
 
         // Stripe Integration
         stripeProductId: { type: String, required: true },
@@ -43,7 +48,6 @@ const subscriptionSchema = new Schema<ISubscription>(
 
         // Features
         features: [subscriptionFeatureSchema],
-        perks: [{ type: String }],
         badge: { type: String },
 
         // Metadata
