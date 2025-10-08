@@ -1,3 +1,5 @@
+import { Types } from "mongoose";
+
 // Roles constants
 export const roles = {
     GUEST: "GUEST" as const,
@@ -6,6 +8,10 @@ export const roles = {
 };
 
 export type Role = (typeof roles)[keyof typeof roles];
+
+export interface IUserSubscriptionRef {
+    subscription: Types.ObjectId;
+}
 
 // IUser interface
 export interface IUser {
@@ -44,6 +50,12 @@ export interface IUser {
         zip: string;
     };
     gender?: "Male" | "Female" | "Other";
+
+    subscriptions?: IUserSubscriptionRef[];
+
+    freeTireUsed?: boolean;
+    freeTireExpiry?: Date;
+    freeTireSub?: Types.ObjectId;
 
     // Audit
     createdAt?: Date;

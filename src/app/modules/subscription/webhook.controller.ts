@@ -48,19 +48,10 @@
 //         subscriptionPlanId?: string;
 //         realUserId?: string;
 //     };
-//     subscription_details?: {
-//         metadata?: {
-//             userId?: string;
-//             type?: string;
-//             level?: string;
-//             subscriptionPlanId?: string;
-//             realUserId?: string;
-//         };
-//     };
 // }
 
 // // Helper function to safely create dates from Stripe timestamps
-// const createSafeDate = (timestamp: number, fallbackMessage: string): Date => {
+// const createSafeDate = (timestamp: number | undefined, fallbackMessage: string): Date => {
 //     if (!timestamp || timestamp <= 0) {
 //         console.warn(`⚠️ ${fallbackMessage}: Invalid timestamp ${timestamp}, using current date`);
 //         return new Date();
@@ -75,40 +66,12 @@
 //     return date;
 // };
 
-// // Helper to extract metadata from different sources
-// const extractMetadata = (event: any) => {
-//     let metadata: any = {};
-
-//     // Try to get metadata from checkout session first
-//     if (event.data?.object?.metadata) {
-//         metadata = { ...event.data.object.metadata };
-//     }
-
-//     // Try to get metadata from subscription
-//     if (event.data?.object?.subscription_details?.metadata) {
-//         metadata = { ...metadata, ...event.data.object.subscription_details.metadata };
-//     }
-
-//     console.log("🔍 Extracted metadata:", metadata);
-//     return metadata;
-// };
-
 // // Helper to find subscription by Stripe price ID
 // const findSubscriptionByStripePriceId = async (stripePriceId: string) => {
 //     try {
 //         return await subscriptionService.getSubscriptionByStripePriceId(stripePriceId);
 //     } catch (error) {
 //         console.error("❌ Error finding subscription by price ID:", error);
-//         return null;
-//     }
-// };
-
-// // Helper to find subscription by Stripe product ID
-// const findSubscriptionByStripeProductId = async (stripeProductId: string) => {
-//     try {
-//         return await subscriptionService.getSubscriptionByStripeProductId(stripeProductId);
-//     } catch (error) {
-//         console.error("❌ Error finding subscription by product ID:", error);
 //         return null;
 //     }
 // };
@@ -125,7 +88,6 @@
 //     try {
 //         const event = await stripeService.handleWebhookEvent(req.body, signature);
 //         console.log(`🔔 Processing event: ${event.type}`);
-//         console.log("📦 Full event object:", JSON.stringify(event, null, 2));
 
 //         // Handle different webhook events
 //         switch (event.type) {
@@ -133,115 +95,11 @@
 //                 const session = event.data.object as unknown as StripeCheckoutSession;
 //                 console.log("🛒 Checkout session completed:", session.id);
 //                 console.log("📋 Session metadata:", session.metadata);
-//                 console.log("👤 Customer:", session.customer);
-//                 console.log("💳 Mode:", session.mode);
 
 //                 if (session.mode === "subscription" && session.subscription) {
 //                     console.log("✅ Subscription checkout completed");
-
-//                     // Get subscription details from Stripe
-//                     const stripeSubscription = await stripeService.getSubscription(session.subscription);
-//                     console.log("📝 Stripe subscription details:", stripeSubscription);
-
-//                     if (stripeSubscription) {
-//                         const subscription = stripeSubscription as unknown as StripeSubscription;
-
-//                         // Extract and validate metadata
-//                         const metadata = subscription.metadata || session.metadata || {};
-//                         console.log("📋 Combined metadata:", metadata);
-
-//                         // Use realUserId if available, otherwise use userId
-//                         const realUserId = metadata.realUserId || metadata.userId;
-
-//                         if (!realUserId) {
-//                             console.error("❌ No valid user ID found in metadata");
-//                             break;
-//                         }
-
-//                         // Get price ID from subscription
-//                         const priceId = subscription.items.data[0]?.price.id;
-//                         if (!priceId) {
-//                             console.error("❌ No price ID found in subscription");
-//                             break;
-//                         }
-
-//                         // Find the subscription plan in our database
-//                         const subscriptionPlan = await findSubscriptionByStripePriceId(priceId);
-//                         if (!subscriptionPlan || !subscriptionPlan._id) {
-//                             console.error("❌ No subscription plan found for price ID:", priceId);
-//                             break;
-//                         }
-
-//                         console.log("✅ Found subscription plan:", subscriptionPlan._id);
-
-//                         // Check if user subscription already exists
-//                         const existingUserSubscription = await userSubscriptionService.getUserSubscriptionByStripeId(subscription.id);
-//                         if (existingUserSubscription) {
-//                             console.log("ℹ️ User subscription already exists, updating...");
-
-//                             // Update existing subscription
-//                             await userSubscriptionService.updateUserSubscriptionByStripeId(subscription.id, {
-//                                 status: subscription.status as any,
-//                                 currentPeriodStart: createSafeDate(subscription.current_period_start, "current_period_start"),
-//                                 currentPeriodEnd: createSafeDate(subscription.current_period_end, "current_period_end"),
-//                                 cancelAtPeriodEnd: subscription.cancel_at_period_end,
-//                             });
-
-//                             console.log("✅ Existing user subscription updated");
-//                             break;
-//                         }
-
-//                         // Create new user subscription
-//                         try {
-//                             // Safely create dates with validation
-//                             const currentPeriodStart = createSafeDate(subscription.current_period_start, "current_period_start");
-//                             const currentPeriodEnd = createSafeDate(subscription.current_period_end, "current_period_end");
-
-//                             console.log("✅ Validated dates - Start:", currentPeriodStart, "End:", currentPeriodEnd);
-
-//                             // Check if it's a free tier
-//                             const isFreeTier = stripeService.isFreeTier(subscriptionPlan.paymentLink);
-
-//                             const userSubscriptionData = {
-//                                 userId: realUserId,
-//                                 subscriptionId: subscriptionPlan._id.toString(),
-//                                 stripeSubscriptionId: subscription.id,
-//                                 stripeCustomerId: subscription.customer,
-//                                 stripePriceId: priceId,
-//                                 status: subscription.status as any,
-//                                 currentPeriodStart,
-//                                 currentPeriodEnd,
-//                                 cancelAtPeriodEnd: subscription.cancel_at_period_end || false,
-//                                 isFreeTier,
-//                             };
-
-//                             console.log("📦 Creating user subscription with data:", userSubscriptionData);
-
-//                             const result = await userSubscriptionService.createUserSubscription(userSubscriptionData);
-//                             console.log("✅ User subscription created successfully:", result._id);
-
-//                             // Log success details
-//                             console.log("🎉 User subscription successfully recorded:", {
-//                                 userSubscriptionId: result._id,
-//                                 userId: result.user,
-//                                 subscriptionId: result.subscription,
-//                                 type: subscriptionPlan.type,
-//                                 level: subscriptionPlan.level,
-//                                 status: result.status,
-//                             });
-//                         } catch (createError) {
-//                             console.error("❌ Error creating user subscription:", createError);
-//                             console.error("💥 Subscription data that failed:", {
-//                                 subscriptionId: subscription.id,
-//                                 metadata: metadata,
-//                                 priceId: priceId,
-//                             });
-//                         }
-//                     }
 //                 }
 //                 break;
-
-//             // In your webhook controller, update the customer.subscription.created case:
 
 //             case "customer.subscription.created":
 //                 const subscription = event.data.object as unknown as StripeSubscription;
@@ -284,41 +142,37 @@
 //                         break;
 //                     }
 
-//                     // FIX 1: Safely create dates with validation - check if timestamps exist
+//                     // Create dates with proper period calculation
 //                     let currentPeriodStart: Date;
 //                     let currentPeriodEnd: Date;
 
-//                     if (subscription.current_period_start) {
-//                         currentPeriodStart = createSafeDate(subscription.current_period_start, "current_period_start");
-//                     } else {
-//                         currentPeriodStart = new Date();
-//                         console.warn("⚠️ Using current date for period start (timestamp missing)");
-//                     }
+//                     // Use available timestamp or current date
+//                     const startTimestamp = subscription.current_period_start;
+//                     // const startTimestamp = subscription.current_period_start || subscription.created;
+//                     currentPeriodStart = createSafeDate(startTimestamp, "period_start");
 
-//                     if (subscription.current_period_end) {
-//                         currentPeriodEnd = createSafeDate(subscription.current_period_end, "current_period_end");
+//                     // Calculate end date based on billing period
+//                     currentPeriodEnd = new Date(currentPeriodStart);
+
+//                     if (subscriptionPlan.billingPeriod === "annual") {
+//                         currentPeriodEnd.setFullYear(currentPeriodEnd.getFullYear() + 1);
+//                         console.log("✅ Added 1 year for annual plan");
 //                     } else {
-//                         // Set default period end (1 month from now for monthly, 1 year for annual)
-//                         currentPeriodEnd = new Date();
-//                         if (subscriptionPlan.billingPeriod === "annual") {
-//                             currentPeriodEnd.setFullYear(currentPeriodEnd.getFullYear() + 1);
-//                         } else {
-//                             currentPeriodEnd.setMonth(currentPeriodEnd.getMonth() + 1);
-//                         }
-//                         console.warn("⚠️ Using calculated date for period end (timestamp missing)");
+//                         currentPeriodEnd.setMonth(currentPeriodEnd.getMonth() + 1);
+//                         console.log("✅ Added 1 month for monthly plan");
 //                     }
 
 //                     console.log("✅ Validated dates - Start:", currentPeriodStart, "End:", currentPeriodEnd);
 
-//                     // FIX 2: Check if it's a free tier
+//                     // Check if it's a free tier
 //                     const isFreeTier = stripeService.isFreeTier(subscriptionPlan.paymentLink);
 
-//                     // FIX 3: Create new user subscription with proper data types
+//                     // Create new user subscription
 //                     const userSubscriptionData = {
-//                         userId: realUserId, // This should be a string that can be cast to ObjectId
-//                         subscriptionId: subscriptionPlan._id.toString(), // Convert to string
+//                         userId: realUserId,
+//                         subscriptionId: subscriptionPlan._id.toString(),
 //                         stripeSubscriptionId: subscription.id,
-//                         stripeCustomerId: subscription.customer, // FIX: Use subscription.customer (string) NOT the full customer object
+//                         stripeCustomerId: subscription.customer,
 //                         stripePriceId: priceId,
 //                         status: subscription.status as any,
 //                         currentPeriodStart,
@@ -333,13 +187,6 @@
 //                     console.log("✅ User subscription created successfully:", result._id);
 //                 } catch (createError) {
 //                     console.error("❌ Error creating user subscription:", createError);
-//                     console.error("💥 Subscription data that failed:", {
-//                         id: subscription.id,
-//                         metadata: subscription.metadata,
-//                         current_period_start: subscription.current_period_start,
-//                         current_period_end: subscription.current_period_end,
-//                         customer: subscription.customer, // This should be the string ID
-//                     });
 //                 }
 //                 break;
 
@@ -348,7 +195,6 @@
 //                 console.log("🔄 Subscription updated:", updatedSubscription.id);
 
 //                 try {
-//                     // Update user subscription
 //                     const updateData: any = {
 //                         status: updatedSubscription.status as any,
 //                         cancelAtPeriodEnd: updatedSubscription.cancel_at_period_end,
@@ -377,7 +223,6 @@
 //                 console.log("🗑️ Subscription deleted:", deletedSubscription.id);
 
 //                 try {
-//                     // Update user subscription status to canceled
 //                     const updatedUserSubscription = await userSubscriptionService.updateUserSubscriptionByStripeId(deletedSubscription.id, { status: "canceled" });
 
 //                     if (updatedUserSubscription) {
@@ -395,7 +240,6 @@
 //                 console.log("✅ Payment succeeded:", invoice.id);
 
 //                 try {
-//                     // Update subscription status to active
 //                     if (invoice.subscription) {
 //                         const updatedUserSubscription = await userSubscriptionService.updateUserSubscriptionByStripeId(invoice.subscription, { status: "active" });
 
@@ -415,7 +259,6 @@
 //                 console.log("❌ Payment failed:", failedInvoice.id);
 
 //                 try {
-//                     // Update subscription status to past_due
 //                     if (failedInvoice.subscription) {
 //                         const updatedUserSubscription = await userSubscriptionService.updateUserSubscriptionByStripeId(failedInvoice.subscription, { status: "past_due" });
 
@@ -528,6 +371,69 @@ const findSubscriptionByStripePriceId = async (stripePriceId: string) => {
     }
 };
 
+// Helper function to attempt creating missing subscription
+const attemptToCreateMissingSubscription = async (subscription: StripeSubscription) => {
+    try {
+        console.log("🔄 Attempting to create missing subscription for:", subscription.id);
+
+        const metadata = subscription.metadata || {};
+        const realUserId = metadata.realUserId || metadata.userId;
+        const priceId = subscription.items.data[0]?.price.id;
+
+        if (!realUserId || !priceId) {
+            console.error("❌ Missing required data for creating missing subscription");
+            return null;
+        }
+
+        const subscriptionPlan = await findSubscriptionByStripePriceId(priceId);
+        if (!subscriptionPlan || !subscriptionPlan._id) {
+            console.error("❌ No subscription plan found for price ID:", priceId);
+            return null;
+        }
+
+        // Use your existing date calculation system
+        let currentPeriodStart: Date;
+        let currentPeriodEnd: Date;
+
+        const startTimestamp = subscription.current_period_start;
+        currentPeriodStart = createSafeDate(startTimestamp, "period_start");
+
+        // Your existing date calculation system
+        currentPeriodEnd = new Date(currentPeriodStart);
+        if (subscriptionPlan.billingPeriod === "annual") {
+            currentPeriodEnd.setFullYear(currentPeriodEnd.getFullYear() + 1);
+            console.log("✅ Added 1 year for annual plan");
+        } else {
+            currentPeriodEnd.setMonth(currentPeriodEnd.getMonth() + 1);
+            console.log("✅ Added 1 month for monthly plan");
+        }
+
+        const isFreeTier = stripeService.isFreeTier(subscriptionPlan.paymentLink);
+
+        const userSubscriptionData = {
+            userId: realUserId,
+            subscriptionId: subscriptionPlan._id.toString(),
+            stripeSubscriptionId: subscription.id,
+            stripeCustomerId: subscription.customer,
+            stripePriceId: priceId,
+            status: subscription.status as any,
+            currentPeriodStart,
+            currentPeriodEnd,
+            cancelAtPeriodEnd: subscription.cancel_at_period_end || false,
+            isFreeTier,
+        };
+
+        console.log("📦 Creating missing user subscription with data:", userSubscriptionData);
+
+        const result = await userSubscriptionService.createUserSubscription(userSubscriptionData);
+        console.log("✅ Missing user subscription created successfully:", result._id);
+        return result;
+    } catch (error) {
+        console.error("❌ Error creating missing subscription:", error);
+        return null;
+    }
+};
+
 const handleWebhook = async (req: Request, res: Response) => {
     const signature = req.headers["stripe-signature"] as string;
 
@@ -594,18 +500,16 @@ const handleWebhook = async (req: Request, res: Response) => {
                         break;
                     }
 
-                    // Create dates with proper period calculation
+                    // Create dates with your existing calculation system
                     let currentPeriodStart: Date;
                     let currentPeriodEnd: Date;
 
                     // Use available timestamp or current date
                     const startTimestamp = subscription.current_period_start;
-                    // const startTimestamp = subscription.current_period_start || subscription.created;
                     currentPeriodStart = createSafeDate(startTimestamp, "period_start");
 
-                    // Calculate end date based on billing period
+                    // Your existing date calculation system
                     currentPeriodEnd = new Date(currentPeriodStart);
-
                     if (subscriptionPlan.billingPeriod === "annual") {
                         currentPeriodEnd.setFullYear(currentPeriodEnd.getFullYear() + 1);
                         console.log("✅ Added 1 year for annual plan");
@@ -642,6 +546,21 @@ const handleWebhook = async (req: Request, res: Response) => {
                 }
                 break;
 
+            case "customer.subscription.trial_will_end":
+                const trialEndingSubscription = event.data.object as unknown as StripeSubscription;
+                console.log("⏰ Trial ending soon:", trialEndingSubscription.id);
+
+                try {
+                    // Update status to "active" or keep as "trialing" based on your business logic
+                    // Since trial is ending, we can set it to "active" or maintain current status
+                    await userSubscriptionService.updateUserSubscriptionByStripeId(trialEndingSubscription.id, {
+                        status: "active", // or keep the current status if you prefer
+                    });
+                    console.log("✅ Trial ending - subscription status updated to active");
+                } catch (trialError) {
+                    console.error("❌ Error handling trial end:", trialError);
+                }
+                break;
             case "customer.subscription.updated":
                 const updatedSubscription = event.data.object as unknown as StripeSubscription;
                 console.log("🔄 Subscription updated:", updatedSubscription.id);
@@ -652,10 +571,19 @@ const handleWebhook = async (req: Request, res: Response) => {
                         cancelAtPeriodEnd: updatedSubscription.cancel_at_period_end,
                     };
 
-                    // Update period dates if available
-                    if (updatedSubscription.current_period_start && updatedSubscription.current_period_end) {
+                    // Always update period dates if available
+                    if (updatedSubscription.current_period_start) {
                         updateData.currentPeriodStart = createSafeDate(updatedSubscription.current_period_start, "updated current_period_start");
+                    }
+
+                    if (updatedSubscription.current_period_end) {
                         updateData.currentPeriodEnd = createSafeDate(updatedSubscription.current_period_end, "updated current_period_end");
+                    }
+
+                    // Handle subscription resumption
+                    if (updatedSubscription.status === "active" && updatedSubscription.cancel_at_period_end === false) {
+                        updateData.status = "active";
+                        console.log("✅ Subscription resumed/reactivated");
                     }
 
                     const updatedUserSubscription = await userSubscriptionService.updateUserSubscriptionByStripeId(updatedSubscription.id, updateData);
@@ -664,6 +592,9 @@ const handleWebhook = async (req: Request, res: Response) => {
                         console.log("✅ User subscription updated successfully");
                     } else {
                         console.warn("⚠️ No user subscription found for Stripe ID:", updatedSubscription.id);
+
+                        // Try to create if not found (edge case)
+                        await attemptToCreateMissingSubscription(updatedSubscription);
                     }
                 } catch (updateError) {
                     console.error("❌ Error updating user subscription:", updateError);

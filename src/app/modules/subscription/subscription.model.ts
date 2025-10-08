@@ -33,13 +33,13 @@ const subscriptionSchema = new Schema<ISubscription>(
         currency: { type: String, required: true, default: "gbp" },
 
         // Guest specific
-        bookingFee: { type: Schema.Types.Mixed },
+        bookingFee: { type: Number, required: true, default: 0 },
         bookingLimit: { type: Number },
 
         // Host specific
-        commission: { type: Schema.Types.Mixed }, // Can be number or string
-        freeBookings: { type: Number }, // For host free tier (10 free bookings)
-        listingLimit: { type: Number }, // Maximum property listings allowed
+        commission: { type: Number },
+        freeBookings: { type: Number },
+        listingLimit: { type: Number },
 
         // Stripe Integration
         stripeProductId: { type: String, required: true },

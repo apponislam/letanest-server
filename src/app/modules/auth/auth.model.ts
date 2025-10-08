@@ -38,6 +38,19 @@ const userSchema = new Schema<IUser>(
             zip: { type: String, default: null },
         },
 
+        subscriptions: {
+            type: [
+                {
+                    subscription: { type: Schema.Types.ObjectId, ref: "UserSubscription" },
+                },
+            ],
+            default: [],
+        },
+
+        freeTireUsed: { type: Boolean, default: false },
+        freeTireExpiry: { type: Date, default: null },
+        freeTireSub: { type: Schema.Types.ObjectId, ref: "Subscription", default: null },
+
         // OTP / password reset
         resetPasswordOtp: { type: String, default: undefined },
         resetPasswordOtpExpiry: { type: Date, default: undefined },

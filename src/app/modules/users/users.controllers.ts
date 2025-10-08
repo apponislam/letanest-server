@@ -4,6 +4,7 @@ import sendResponse from "../../../utils/sendResponse.";
 import { userServices } from "./users.services";
 import httpStatus from "http-status";
 import { Types } from "mongoose";
+import ApiError from "../../../errors/ApiError";
 
 const getAllUsersController = catchAsync(async (req: Request, res: Response) => {
     const usersData = await userServices.getAllUsersService(req.query);
@@ -56,8 +57,50 @@ const updateUserProfileController = catchAsync(async (req: Request, res: Respons
     });
 });
 
+const getMySubscriptionsController = catchAsync(async (req: Request, res: Response) => {
+    const userId = req.user?._id;
+
+    if (!userId) {
+        throw new ApiError(httpStatus.UNAUTHORIZED, "User not authenticated");
+    }
+
+    const user = await userServices.getMySubscriptionsService(userId);
+
+    sendResponse(res, {
+        statusCode: httpStatus.OK,
+        success: true,
+        message: "User subscriptions retrieved successfully",
+        data: user,
+    });
+});
+
+// ONLY THIS NEW CONTROLLER - Activate free tier
+const activateFreeTierController = catchAsync(async (req: Request, res: Response) => {
+    const userId = req.user?._id;
+    const { subscriptionId } = req.body;
+
+    if (!userId) {
+        throw new ApiError(httpStatus.UNAUTHORIZED, "User not authenticated");
+    }
+
+    if (!subscriptionId) {
+        throw new ApiError(httpStatus.BAD_REQUEST, "Subscription ID is required");
+    }
+
+    const freeTierData = await userServices.activateFreeTierService(userId, subscriptionId);
+
+    sendResponse(res, {
+        statusCode: httpStatus.OK,
+        success: true,
+        message: "Free tier activated successfully",
+        data: freeTierData,
+    });
+});
+
 export const userControllers = {
     getAllUsersController,
     getSingleUserController,
     updateUserProfileController,
+    getMySubscriptionsController,
+    activateFreeTierController,
 };
