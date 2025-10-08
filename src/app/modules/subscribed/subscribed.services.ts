@@ -45,6 +45,8 @@ const createUserSubscription = async (data: CreateUserSubscriptionData): Promise
             freeBookings: subscription.freeBookings,
             listingLimit: subscription.listingLimit,
             isFreeTier: data.isFreeTier,
+            cost: subscription.cost,
+            currency: subscription.currency,
         };
 
         if (userSubscription) {

@@ -61,10 +61,15 @@ const updateUserProfileService = async (userId: Types.ObjectId, updateData: IUpd
 
 const getMySubscriptionsService = async (userId: Types.ObjectId): Promise<IUser | null> => {
     const user = await UserModel.findById(userId)
-        .select("name email role profileImg subscriptions") // only these fields
+        .select("name email role profileImg subscriptions freeTireUsed freeTireExpiry")
         .populate({
             path: "subscriptions.subscription",
             model: "UserSubscription",
+        })
+        .populate({
+            path: "freeTireSub",
+            model: "Subscription",
+            select: "billingPeriod bookingFee level paymentLink type freeBookings listingLimit commission",
         });
 
     if (!user) {
@@ -89,7 +94,7 @@ const activateFreeTierService = async (userId: Types.ObjectId, subscriptionId: s
             freeTireSub: new Types.ObjectId(subscriptionId),
         },
         { new: true }
-    ).populate("freeTireSub", "name features billingPeriod cost currency");
+    ).populate("freeTireSub");
 
     return {
         freeTireUsed: updatedUser?.freeTireUsed,

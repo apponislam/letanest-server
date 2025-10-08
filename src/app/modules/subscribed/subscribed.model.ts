@@ -27,6 +27,8 @@ const userSubscriptionSchema = new Schema<IUserSubscription>(
 
         // For free tiers
         isFreeTier: { type: Boolean, default: false },
+        cost: { type: Number },
+        currency: { type: String },
 
         // Snapshot of subscription fields
         bookingFee: { type: Number },
