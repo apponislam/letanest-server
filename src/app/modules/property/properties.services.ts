@@ -1,9 +1,44 @@
 import { PropertyModel } from "./properties.model";
 import { IProperty, IPropertyListResponse, IPropertyQuery } from "./properties.interface";
 import { Types } from "mongoose";
+import { geocodeAddress } from "./geocodingService";
+
+// const createPropertyService = async (data: IProperty): Promise<IProperty> => {
+//     return PropertyModel.create(data);
+// };
 
 const createPropertyService = async (data: IProperty): Promise<IProperty> => {
-    return PropertyModel.create(data);
+    try {
+        // Parse data
+        const parsedData = {
+            ...data,
+            maxGuests: Number(data.maxGuests),
+            bedrooms: Number(data.bedrooms),
+            bathrooms: Number(data.bathrooms),
+            price: Number(data.price),
+            availableFrom: new Date(data.availableFrom),
+            availableTo: new Date(data.availableTo),
+            amenities: Array.isArray(data.amenities) ? data.amenities : [],
+        };
+
+        // Get coordinates from geocoding
+        if (parsedData.location && parsedData.postCode) {
+            const geocodedData = await geocodeAddress(parsedData.location, parsedData.postCode);
+
+            if (geocodedData) {
+                parsedData.coordinates = {
+                    lat: geocodedData.lat,
+                    lng: geocodedData.lng,
+                };
+                console.log(`Coordinates found: ${geocodedData.lat}, ${geocodedData.lng}`);
+            }
+        }
+
+        return await PropertyModel.create(parsedData);
+    } catch (error) {
+        console.error("Property service error:", error);
+        throw error;
+    }
 };
 
 const updatePropertyService = async (id: string, data: Partial<IProperty>): Promise<IProperty | null> => {
