@@ -28,9 +28,12 @@ const userSubscriptionSchema = new Schema<IUserSubscription>(
         // For free tiers
         isFreeTier: { type: Boolean, default: false },
 
-        // Usage tracking
-        bookingCount: { type: Number, default: 0 },
-        freeBookingCount: { type: Number, default: 0 },
+        // Snapshot of subscription fields
+        bookingFee: { type: Number },
+        bookingLimit: { type: Number },
+        commission: { type: Number },
+        freeBookings: { type: Number },
+        listingLimit: { type: Number },
     },
     {
         timestamps: true,

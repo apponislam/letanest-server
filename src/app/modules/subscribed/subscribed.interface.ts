@@ -1,4 +1,4 @@
-import { Document, Types } from "mongoose";
+import { Types } from "mongoose";
 
 export interface IUserSubscription {
     _id?: string;
@@ -12,8 +12,13 @@ export interface IUserSubscription {
     currentPeriodEnd: Date;
     cancelAtPeriodEnd: boolean;
     isFreeTier: boolean;
-    bookingCount?: number;
-    freeBookingCount?: number;
+    // bookingCount?: number;
+    // freeBookingCount?: number;
+    bookingFee?: number;
+    bookingLimit?: number;
+    commission?: number;
+    freeBookings?: number;
+    listingLimit?: number;
     createdAt?: Date;
     updatedAt?: Date;
 }

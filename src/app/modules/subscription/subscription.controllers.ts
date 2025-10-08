@@ -214,6 +214,23 @@ const createCheckoutSession = catchAsync(async (req: Request, res: Response) => 
     });
 });
 
+const getCheckoutSession = catchAsync(async (req: Request, res: Response) => {
+    const { sessionId } = req.params;
+
+    if (!sessionId) {
+        throw new ApiError(httpStatus.BAD_REQUEST, "Session ID is required");
+    }
+
+    const session = await stripeService.getCheckoutSession(sessionId);
+
+    sendResponse(res, {
+        statusCode: httpStatus.OK,
+        success: true,
+        message: "Checkout session retrieved successfully",
+        data: session,
+    });
+});
+
 export const subscriptionController = {
     createSubscription,
     getAllSubscriptions,
@@ -226,4 +243,5 @@ export const subscriptionController = {
     updateSubscription,
     toggleSubscriptionStatus,
     createCheckoutSession,
+    getCheckoutSession,
 };

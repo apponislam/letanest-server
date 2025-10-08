@@ -14,4 +14,9 @@ router.get("/:id", auth, userControllers.getSingleUserController);
 
 router.patch("/profile", auth, uploadProfileImage, userControllers.updateUserProfileController);
 
+router.get("/me/subscriptions", auth, userControllers.getMySubscriptionsController);
+
+// ONLY THIS NEW ROUTE
+router.post("/me/free-tier/activate", auth, userControllers.activateFreeTierController);
+
 export const userRoutes = router;

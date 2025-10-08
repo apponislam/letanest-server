@@ -23,4 +23,6 @@ router.patch("/:id/toggle-status", auth, authorize([roles.ADMIN]), subscriptionC
 // new
 router.post("/create-checkout-session", auth, subscriptionController.createCheckoutSession);
 
+router.get("/session/:sessionId", auth, subscriptionController.getCheckoutSession);
+
 export const subscriptionRoutes = router;
