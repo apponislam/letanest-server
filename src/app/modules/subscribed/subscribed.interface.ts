@@ -12,6 +12,8 @@ export interface IUserSubscription {
     currentPeriodEnd: Date;
     cancelAtPeriodEnd: boolean;
     isFreeTier: boolean;
+    cost?: number;
+    currency?: string;
     // bookingCount?: number;
     // freeBookingCount?: number;
     bookingFee?: number;
