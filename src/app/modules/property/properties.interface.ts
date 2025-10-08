@@ -15,6 +15,10 @@ export interface IPropertyStep1 {
     description: string;
     location: string;
     postCode: string;
+    coordinates?: {
+        lat: number;
+        lng: number;
+    };
     propertyType: PropertyType;
 }
 
@@ -38,10 +42,12 @@ export interface IPropertyStep3 {
 // Step 4: Terms agreement
 export interface IPropertyStep4 {
     agreeTerms: boolean;
+    termsAndConditions?: Types.ObjectId;
 }
 
 // Complete Property Interface
 export interface IProperty extends IPropertyStep1, IPropertyStep2, IPropertyStep3, IPropertyStep4 {
+    propertyNumber?: string;
     createdBy: Types.ObjectId;
     createdAt?: Date;
     updatedAt?: Date;

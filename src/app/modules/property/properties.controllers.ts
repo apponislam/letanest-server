@@ -10,8 +10,34 @@ interface MulterFiles {
     photos?: Express.Multer.File[];
 }
 
-export const createPropertyController = catchAsync(async (req: Request, res: Response) => {
-    const files = req.files as MulterFiles; // type assertion
+// const createPropertyController = catchAsync(async (req: Request, res: Response) => {
+//     const files = req.files as MulterFiles; // type assertion
+//     const coverPhotoFile = files?.coverPhoto?.[0];
+//     const photosFiles = files?.photos || [];
+
+//     const mediaData: Partial<IProperty> = {};
+
+//     if (coverPhotoFile) mediaData.coverPhoto = `/uploads/photos/${coverPhotoFile.filename}`;
+//     if (photosFiles.length > 0) mediaData.photos = photosFiles.map((file) => `/uploads/photos/${file.filename}`);
+
+//     const propertyData: Partial<IProperty> = {
+//         ...req.body,
+//         ...mediaData,
+//         createdBy: (req.user as any)?._id,
+//     };
+
+//     const property = await propertyServices.createPropertyService(propertyData as IProperty);
+
+//     sendResponse(res, {
+//         statusCode: httpStatus.CREATED,
+//         success: true,
+//         message: "Property created successfully",
+//         data: property,
+//     });
+// });
+
+const createPropertyController = catchAsync(async (req: Request, res: Response) => {
+    const files = req.files as MulterFiles;
     const coverPhotoFile = files?.coverPhoto?.[0];
     const photosFiles = files?.photos || [];
 
@@ -24,7 +50,17 @@ export const createPropertyController = catchAsync(async (req: Request, res: Res
         ...req.body,
         ...mediaData,
         createdBy: (req.user as any)?._id,
+        agreeTerms: req.body.agreeTerms === "true" || req.body.agreeTerms === true,
     };
+
+    // Parse amenities if it's a string
+    if (typeof req.body.amenities === "string") {
+        try {
+            propertyData.amenities = JSON.parse(req.body.amenities);
+        } catch (e) {
+            propertyData.amenities = [];
+        }
+    }
 
     const property = await propertyServices.createPropertyService(propertyData as IProperty);
 
@@ -36,7 +72,7 @@ export const createPropertyController = catchAsync(async (req: Request, res: Res
     });
 });
 
-export const updatePropertyController = catchAsync(async (req: Request, res: Response) => {
+const updatePropertyController = catchAsync(async (req: Request, res: Response) => {
     const files = req.files as MulterFiles; // type assertion
     const coverPhotoFile = files?.coverPhoto?.[0];
     const photosFiles = files?.photos || [];

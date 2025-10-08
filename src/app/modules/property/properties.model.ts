@@ -3,6 +3,7 @@ import { IProperty, amenitiesList, propertyTypeOptions } from "./properties.inte
 
 const PropertySchema = new Schema<IProperty>(
     {
+        propertyNumber: { type: String, unique: true },
         // Step 1: Basic property info
         title: { type: String, required: [true, "Title is required"] },
         description: { type: String, required: [true, "Description is required"] },
@@ -12,6 +13,11 @@ const PropertySchema = new Schema<IProperty>(
             type: String,
             enum: propertyTypeOptions,
             required: [true, "Property type is required"],
+        },
+
+        coordinates: {
+            lat: { type: Number },
+            lng: { type: Number },
         },
 
         // Step 2: Property details
@@ -33,6 +39,10 @@ const PropertySchema = new Schema<IProperty>(
 
         // Step 4: Terms agreement
         agreeTerms: { type: Boolean, required: [true, "Agreement to terms is required"] },
+        termsAndConditions: {
+            type: Schema.Types.ObjectId,
+            ref: "TermsAndConditions",
+        },
 
         // Metadata
         createdBy: { type: Schema.Types.ObjectId, ref: "User", required: true },
@@ -47,5 +57,23 @@ const PropertySchema = new Schema<IProperty>(
         versionKey: false,
     }
 );
+
+PropertySchema.pre("save", async function (next) {
+    const doc = this as any;
+
+    if (doc.isNew) {
+        const lastProperty = await mongoose.model("Property").findOne({}, { propertyNumber: 1 }).sort({ propertyNumber: -1 }).exec();
+
+        let newNumber = 1;
+        if (lastProperty?.propertyNumber) {
+            newNumber = parseInt(lastProperty.propertyNumber, 10) + 1;
+        }
+
+        // Always pad to 9 digits, even when it goes beyond 999999999
+        doc.propertyNumber = newNumber.toString().padStart(9, "0");
+    }
+
+    next();
+});
 
 export const PropertyModel = mongoose.model<IProperty>("Property", PropertySchema);
