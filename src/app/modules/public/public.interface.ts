@@ -19,7 +19,7 @@ export interface TermsAndConditions {
     creatorType: TermsCreator;
     target: TermsTarget;
     hostTarget?: HostTCTarget;
-    propertyId?: Types.ObjectId;
+    // propertyId?: Types.ObjectId;
     createdAt?: string;
     updatedAt?: string;
 }

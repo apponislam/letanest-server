@@ -16,4 +16,8 @@ router.get("/:id", auth, propertyControllers.getSinglePropertyController);
 // Listing with pagination, search, filter
 router.get("/", auth, propertyControllers.getAllPropertiesController);
 
+router.get("/admin/all", auth, authorize(["ADMIN"]), propertyControllers.getAllPropertiesForAdminController);
+
+router.patch("/:id/status", auth, authorize(["ADMIN"]), propertyControllers.changePropertyStatusController);
+
 export const propertyRoutes = router;

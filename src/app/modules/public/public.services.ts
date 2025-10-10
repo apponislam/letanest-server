@@ -33,8 +33,6 @@ const createTermsService = async (data: any, userId: string) => {
         }
     }
 
-    // ... rest of your host logic
-
     console.log("✅ Creating new terms with final data:", finalData);
     return TermsAndConditionsModel.create(finalData);
 };
@@ -69,10 +67,23 @@ const getTermsByTargetService = async (target: string) => {
     return TermsAndConditionsModel.find({ target }).populate("createdBy", "name email");
 };
 
-const getPropertyTermsService = async (propertyId: string) => {
-    const term = await TermsAndConditionsModel.findOne({ propertyId }).populate("createdBy", "name email");
-    if (!term) throw new ApiError(httpStatus.NOT_FOUND, "Property-specific T&C not found");
-    return term;
+// const getPropertyTermsService = async (propertyId: string) => {
+//     const term = await TermsAndConditionsModel.findOne({ propertyId }).populate("createdBy", "name email");
+//     if (!term) throw new ApiError(httpStatus.NOT_FOUND, "Property-specific T&C not found");
+//     return term;
+// };
+
+const getMyDefaultHostTermsService = async (userId: string) => {
+    const defaultTerms = await TermsAndConditionsModel.findOne({
+        hostTarget: "default",
+        createdBy: userId,
+    }).select("_id createdBy");
+
+    if (!defaultTerms) {
+        throw new ApiError(httpStatus.NOT_FOUND, "Default host terms and conditions not found for this user");
+    }
+
+    return defaultTerms;
 };
 
 export const termsService = {
@@ -83,5 +94,6 @@ export const termsService = {
     updateTermService,
     deleteTermService,
     getTermsByTargetService,
-    getPropertyTermsService,
+    // getPropertyTermsService,
+    getMyDefaultHostTermsService,
 };

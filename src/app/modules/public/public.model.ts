@@ -44,23 +44,23 @@ const TermsAndConditionsSchema = new mongoose.Schema(
                 message: "hostTarget can only be set when creatorType is HOST",
             },
         },
-        propertyId: {
-            type: Schema.Types.ObjectId,
-            ref: "Property",
-            required: function (this: any) {
-                return this.target === roles.HOST && this.hostTarget === "property";
-            },
-        },
+        // propertyId: {
+        //     type: Schema.Types.ObjectId,
+        //     ref: "Property",
+        //     required: function (this: any) {
+        //         return this.target === roles.HOST && this.hostTarget === "property";
+        //     },
+        // },
     },
     { timestamps: true }
 );
 
 // Optional: pre-save validation for HOST property-specific T&C
-TermsAndConditionsSchema.pre("save", function (next) {
-    if (this.creatorType === roles.HOST && this.hostTarget === "property" && !this.propertyId) {
-        return next(new Error("PropertyId is required for property-specific T&C"));
-    }
-    next();
-});
+// TermsAndConditionsSchema.pre("save", function (next) {
+//     if (this.creatorType === roles.HOST && this.hostTarget === "property" && !this.propertyId) {
+//         return next(new Error("PropertyId is required for property-specific T&C"));
+//     }
+//     next();
+// });
 
 export const TermsAndConditionsModel = mongoose.model("TermsAndConditions", TermsAndConditionsSchema);

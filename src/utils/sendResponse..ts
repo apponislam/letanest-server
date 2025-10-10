@@ -9,6 +9,7 @@ type TResponse<T> = {
         page: number;
         limit: number;
         total: number;
+        totalAmount?: number;
     };
 };
 
