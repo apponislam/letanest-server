@@ -3,10 +3,6 @@ import { IProperty, IPropertyListResponse, IPropertyQuery } from "./properties.i
 import { Types } from "mongoose";
 import { geocodeAddress } from "./geocodingService";
 
-// const createPropertyService = async (data: IProperty): Promise<IProperty> => {
-//     return PropertyModel.create(data);
-// };
-
 const createPropertyService = async (data: IProperty): Promise<IProperty> => {
     try {
         // Parse data
@@ -76,9 +72,43 @@ const getAllPropertiesService = async (query: IPropertyQuery): Promise<IProperty
     };
 };
 
+const getAllPropertiesForAdminService = async (query: IPropertyQuery): Promise<IPropertyListResponse> => {
+    const { page = 1, limit = 10, search, status } = query;
+
+    const filter: Record<string, any> = {};
+
+    if (search) {
+        filter.$or = [{ title: { $regex: search, $options: "i" } }, { description: { $regex: search, $options: "i" } }, { location: { $regex: search, $options: "i" } }];
+    }
+
+    if (status) filter.status = status;
+
+    const skip = (Number(page) - 1) * Number(limit);
+
+    const [properties, total] = await Promise.all([PropertyModel.find(filter).populate("createdBy").populate("termsAndConditions").skip(skip).limit(Number(limit)).sort({ createdAt: -1 }), PropertyModel.countDocuments(filter)]);
+
+    return {
+        properties,
+        meta: {
+            total,
+            page: Number(page),
+            limit: Number(limit),
+            totalPages: Math.ceil(total / Number(limit)),
+        },
+    };
+};
+
+const changePropertyStatusService = async (id: string, status: string): Promise<IProperty | null> => {
+    const property = await PropertyModel.findByIdAndUpdate(id, { status }, { new: true });
+
+    return property;
+};
+
 export const propertyServices = {
     createPropertyService,
     updatePropertyService,
     getSinglePropertyService,
     getAllPropertiesService,
+    getAllPropertiesForAdminService,
+    changePropertyStatusService,
 };

@@ -40,9 +40,21 @@ const getTermsByTargetController = catchAsync(async (req, res) => {
     sendResponse(res, { statusCode: httpStatus.OK, success: true, message: `Terms & Conditions for ${req.params.target} retrieved successfully`, data: terms });
 });
 
-const getPropertyTermsController = catchAsync(async (req, res) => {
-    const term = await termsService.getPropertyTermsService(req.params.propertyId);
-    sendResponse(res, { statusCode: httpStatus.OK, success: true, message: "Property-specific Terms & Conditions retrieved successfully", data: term });
+// const getPropertyTermsController = catchAsync(async (req, res) => {
+//     const term = await termsService.getPropertyTermsService(req.params.propertyId);
+//     sendResponse(res, { statusCode: httpStatus.OK, success: true, message: "Property-specific Terms & Conditions retrieved successfully", data: term });
+// });
+
+const getMyDefaultHostTermsController = catchAsync(async (req: Request, res: Response) => {
+    if (!req.user?._id) throw new Error("Unauthorized: user not logged in");
+
+    const result = await termsService.getMyDefaultHostTermsService(req.user._id);
+    sendResponse(res, {
+        statusCode: httpStatus.OK,
+        success: true,
+        message: "Default Host Terms & Conditions retrieved successfully",
+        data: result,
+    });
 });
 
 export const termsController = {
@@ -53,5 +65,6 @@ export const termsController = {
     updateTermController,
     deleteTermController,
     getTermsByTargetController,
-    getPropertyTermsController,
+    // getPropertyTermsController,
+    getMyDefaultHostTermsController,
 };
