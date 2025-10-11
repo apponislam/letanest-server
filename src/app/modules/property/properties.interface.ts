@@ -51,7 +51,8 @@ export interface IProperty extends IPropertyStep1, IPropertyStep2, IPropertyStep
     createdBy: Types.ObjectId;
     createdAt?: Date;
     updatedAt?: Date;
-    status?: "draft" | "pending" | "published" | "archived" | "rejected" | "under_review";
+    status?: "pending" | "published" | "rejected" | "hidden";
+    isDeleted?: boolean;
 }
 
 export interface IPropertyQuery {
@@ -67,6 +68,7 @@ export interface IPropertyMeta {
     page: number;
     limit: number;
     totalPages: number;
+    totalAmount?: number;
 }
 
 export interface IPropertyListResponse {

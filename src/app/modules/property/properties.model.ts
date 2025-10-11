@@ -48,9 +48,10 @@ const PropertySchema = new Schema<IProperty>(
         createdBy: { type: Schema.Types.ObjectId, ref: "User", required: true },
         status: {
             type: String,
-            enum: ["draft", "pending", "published", "archived", "rejected", "under_review"],
+            enum: ["pending", "published", "rejected", "hidden"],
             default: "pending",
         },
+        isDeleted: { type: Boolean, default: false },
     },
     {
         timestamps: true,

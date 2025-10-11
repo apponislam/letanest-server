@@ -42,13 +42,18 @@ const updatePropertyService = async (id: string, data: Partial<IProperty>): Prom
 };
 
 const getSinglePropertyService = async (id: string): Promise<IProperty | null> => {
-    return PropertyModel.findById(id);
+    return PropertyModel.findById(id)
+        .populate("createdBy") // Populate the user object
+        .populate("termsAndConditions"); // Populate terms and conditions
 };
 
+// Update getAllPropertiesService to exclude deleted properties
 const getAllPropertiesService = async (query: IPropertyQuery): Promise<IPropertyListResponse> => {
     const { page = 1, limit = 10, search, status, createdBy } = query;
 
-    const filter: Record<string, any> = {};
+    const filter: Record<string, any> = {
+        isDeleted: false, // Add soft delete filter
+    };
 
     if (search) {
         filter.$or = [{ title: { $regex: search, $options: "i" } }, { description: { $regex: search, $options: "i" } }, { location: { $regex: search, $options: "i" } }];
@@ -72,20 +77,27 @@ const getAllPropertiesService = async (query: IPropertyQuery): Promise<IProperty
     };
 };
 
-const getAllPropertiesForAdminService = async (query: IPropertyQuery): Promise<IPropertyListResponse> => {
-    const { page = 1, limit = 10, search, status } = query;
+// Update getAllPublishedPropertiesService to exclude deleted properties
+const getAllPublishedPropertiesService = async (query: IPropertyQuery): Promise<IPropertyListResponse> => {
+    const { page = 1, limit = 10, search } = query;
 
-    const filter: Record<string, any> = {};
+    const filter: Record<string, any> = {
+        status: "published",
+        isDeleted: false, // Add soft delete filter
+    };
 
     if (search) {
         filter.$or = [{ title: { $regex: search, $options: "i" } }, { description: { $regex: search, $options: "i" } }, { location: { $regex: search, $options: "i" } }];
     }
 
-    if (status) filter.status = status;
-
     const skip = (Number(page) - 1) * Number(limit);
 
     const [properties, total] = await Promise.all([PropertyModel.find(filter).populate("createdBy").populate("termsAndConditions").skip(skip).limit(Number(limit)).sort({ createdAt: -1 }), PropertyModel.countDocuments(filter)]);
+
+    // Calculate total amount (sum of all published properties' prices)
+    const totalAmountResult = await PropertyModel.aggregate([{ $match: filter }, { $group: { _id: null, totalAmount: { $sum: "$price" } } }]);
+
+    const totalAmount = totalAmountResult.length > 0 ? totalAmountResult[0].totalAmount : 0;
 
     return {
         properties,
@@ -94,6 +106,45 @@ const getAllPropertiesForAdminService = async (query: IPropertyQuery): Promise<I
             page: Number(page),
             limit: Number(limit),
             totalPages: Math.ceil(total / Number(limit)),
+            totalAmount,
+        },
+    };
+};
+
+const getAllNonPublishedPropertiesService = async (query: IPropertyQuery): Promise<IPropertyListResponse> => {
+    const { page = 1, limit = 10, search, status } = query;
+
+    const filter: Record<string, any> = {
+        status: { $ne: "published" },
+        isDeleted: false, // Add soft delete filter
+    };
+
+    if (search) {
+        filter.$or = [{ title: { $regex: search, $options: "i" } }, { description: { $regex: search, $options: "i" } }, { location: { $regex: search, $options: "i" } }];
+    }
+
+    // If specific non-published status is provided, use it instead of excluding published
+    if (status && status !== "published") {
+        filter.status = status;
+    }
+
+    const skip = (Number(page) - 1) * Number(limit);
+
+    const [properties, total] = await Promise.all([PropertyModel.find(filter).populate("createdBy").populate("termsAndConditions").skip(skip).limit(Number(limit)).sort({ createdAt: -1 }), PropertyModel.countDocuments(filter)]);
+
+    // Calculate total amount (sum of all non-published properties' prices)
+    const totalAmountResult = await PropertyModel.aggregate([{ $match: filter }, { $group: { _id: null, totalAmount: { $sum: "$price" } } }]);
+
+    const totalAmount = totalAmountResult.length > 0 ? totalAmountResult[0].totalAmount : 0;
+
+    return {
+        properties,
+        meta: {
+            total,
+            page: Number(page),
+            limit: Number(limit),
+            totalPages: Math.ceil(total / Number(limit)),
+            totalAmount,
         },
     };
 };
@@ -104,11 +155,100 @@ const changePropertyStatusService = async (id: string, status: string): Promise<
     return property;
 };
 
+// Update getHostPropertiesService to include soft delete filter
+const getHostPropertiesService = async (hostId: string, query: IPropertyQuery) => {
+    if (!hostId) {
+        throw new Error("Host ID is required");
+    }
+
+    const { page = 1, limit = 10, search, status } = query;
+
+    const filter: Record<string, any> = {
+        createdBy: new Types.ObjectId(hostId),
+        isDeleted: false, // Add soft delete filter
+    };
+
+    // Add search filter
+    if (search) {
+        filter.$or = [{ title: { $regex: search, $options: "i" } }, { description: { $regex: search, $options: "i" } }, { location: { $regex: search, $options: "i" } }];
+    }
+
+    // Add status filter
+    if (status) {
+        filter.status = status;
+    }
+
+    const skip = (Number(page) - 1) * Number(limit);
+
+    const [properties, total] = await Promise.all([PropertyModel.find(filter).populate("createdBy").populate("termsAndConditions").skip(skip).limit(Number(limit)).sort({ createdAt: -1 }), PropertyModel.countDocuments(filter)]);
+
+    // Calculate total amount (sum of all properties' prices)
+    const totalAmountResult = await PropertyModel.aggregate([{ $match: filter }, { $group: { _id: null, totalAmount: { $sum: "$price" } } }]);
+
+    const totalAmount = totalAmountResult.length > 0 ? totalAmountResult[0].totalAmount : 0;
+
+    return {
+        properties,
+        meta: {
+            total,
+            page: Number(page),
+            limit: Number(limit),
+            totalPages: Math.ceil(total / Number(limit)),
+            totalAmount,
+        },
+    };
+};
+
+const deleteHostPropertyService = async (hostId: string, propertyId: string) => {
+    if (!hostId) {
+        throw new Error("Host ID is required");
+    }
+
+    // Find the property and verify ownership
+    const property = await PropertyModel.findOne({
+        _id: propertyId,
+        createdBy: new Types.ObjectId(hostId),
+    });
+
+    if (!property) {
+        throw new Error("Property not found or you don't have permission to delete it");
+    }
+
+    // Check if property is already deleted
+    if (property.isDeleted) {
+        throw new Error("Property is already deleted");
+    }
+
+    // Check if property is published
+    if (property.status === "published") {
+        throw new Error("Cannot delete published properties");
+    }
+
+    // Soft delete - set isDeleted to true instead of removing from database
+    const result = await PropertyModel.findByIdAndUpdate(
+        propertyId,
+        {
+            isDeleted: true,
+            status: "hidden", // Optionally change status to hidden when deleted
+        },
+        { new: true }
+    );
+
+    if (!result) {
+        throw new Error("Failed to delete property");
+    }
+
+    return result;
+};
+
 export const propertyServices = {
     createPropertyService,
     updatePropertyService,
     getSinglePropertyService,
     getAllPropertiesService,
-    getAllPropertiesForAdminService,
+    getAllPublishedPropertiesService,
+    getAllNonPublishedPropertiesService,
     changePropertyStatusService,
+    getHostPropertiesService,
+    deleteHostPropertyService,
 };

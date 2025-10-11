@@ -16,8 +16,16 @@ router.get("/:id", auth, propertyControllers.getSinglePropertyController);
 // Listing with pagination, search, filter
 router.get("/", auth, propertyControllers.getAllPropertiesController);
 
-router.get("/admin/all", auth, authorize(["ADMIN"]), propertyControllers.getAllPropertiesForAdminController);
+router.get("/admin/published", auth, authorize(["ADMIN"]), propertyControllers.getAllPublishedPropertiesController);
+
+router.get("/admin/all", auth, authorize(["ADMIN"]), propertyControllers.getAllNonPublishedPropertiesController);
 
 router.patch("/:id/status", auth, authorize(["ADMIN"]), propertyControllers.changePropertyStatusController);
+
+// Host
+
+router.get("/host/my-properties", auth, propertyControllers.getHostProperties);
+
+router.delete("/host/my-properties/:id", auth, propertyControllers.deleteHostProperty);
 
 export const propertyRoutes = router;
