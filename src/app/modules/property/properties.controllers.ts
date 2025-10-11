@@ -95,15 +95,29 @@ const getAllPropertiesController = catchAsync(async (req: Request, res: Response
     });
 });
 
-const getAllPropertiesForAdminController = catchAsync(async (req: Request, res: Response) => {
+const getAllPublishedPropertiesController = catchAsync(async (req: Request, res: Response) => {
     const query = req.query as unknown as IPropertyQuery;
 
-    const data = await propertyServices.getAllPropertiesForAdminService(query);
+    const data = await propertyServices.getAllPublishedPropertiesService(query);
 
     sendResponse(res, {
         statusCode: httpStatus.OK,
         success: true,
-        message: "All properties retrieved successfully for admin",
+        message: "Published properties retrieved successfully",
+        data: data.properties,
+        meta: data.meta,
+    });
+});
+
+const getAllNonPublishedPropertiesController = catchAsync(async (req: Request, res: Response) => {
+    const query = req.query as unknown as IPropertyQuery;
+
+    const data = await propertyServices.getAllNonPublishedPropertiesService(query);
+
+    sendResponse(res, {
+        statusCode: httpStatus.OK,
+        success: true,
+        message: "Non-published properties retrieved successfully",
         data: data.properties,
         meta: data.meta,
     });
@@ -122,11 +136,46 @@ const changePropertyStatusController = catchAsync(async (req: Request, res: Resp
         data: property || null,
     });
 });
+
+// Get host properties
+const getHostProperties = catchAsync(async (req: Request, res: Response) => {
+    const hostId = req.user?._id;
+    const query = req.query;
+
+    const result = await propertyServices.getHostPropertiesService(hostId, query);
+
+    sendResponse(res, {
+        statusCode: httpStatus.OK,
+        success: true,
+        message: "Host properties retrieved successfully",
+        data: result.properties,
+        meta: result.meta,
+    });
+});
+
+// Delete host property - THIS IS THE CONTROLLER FOR THE DELETE ROUTE
+const deleteHostProperty = catchAsync(async (req: Request, res: Response) => {
+    const hostId = req.user?._id;
+    const propertyId = req.params.id;
+
+    const result = await propertyServices.deleteHostPropertyService(hostId, propertyId);
+
+    sendResponse(res, {
+        statusCode: httpStatus.OK,
+        success: true,
+        message: "Property deleted successfully",
+        data: result,
+    });
+});
+
 export const propertyControllers = {
     createPropertyController,
     updatePropertyController,
     getSinglePropertyController,
     getAllPropertiesController,
-    getAllPropertiesForAdminController,
+    getAllPublishedPropertiesController,
+    getAllNonPublishedPropertiesController,
     changePropertyStatusController,
+    getHostProperties,
+    deleteHostProperty,
 };
