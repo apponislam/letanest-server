@@ -4,7 +4,7 @@ import config from "./app/config";
 import mongoose from "mongoose";
 import http from "http";
 import createSuperAdmin from "./scripts/createSuperAdmin";
-import { initSocket } from "./socket/socketHelper";
+import { initSocket } from "./socket/socket";
 
 let server: Server;
 
