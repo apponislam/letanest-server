@@ -6,6 +6,7 @@ import { propertyRoutes } from "../modules/property/properties.routes";
 import { verificationRoutes } from "../modules/verification/verification.routes";
 import { subscriptionRoutes } from "../modules/subscription/subscription.routes";
 import { userSubscriptionRoutes } from "../modules/subscribed/subscribed.routes";
+import { messageRoutes } from "../modules/messages/message.routes";
 
 const router = express.Router();
 
@@ -37,6 +38,10 @@ const moduleRoutes = [
     {
         path: "/subscribed",
         route: userSubscriptionRoutes,
+    },
+    {
+        path: "/messages",
+        route: messageRoutes,
     },
 ];
 
