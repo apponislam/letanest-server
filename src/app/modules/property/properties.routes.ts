@@ -28,4 +28,6 @@ router.get("/host/my-properties", auth, propertyControllers.getHostProperties);
 
 router.delete("/host/my-properties/:id", auth, propertyControllers.deleteHostProperty);
 
+router.get("/host/my-published-properties", auth, propertyControllers.getMyPublishedPropertiesController);
+
 export const propertyRoutes = router;

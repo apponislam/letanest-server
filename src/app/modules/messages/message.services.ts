@@ -3,6 +3,7 @@ import { ICreateConversationDto, ICreateMessageDto } from "./messages.interface"
 import { Conversation, Message } from "./messages.model";
 import ApiError from "../../../errors/ApiError";
 import { getIO } from "../../../socket/socket";
+import { emitToConversation } from "../../../socket/socketHandlers";
 
 const createConversation = async (conversationData: ICreateConversationDto) => {
     // Check if conversation already exists between these participants
@@ -12,7 +13,8 @@ const createConversation = async (conversationData: ICreateConversationDto) => {
     });
 
     if (existingConversation) {
-        throw new ApiError(httpStatus.CONFLICT, "Conversation already exists");
+        // Return existing conversation instead of throwing error
+        return await Conversation.findById(existingConversation._id).populate("participants", "name profileImg email").populate("lastMessage");
     }
 
     const conversation = await Conversation.create(conversationData);
@@ -21,8 +23,9 @@ const createConversation = async (conversationData: ICreateConversationDto) => {
     const io = getIO();
     const populatedConversation = await Conversation.findById(conversation._id).populate("participants", "name profileImg email");
 
+    // Emit to all participants
     conversationData.participants.forEach((participantId) => {
-        io.to(participantId).emit("conversation:new", populatedConversation);
+        io.to(participantId.toString()).emit("conversation:new", populatedConversation);
     });
 
     return populatedConversation;
@@ -44,6 +47,7 @@ const getConversationById = async (conversationId: string, userId: string) => {
     const conversation = await Conversation.findOne({
         _id: conversationId,
         participants: userId,
+        isActive: true,
     })
         .populate("participants", "name profileImg email")
         .populate("lastMessage");
@@ -75,13 +79,17 @@ const createMessage = async (messageData: ICreateMessageDto) => {
         updatedAt: new Date(),
     });
 
-    // Emit new message to all participants in the conversation
-    const io = getIO();
+    // Populate the message with sender info
     const populatedMessage = await Message.findById(message._id).populate("sender", "name profileImg email");
 
-    conversation.participants.forEach((participantId) => {
-        io.to(participantId.toString()).emit("message:new", populatedMessage);
-    });
+    if (!populatedMessage) {
+        throw new ApiError(httpStatus.INTERNAL_SERVER_ERROR, "Failed to create message");
+    }
+
+    // Emit new message to ALL participants in the conversation
+    emitToConversation(messageData.conversationId, "message:new", populatedMessage);
+
+    console.log(`✅ Message sent and emitted to conversation ${messageData.conversationId}`);
 
     return populatedMessage;
 };
@@ -102,6 +110,7 @@ const getConversationMessages = async (conversationId: string, userId: string, p
 
     const messages = await Message.find({ conversationId }).populate("sender", "name profileImg email").sort({ createdAt: -1 }).skip(skip).limit(limit);
 
+    // Return in chronological order (oldest first)
     return messages.reverse();
 };
 
@@ -145,19 +154,28 @@ const markMessageAsRead = async (messageId: string, userId: string) => {
     }
 
     // Update message read status
-    await Message.findByIdAndUpdate(messageId, {
-        $addToSet: { readBy: userId },
-    });
-
-    // Emit read receipt to message sender
-    const io = getIO();
-    io.to(message.sender.toString()).emit("message:read", {
+    const updatedMessage = await Message.findByIdAndUpdate(
         messageId,
+        {
+            $addToSet: { readBy: userId },
+        },
+        { new: true }
+    ).populate("sender", "name profileImg email");
+
+    // Emit read receipt to conversation participants
+    const io = getIO();
+    io.to(message.conversationId.toString()).emit("message:read", {
+        messageId,
+        conversationId: message.conversationId,
         readBy: userId,
         readAt: new Date(),
     });
 
-    return { success: true, message: "Message marked as read" };
+    return {
+        success: true,
+        message: "Message marked as read",
+        data: updatedMessage,
+    };
 };
 
 export const messageServices = {

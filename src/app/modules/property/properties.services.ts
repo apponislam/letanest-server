@@ -241,6 +241,23 @@ const deleteHostPropertyService = async (hostId: string, propertyId: string) => 
     return result;
 };
 
+const getMyPublishedPropertiesService = async (hostId: string) => {
+    if (!hostId) {
+        throw new Error("Host ID is required");
+    }
+
+    const properties = await PropertyModel.find({
+        createdBy: new Types.ObjectId(hostId),
+        status: "published",
+        isDeleted: false,
+    })
+        .select("propertyNumber _id createdBy price")
+        .populate("createdBy", "name email")
+        .sort({ createdAt: -1 });
+
+    return properties;
+};
+
 export const propertyServices = {
     createPropertyService,
     updatePropertyService,
@@ -251,4 +268,5 @@ export const propertyServices = {
     changePropertyStatusService,
     getHostPropertiesService,
     deleteHostPropertyService,
+    getMyPublishedPropertiesService,
 };
