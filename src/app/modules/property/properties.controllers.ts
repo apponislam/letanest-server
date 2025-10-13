@@ -168,6 +168,19 @@ const deleteHostProperty = catchAsync(async (req: Request, res: Response) => {
     });
 });
 
+const getMyPublishedPropertiesController = catchAsync(async (req: Request, res: Response) => {
+    const hostId = req.user?._id;
+
+    const properties = await propertyServices.getMyPublishedPropertiesService(hostId);
+
+    sendResponse(res, {
+        statusCode: httpStatus.OK,
+        success: true,
+        message: "My published properties retrieved successfully",
+        data: properties,
+    });
+});
+
 export const propertyControllers = {
     createPropertyController,
     updatePropertyController,
@@ -178,4 +191,5 @@ export const propertyControllers = {
     changePropertyStatusController,
     getHostProperties,
     deleteHostProperty,
+    getMyPublishedPropertiesController,
 };
