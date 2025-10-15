@@ -20,10 +20,11 @@ export interface IMessage {
 
     // For offer messages
     propertyId?: string;
-    dates?: string;
-    agreedFee?: string;
-    bookingFee?: string;
-    total?: string;
+    checkInDate?: string;
+    checkOutDate?: string;
+    agreedFee?: number;
+    bookingFee?: number;
+    total?: number;
 
     // For accepted messages
     propertyName?: string;
@@ -41,8 +42,8 @@ export interface IMessage {
 // Conversation Interface
 export interface IConversation {
     _id?: Types.ObjectId;
-    participants: Types.ObjectId[]; // Array of user IDs
-    lastMessage?: Types.ObjectId; // Reference to last message
+    participants: Types.ObjectId[];
+    lastMessage?: Types.ObjectId;
     unreadCount?: number;
     isActive?: boolean;
     createdAt?: Date;
@@ -56,10 +57,11 @@ export interface ICreateMessageDto {
     type: MessageType;
     text?: string;
     propertyId?: string;
-    dates?: string;
-    agreedFee?: string;
-    bookingFee?: string;
-    total?: string;
+    checkInDate?: string; // ✅ check-in
+    checkOutDate?: string; // ✅ check-out
+    agreedFee?: number;
+    bookingFee?: number;
+    total?: number;
     propertyName?: string;
     address?: string;
     manager?: string;

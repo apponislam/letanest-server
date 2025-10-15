@@ -2,6 +2,7 @@ import httpStatus from "http-status";
 import catchAsync from "../../../utils/catchAsync";
 import { messageServices } from "./message.services";
 import sendResponse from "../../../utils/sendResponse.";
+import ApiError from "../../../errors/ApiError";
 
 const createConversation = catchAsync(async (req, res) => {
     const userId = req.user._id;
@@ -98,6 +99,29 @@ const markAsRead = catchAsync(async (req, res) => {
     });
 });
 
+const rejectOffer = catchAsync(async (req, res) => {
+    const { messageId } = req.params;
+    const { conversationId } = req.body;
+    const userId = req.user?._id;
+
+    if (!userId) {
+        throw new ApiError(httpStatus.UNAUTHORIZED, "User not authenticated");
+    }
+
+    if (!conversationId) {
+        throw new ApiError(httpStatus.BAD_REQUEST, "Conversation ID is required");
+    }
+
+    const result = await messageServices.rejectOffer(messageId, conversationId, userId);
+
+    sendResponse(res, {
+        success: true,
+        statusCode: httpStatus.OK,
+        message: "Offer rejected successfully",
+        data: result,
+    });
+});
+
 export const messageControllers = {
     createConversation,
     getUserConversations,
@@ -106,4 +130,5 @@ export const messageControllers = {
     getConversationMessages,
     getMessageById,
     markAsRead,
+    rejectOffer,
 };
