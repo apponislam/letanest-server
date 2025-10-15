@@ -13,4 +13,6 @@ router.get("/messages/conversation/:conversationId", auth, messageControllers.ge
 router.get("/messages/:messageId", auth, messageControllers.getMessageById);
 router.patch("/messages/:messageId/read", auth, messageControllers.markAsRead);
 
+router.patch("/:messageId/reject", auth, messageControllers.rejectOffer);
+
 export const messageRoutes = router;

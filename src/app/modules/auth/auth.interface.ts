@@ -13,6 +13,14 @@ export interface IUserSubscriptionRef {
     subscription: Types.ObjectId;
 }
 
+export interface IFreeTireData {
+    commission?: number;
+    freeBookings?: number;
+    listingLimit?: number;
+    bookingFee?: number;
+    bookingLimit?: number;
+}
+
 // IUser interface
 export interface IUser {
     _id?: string;
@@ -56,6 +64,10 @@ export interface IUser {
     freeTireUsed?: boolean;
     freeTireExpiry?: Date;
     freeTireSub?: Types.ObjectId;
+    freeTireData?: IFreeTireData;
+
+    // stirpe
+    stripeCustomerId?: string;
 
     // Audit
     createdAt?: Date;

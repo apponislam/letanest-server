@@ -4,6 +4,7 @@ import { UserModel } from "../auth/auth.model";
 import { IUpdateUserProfile } from "./user.interface";
 import ApiError from "../../../errors/ApiError";
 import httpStatus from "http-status";
+import { Subscription } from "../subscription/subscription.model";
 
 interface IUserQuery {
     page?: number;
@@ -80,18 +81,54 @@ const getMySubscriptionsService = async (userId: Types.ObjectId): Promise<IUser 
 };
 
 // ONLY THIS NEW SERVICE - Activate free tier
+// const activateFreeTierService = async (userId: Types.ObjectId, subscriptionId: string) => {
+//     // Calculate expiry date (30 days from now for free tier)
+//     const freeTireExpiry = new Date();
+//     freeTireExpiry.setDate(freeTireExpiry.getDate() + 30);
+
+//     // Update user with free tier data
+//     const updatedUser = await UserModel.findByIdAndUpdate(
+//         userId,
+//         {
+//             freeTireUsed: true,
+//             freeTireExpiry: freeTireExpiry,
+//             freeTireSub: new Types.ObjectId(subscriptionId),
+//         },
+//         { new: true }
+//     ).populate("freeTireSub");
+
+//     return {
+//         freeTireUsed: updatedUser?.freeTireUsed,
+//         freeTireExpiry: updatedUser?.freeTireExpiry,
+//         freeTireSub: updatedUser?.freeTireSub,
+//     };
+// };
+
 const activateFreeTierService = async (userId: Types.ObjectId, subscriptionId: string) => {
     // Calculate expiry date (30 days from now for free tier)
     const freeTireExpiry = new Date();
     freeTireExpiry.setDate(freeTireExpiry.getDate() + 30);
 
-    // Update user with free tier data
+    // Fetch subscription to get free tier data
+    const subscription = await Subscription.findById(subscriptionId).lean();
+    const freeTireData = subscription
+        ? {
+              commission: subscription.commission || null,
+              freeBookings: subscription.freeBookings || null,
+              listingLimit: subscription.listingLimit || null,
+              bookingFee: subscription.bookingFee || null,
+              bookingLimit: subscription.bookingLimit || null,
+          }
+        : {};
+
+    // Update user with free tier info and optional data
     const updatedUser = await UserModel.findByIdAndUpdate(
         userId,
         {
             freeTireUsed: true,
-            freeTireExpiry: freeTireExpiry,
+            freeTireExpiry,
             freeTireSub: new Types.ObjectId(subscriptionId),
+            freeTireData, // save the optional numeric data
         },
         { new: true }
     ).populate("freeTireSub");
@@ -100,6 +137,7 @@ const activateFreeTierService = async (userId: Types.ObjectId, subscriptionId: s
         freeTireUsed: updatedUser?.freeTireUsed,
         freeTireExpiry: updatedUser?.freeTireExpiry,
         freeTireSub: updatedUser?.freeTireSub,
+        freeTireData: updatedUser?.freeTireData,
     };
 };
 

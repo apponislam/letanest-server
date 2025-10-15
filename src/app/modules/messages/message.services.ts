@@ -3,7 +3,8 @@ import { ICreateConversationDto, ICreateMessageDto } from "./messages.interface"
 import { Conversation, Message } from "./messages.model";
 import ApiError from "../../../errors/ApiError";
 import { getIO } from "../../../socket/socket";
-import { emitToConversation } from "../../../socket/socketHandlers";
+import { emitToConversation, emitToUser } from "../../../socket/socketHandlers";
+import { UserModel } from "../auth/auth.model";
 
 const createConversation = async (conversationData: ICreateConversationDto) => {
     // Check if conversation already exists between these participants
@@ -37,7 +38,13 @@ const getUserConversations = async (userId: string) => {
         isActive: true,
     })
         .populate("participants", "name profileImg email")
-        .populate("lastMessage")
+        .populate({
+            path: "lastMessage",
+            populate: {
+                path: "propertyId",
+                select: "title images address price propertyNumber _id",
+            },
+        })
         .sort({ updatedAt: -1 });
 
     return conversations;
@@ -50,7 +57,13 @@ const getConversationById = async (conversationId: string, userId: string) => {
         isActive: true,
     })
         .populate("participants", "name profileImg email")
-        .populate("lastMessage");
+        .populate({
+            path: "lastMessage",
+            populate: {
+                path: "propertyId",
+                select: "title images address price propertyNumber _id",
+            },
+        });
 
     if (!conversation) {
         throw new ApiError(httpStatus.NOT_FOUND, "Conversation not found");
@@ -60,7 +73,6 @@ const getConversationById = async (conversationId: string, userId: string) => {
 };
 
 const createMessage = async (messageData: ICreateMessageDto) => {
-    // Verify conversation exists and user is a participant
     const conversation = await Conversation.findOne({
         _id: messageData.conversationId,
         participants: messageData.sender,
@@ -71,16 +83,33 @@ const createMessage = async (messageData: ICreateMessageDto) => {
         throw new ApiError(httpStatus.FORBIDDEN, "Cannot send message to this conversation");
     }
 
-    const message = await Message.create(messageData);
+    const receiver = conversation.participants.find((p) => p.toString() !== messageData.sender.toString());
+    let bookingFee = 30;
+    if (receiver) {
+        const receiverData = await UserModel.findById(receiver)
+            .select("_id name email role phone profileImg subscriptions freeTireSub freeTireData")
+            // Populate the freeTireSub reference
+            .populate({
+                path: "freeTireSub",
+                select: "_id name price duration",
+            })
 
-    // Update conversation's last message
+            .populate({
+                path: "subscriptions.subscription",
+                select: "_id bookingFee commission listingLimit freeBookings bookingLimit",
+            });
+
+        console.log("🎯 Receiver with subscriptions and free trial populated:", receiverData);
+    }
+
+    const message = await Message.create({ ...messageData, bookingFee });
+
     await Conversation.findByIdAndUpdate(messageData.conversationId, {
         lastMessage: message._id,
         updatedAt: new Date(),
     });
 
-    // Populate the message with sender info
-    const populatedMessage = await Message.findById(message._id).populate("sender", "name profileImg email");
+    const populatedMessage = await Message.findById(message._id).populate("sender", "name profileImg email phone").populate("propertyId", "propertyNumber price title address");
 
     if (!populatedMessage) {
         throw new ApiError(httpStatus.INTERNAL_SERVER_ERROR, "Failed to create message");
@@ -108,14 +137,14 @@ const getConversationMessages = async (conversationId: string, userId: string, p
 
     const skip = (page - 1) * limit;
 
-    const messages = await Message.find({ conversationId }).populate("sender", "name profileImg email").sort({ createdAt: -1 }).skip(skip).limit(limit);
+    const messages = await Message.find({ conversationId }).populate("sender", "name profileImg email").populate("propertyId", "propertyNumber price title address").sort({ createdAt: -1 }).skip(skip).limit(limit);
 
     // Return in chronological order (oldest first)
     return messages.reverse();
 };
 
 const getMessageById = async (messageId: string, userId: string) => {
-    const message = await Message.findById(messageId).populate("sender", "name profileImg email");
+    const message = await Message.findById(messageId).populate("sender", "name profileImg email").populate("propertyId", "propertyNumber price title address");
 
     if (!message) {
         throw new ApiError(httpStatus.NOT_FOUND, "Message not found");
@@ -178,6 +207,62 @@ const markMessageAsRead = async (messageId: string, userId: string) => {
     };
 };
 
+const rejectOffer = async (messageId: string, conversationId: string, userId: string) => {
+    // Verify the message exists and is an offer
+    const message = await Message.findById(messageId);
+    if (!message) {
+        throw new ApiError(httpStatus.NOT_FOUND, "Message not found");
+    }
+
+    if (message.type !== "offer") {
+        throw new ApiError(httpStatus.BAD_REQUEST, "Can only reject offer messages");
+    }
+
+    // Verify user has access to this conversation
+    const conversation = await Conversation.findOne({
+        _id: conversationId,
+        participants: userId,
+        isActive: true,
+    });
+
+    if (!conversation) {
+        throw new ApiError(httpStatus.FORBIDDEN, "Access denied to this conversation");
+    }
+
+    // UPDATE the existing message to rejected
+    const updatedMessage = await Message.findByIdAndUpdate(
+        messageId,
+        {
+            type: "rejected",
+        },
+        { new: true }
+    )
+        .populate("sender", "name profileImg email")
+        .populate("propertyId", "propertyNumber price title images address");
+
+    if (!updatedMessage) {
+        throw new ApiError(httpStatus.INTERNAL_SERVER_ERROR, "Failed to reject offer");
+    }
+
+    // Update conversation's last message
+    await Conversation.findByIdAndUpdate(conversationId, {
+        lastMessage: updatedMessage._id,
+        updatedAt: new Date(),
+    });
+
+    // Emit the updated message as a new message (using existing event)
+    emitToConversation(conversationId, "message:new", updatedMessage);
+    // emitToConversation(conversationId, "offer:rejected", updatedMessage);
+    emitToConversation(conversationId, "offer:rejected", {
+        messageId: updatedMessage._id,
+        conversationId,
+    });
+
+    console.log(`✅ Offer rejected by user ${userId}`);
+
+    return updatedMessage;
+};
+
 export const messageServices = {
     createConversation,
     getUserConversations,
@@ -186,4 +271,5 @@ export const messageServices = {
     getConversationMessages,
     getMessageById,
     markMessageAsRead,
+    rejectOffer,
 };

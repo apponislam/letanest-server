@@ -1,6 +1,17 @@
 import { model, Schema } from "mongoose";
 import { IUser, roles } from "./auth.interface";
 
+const freeTireDataSchema = new Schema(
+    {
+        commission: { type: Number, default: null },
+        freeBookings: { type: Number, default: null },
+        listingLimit: { type: Number, default: null },
+        bookingFee: { type: Number, default: null },
+        bookingLimit: { type: Number, default: null },
+    },
+    { _id: false }
+);
+
 const userSchema = new Schema<IUser>(
     {
         name: { type: String, required: [true, "Name is required"] },
@@ -50,6 +61,14 @@ const userSchema = new Schema<IUser>(
         freeTireUsed: { type: Boolean, default: false },
         freeTireExpiry: { type: Date, default: null },
         freeTireSub: { type: Schema.Types.ObjectId, ref: "Subscription", default: null },
+        freeTireData: { type: freeTireDataSchema, default: {} },
+
+        // stripe
+        stripeCustomerId: {
+            type: String,
+            unique: true,
+            sparse: true,
+        },
 
         // OTP / password reset
         resetPasswordOtp: { type: String, default: undefined },

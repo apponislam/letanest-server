@@ -426,6 +426,110 @@ export class StripeService {
             throw new Error("Failed to get checkout session details");
         }
     }
+
+    // save card
+    // save card
+    // save card
+    // save card
+    // save card
+    // save card
+    // save card
+    // save card
+    // save card
+    // save card
+    // save card
+    // save card
+    // save card
+    // save card
+    // save card
+    // save card
+    // save card
+    // save card
+    // save card
+    // save card
+    // save card
+
+    /**
+     * Create and attach payment method to customer
+     */
+    async createPaymentMethod(customerId: string, paymentMethodId: string, isDefault: boolean = false) {
+        try {
+            // Attach payment method to customer
+            await this.stripe.paymentMethods.attach(paymentMethodId, {
+                customer: customerId,
+            });
+
+            // Retrieve payment method details
+            const paymentMethod = await this.stripe.paymentMethods.retrieve(paymentMethodId);
+
+            // Set as default if requested
+            if (isDefault) {
+                await this.stripe.customers.update(customerId, {
+                    invoice_settings: {
+                        default_payment_method: paymentMethodId,
+                    },
+                });
+            }
+
+            return paymentMethod;
+        } catch (error) {
+            console.error("Error creating payment method:", error);
+            throw new Error(`Failed to create payment method: ${error instanceof Error ? error.message : "Unknown error"}`);
+        }
+    }
+
+    /**
+     * Get customer's payment methods
+     */
+    async getCustomerPaymentMethods(customerId: string) {
+        try {
+            const paymentMethods = await this.stripe.paymentMethods.list({
+                customer: customerId,
+                type: "card",
+            });
+            return paymentMethods;
+        } catch (error) {
+            console.error("Error getting customer payment methods:", error);
+            throw new Error("Failed to get payment methods");
+        }
+    }
+
+    /**
+     * Set default payment method for customer
+     */
+    async setDefaultPaymentMethod(customerId: string, paymentMethodId: string) {
+        try {
+            await this.stripe.customers.update(customerId, {
+                invoice_settings: {
+                    default_payment_method: paymentMethodId,
+                },
+            });
+        } catch (error) {
+            console.error("Error setting default payment method:", error);
+            throw new Error("Failed to set default payment method");
+        }
+    }
+
+    /**
+     * Detach payment method from customer
+     */
+    async detachPaymentMethod(paymentMethodId: string) {
+        try {
+            await this.stripe.paymentMethods.detach(paymentMethodId);
+        } catch (error) {
+            console.error("Error detaching payment method:", error);
+            throw new Error("Failed to detach payment method");
+        }
+    }
+
+    // Add stripe instance getter if needed
+    private get stripe() {
+        // You might want to make this a private property in your class
+        const stripe = new Stripe(config.stripe_secret_key!, {
+            apiVersion: "2025-09-30.clover",
+        });
+        return stripe;
+    }
 }
 
 export const stripeService = new StripeService();
