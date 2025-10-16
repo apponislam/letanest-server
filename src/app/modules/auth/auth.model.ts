@@ -12,6 +12,20 @@ const freeTireDataSchema = new Schema(
     { _id: false }
 );
 
+const hostStripeAccountSchema = new Schema(
+    {
+        stripeAccountId: { type: String, required: true },
+        status: {
+            type: String,
+            enum: ["pending", "verified", "rejected"],
+            default: "pending",
+        },
+        createdAt: { type: Date, default: Date.now },
+        verifiedAt: { type: Date, default: null },
+    },
+    { _id: false }
+);
+
 const userSchema = new Schema<IUser>(
     {
         name: { type: String, required: [true, "Name is required"] },
@@ -68,6 +82,11 @@ const userSchema = new Schema<IUser>(
             type: String,
             unique: true,
             sparse: true,
+        },
+
+        hostStripeAccount: {
+            type: hostStripeAccountSchema,
+            default: null,
         },
 
         // OTP / password reset

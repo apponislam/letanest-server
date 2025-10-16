@@ -530,6 +530,183 @@ export class StripeService {
         });
         return stripe;
     }
+
+    // connect stripe
+    // connect stripe
+    // connect stripe
+    // connect stripe
+    // connect stripe
+    // connect stripe
+    // connect stripe
+    // connect stripe
+    // connect stripe
+    // connect stripe
+    // connect stripe
+
+    // Add this to your existing stripeService.ts at the bottom
+
+    // =============================================
+    // STRIPE CONNECT FUNCTIONALITY
+    // =============================================
+
+    /**
+     * Create Stripe Connect Express account for host
+     */
+    async createConnectAccount(userId: string, email: string, name: string) {
+        try {
+            console.log("🔍 config.client_url:", config.client_url);
+            // const businessUrl = config.client_url && config.client_url.startsWith("http") ? config.client_url : "https://your-app-domain.com"; // Fallback URL
+
+            const account = await stripe.accounts.create({
+                type: "express",
+                country: "GB",
+                email: email,
+                business_type: "individual",
+                capabilities: {
+                    transfers: { requested: true },
+                    card_payments: { requested: true },
+                },
+                business_profile: {
+                    name: name,
+                    url: "https://your-app-domain.com",
+                },
+                metadata: {
+                    userId: userId,
+                },
+            });
+
+            console.log("✅ Stripe Connect account created:", account.id);
+            return account;
+        } catch (error) {
+            console.error("Error creating Stripe Connect account:", error);
+            throw new Error(`Failed to create Stripe account: ${error instanceof Error ? error.message : "Unknown error"}`);
+        }
+    }
+
+    /**
+     * Create account link for host onboarding
+     */
+    async createAccountLink(accountId: string, userId: string) {
+        console.log("🔍 config.client_url 2:", config.client_url);
+        try {
+            const accountLink = await stripe.accountLinks.create({
+                account: accountId,
+                refresh_url: `${config.client_url}/messages?stripe=failed`,
+                return_url: `${config.client_url}/messages?stripe=success`,
+                // refresh_url: `${config.client_url}/stripe/retry?userId=${userId}`,
+                // return_url: `${config.client_url}/stripe/success?userId=${userId}`,
+                type: "account_onboarding",
+            });
+
+            console.log("✅ Account link created for:", accountId);
+            return accountLink;
+        } catch (error) {
+            console.error("Error creating account link:", error);
+            throw new Error(`Failed to create account link: ${error instanceof Error ? error.message : "Unknown error"}`);
+        }
+    }
+
+    /**
+     * Check Stripe Connect account status
+     */
+    async getConnectAccountStatus(accountId: string) {
+        try {
+            const account = await stripe.accounts.retrieve(accountId);
+
+            const status = {
+                chargesEnabled: account.charges_enabled,
+                payoutsEnabled: account.payouts_enabled,
+                detailsSubmitted: account.details_submitted,
+                status: account.charges_enabled && account.payouts_enabled ? "verified" : "pending",
+            };
+
+            console.log("✅ Account status retrieved:", accountId, status);
+            return status;
+        } catch (error) {
+            console.error("Error getting account status:", error);
+            throw new Error(`Failed to get account status: ${error instanceof Error ? error.message : "Unknown error"}`);
+        }
+    }
+
+    /**
+     * Create login link for host to access Stripe dashboard
+     */
+    async createLoginLink(accountId: string) {
+        try {
+            const loginLink = await stripe.accounts.createLoginLink(accountId);
+            console.log("✅ Login link created for:", accountId);
+            return loginLink;
+        } catch (error) {
+            console.error("Error creating login link:", error);
+            throw new Error(`Failed to create login link: ${error instanceof Error ? error.message : "Unknown error"}`);
+        }
+    }
+
+    // if card is not saved
+    async createCustomer2(customerData: { email: string; name?: string; metadata?: any }) {
+        try {
+            const customer = await this.stripe.customers.create({
+                email: customerData.email,
+                name: customerData.name,
+                metadata: customerData.metadata || {},
+            });
+
+            console.log("✅ Stripe customer created:", customer.id);
+            return customer;
+        } catch (error) {
+            console.error("Error creating Stripe customer:", error);
+            throw new Error(`Failed to create customer: ${error instanceof Error ? error.message : "Unknown error"}`);
+        }
+    }
+
+    // saved card payment
+
+    /**
+     * Create payment with Stripe Connect (for commission split)
+     */
+
+    async createConnectPayment(amount: number, hostAccountId: string, customerId: string, applicationFeeAmount: number) {
+        try {
+            const paymentIntent = await this.stripe.paymentIntents.create({
+                amount: Math.round(amount * 100),
+                currency: "gbp",
+                customer: customerId,
+                application_fee_amount: Math.round(applicationFeeAmount * 100),
+                transfer_data: {
+                    destination: hostAccountId,
+                },
+                on_behalf_of: hostAccountId,
+                automatic_payment_methods: {
+                    enabled: true,
+                },
+                metadata: {
+                    paymentType: "connect_booking",
+                    hostAccountId: hostAccountId,
+                },
+            });
+
+            console.log("✅ Connect payment intent created:", paymentIntent.id);
+            return paymentIntent;
+        } catch (error) {
+            console.error("Error creating connect payment:", error);
+            throw new Error(`Failed to create connect payment: ${error instanceof Error ? error.message : "Unknown error"}`);
+        }
+    }
+
+    async confirmPaymentIntent(paymentIntentId: string, paymentMethodId: string) {
+        try {
+            const paymentIntent = await this.stripe.paymentIntents.confirm(paymentIntentId, {
+                payment_method: paymentMethodId,
+                return_url: `${config.client_url}/payment/success`,
+            });
+
+            console.log(`✅ PaymentIntent ${paymentIntentId} confirmed with status: ${paymentIntent.status}`);
+            return paymentIntent;
+        } catch (error) {
+            console.error("Error confirming PaymentIntent:", error);
+            throw new Error(`Failed to confirm PaymentIntent: ${error instanceof Error ? error.message : "Unknown error"}`);
+        }
+    }
 }
 
 export const stripeService = new StripeService();

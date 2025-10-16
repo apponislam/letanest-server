@@ -19,4 +19,10 @@ router.get("/me/subscriptions", auth, userControllers.getMySubscriptionsControll
 // ONLY THIS NEW ROUTE
 router.post("/me/free-tier/activate", auth, userControllers.activateFreeTierController);
 
+// Stripe Connect Routes (Host only)
+router.post("/stripe/connect", auth, userControllers.connectStripeAccountController);
+router.get("/stripe/status", auth, userControllers.getStripeAccountStatusController);
+router.get("/stripe/dashboard", auth, userControllers.getStripeDashboardController);
+router.post("/stripe/disconnect", auth, userControllers.disconnectStripeAccountController);
+
 export const userRoutes = router;

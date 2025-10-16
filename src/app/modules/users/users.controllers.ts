@@ -97,10 +97,87 @@ const activateFreeTierController = catchAsync(async (req: Request, res: Response
     });
 });
 
+// Connect Stripe account
+const connectStripeAccountController = catchAsync(async (req: Request, res: Response) => {
+    const userId = req.user?._id;
+
+    if (!userId) {
+        throw new ApiError(httpStatus.UNAUTHORIZED, "User not authenticated");
+    }
+
+    const result = await userServices.connectStripeAccountService(userId.toString());
+
+    sendResponse(res, {
+        statusCode: httpStatus.OK,
+        success: true,
+        message: "Stripe account connected successfully",
+        data: result,
+    });
+});
+
+// Get Stripe account status
+const getStripeAccountStatusController = catchAsync(async (req: Request, res: Response) => {
+    const userId = req.user?._id;
+
+    if (!userId) {
+        throw new ApiError(httpStatus.UNAUTHORIZED, "User not authenticated");
+    }
+
+    const result = await userServices.getStripeAccountStatusService(userId.toString());
+
+    sendResponse(res, {
+        statusCode: httpStatus.OK,
+        success: true,
+        message: "Stripe account status retrieved successfully",
+        data: result,
+    });
+});
+
+// Get Stripe dashboard
+const getStripeDashboardController = catchAsync(async (req: Request, res: Response) => {
+    const userId = req.user?._id;
+
+    if (!userId) {
+        throw new ApiError(httpStatus.UNAUTHORIZED, "User not authenticated");
+    }
+
+    const result = await userServices.getStripeDashboardService(userId.toString());
+
+    sendResponse(res, {
+        statusCode: httpStatus.OK,
+        success: true,
+        message: "Stripe dashboard link retrieved successfully",
+        data: result,
+    });
+});
+
+// Disconnect Stripe account
+const disconnectStripeAccountController = catchAsync(async (req: Request, res: Response) => {
+    const userId = req.user?._id;
+
+    if (!userId) {
+        throw new ApiError(httpStatus.UNAUTHORIZED, "User not authenticated");
+    }
+
+    const result = await userServices.disconnectStripeAccountService(userId.toString());
+
+    sendResponse(res, {
+        statusCode: httpStatus.OK,
+        success: true,
+        message: "Stripe account disconnected successfully",
+        data: result,
+    });
+});
+
 export const userControllers = {
     getAllUsersController,
     getSingleUserController,
     updateUserProfileController,
     getMySubscriptionsController,
     activateFreeTierController,
+    // stripe
+    connectStripeAccountController,
+    getStripeAccountStatusController,
+    getStripeDashboardController,
+    disconnectStripeAccountController,
 };

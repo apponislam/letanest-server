@@ -5,6 +5,8 @@ import { IUpdateUserProfile } from "./user.interface";
 import ApiError from "../../../errors/ApiError";
 import httpStatus from "http-status";
 import { Subscription } from "../subscription/subscription.model";
+import { stripeService } from "../subscription/stripe.services";
+import config from "../../config";
 
 interface IUserQuery {
     page?: number;
@@ -141,10 +143,168 @@ const activateFreeTierService = async (userId: Types.ObjectId, subscriptionId: s
     };
 };
 
+// Stripe Account connect
+
+/**
+ * Connect host to Stripe
+ */
+const connectStripeAccountService = async (userId: string) => {
+    // Find user
+    const user = await UserModel.findById(userId);
+    if (!user) {
+        throw new ApiError(httpStatus.NOT_FOUND, "User not found");
+    }
+
+    // Check if user is a host
+    // if (user.role !== "HOST") {
+    //     throw new ApiError(httpStatus.BAD_REQUEST, "Only hosts can connect Stripe accounts");
+    // }
+
+    // Check if already has Stripe account
+    if (user.hostStripeAccount) {
+        throw new ApiError(httpStatus.BAD_REQUEST, "Stripe account already connected");
+    }
+
+    // Create Stripe Connect account
+    const account = await stripeService.createConnectAccount(userId, user.email, user.name);
+
+    // Create account link for onboarding
+    const accountLink = await stripeService.createAccountLink(account.id, userId);
+
+    // Save Stripe account ID to user (pending status)
+    user.hostStripeAccount = {
+        stripeAccountId: account.id,
+        status: "pending",
+        createdAt: new Date(),
+    };
+    await user.save();
+
+    return {
+        accountId: account.id,
+        onboardingUrl: accountLink.url,
+        status: "pending",
+    };
+};
+
+/**
+ * Get Stripe Connect account status
+ */
+// const getStripeAccountStatusService = async (userId: string) => {
+//     const user = await UserModel.findById(userId);
+//     if (!user || !user.hostStripeAccount) {
+//         throw new ApiError(httpStatus.NOT_FOUND, "Stripe account not found");
+//     }
+
+//     // Get current status from Stripe
+//     const stripeStatus = await stripeService.getConnectAccountStatus(user.hostStripeAccount.stripeAccountId);
+//     console.log(stripeStatus);
+
+//     // Convert Stripe status to our app status type
+//     let appStatus: "pending" | "verified" | "rejected";
+//     if (stripeStatus.chargesEnabled && stripeStatus.payoutsEnabled) {
+//         appStatus = "verified";
+//     } else if (config.node_env === "development" && stripeStatus.chargesEnabled) {
+//         appStatus = "verified";
+//     } else if (stripeStatus.detailsSubmitted && !stripeStatus.chargesEnabled) {
+//         appStatus = "rejected";
+//     } else {
+//         appStatus = "pending";
+//     }
+
+//     // Update user status if changed
+//     if (appStatus !== user.hostStripeAccount.status) {
+//         user.hostStripeAccount.status = appStatus;
+//         if (appStatus === "verified") {
+//             user.hostStripeAccount.verifiedAt = new Date();
+//         }
+//         await user.save();
+//     }
+
+//     return {
+//         status: user.hostStripeAccount.status,
+//         stripeStatus: stripeStatus,
+//         accountId: user.hostStripeAccount.stripeAccountId,
+//     };
+// };
+
+const getStripeAccountStatusService = async (userId: string) => {
+    const user = await UserModel.findById(userId);
+    if (!user || !user.hostStripeAccount) {
+        throw new ApiError(httpStatus.NOT_FOUND, "Stripe account not found");
+    }
+
+    const stripeStatus = await stripeService.getConnectAccountStatus(user.hostStripeAccount.stripeAccountId);
+
+    let appStatus: "pending" | "verified" | "rejected";
+    if (stripeStatus.chargesEnabled && stripeStatus.payoutsEnabled) {
+        appStatus = "verified";
+    } else if (config.node_env === "development" && stripeStatus.chargesEnabled) {
+        appStatus = "verified";
+    } else if (stripeStatus.detailsSubmitted && !stripeStatus.chargesEnabled) {
+        appStatus = "rejected";
+    } else {
+        appStatus = "pending";
+    }
+
+    if (appStatus !== user.hostStripeAccount.status) {
+        user.hostStripeAccount.status = appStatus;
+        if (appStatus === "verified") {
+            user.hostStripeAccount.verifiedAt = new Date();
+        }
+        await user.save();
+    }
+
+    return {
+        status: user.hostStripeAccount.status,
+        stripeStatus: stripeStatus,
+        accountId: user.hostStripeAccount.stripeAccountId,
+    };
+};
+
+/**
+ * Get Stripe dashboard link
+ */
+const getStripeDashboardService = async (userId: string) => {
+    const user = await UserModel.findById(userId);
+    if (!user || !user.hostStripeAccount) {
+        throw new ApiError(httpStatus.NOT_FOUND, "Stripe account not found");
+    }
+
+    const loginLink = await stripeService.createLoginLink(user.hostStripeAccount.stripeAccountId);
+
+    return {
+        dashboardUrl: loginLink.url,
+    };
+};
+
+/**
+ * Disconnect Stripe account
+ */
+const disconnectStripeAccountService = async (userId: string) => {
+    const user = await UserModel.findById(userId);
+    if (!user || !user.hostStripeAccount) {
+        throw new ApiError(httpStatus.NOT_FOUND, "Stripe account not found");
+    }
+
+    // Remove Stripe account from user
+    user.hostStripeAccount = undefined;
+    await user.save();
+
+    return {
+        success: true,
+        message: "Stripe account disconnected successfully",
+    };
+};
+
 export const userServices = {
     getAllUsersService,
     getSingleUserService,
     updateUserProfileService,
     getMySubscriptionsService,
     activateFreeTierService,
+    // stripe
+    connectStripeAccountService,
+    getStripeAccountStatusService,
+    getStripeDashboardService,
+    disconnectStripeAccountService,
 };

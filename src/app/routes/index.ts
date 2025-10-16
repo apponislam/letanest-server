@@ -8,6 +8,7 @@ import { subscriptionRoutes } from "../modules/subscription/subscription.routes"
 import { userSubscriptionRoutes } from "../modules/subscribed/subscribed.routes";
 import { messageRoutes } from "../modules/messages/message.routes";
 import { paymentMethodRoutes } from "../modules/paymentMethod/paymentMethod.routes";
+import { paymentRoutes } from "../modules/payment/payment.routes";
 
 const router = express.Router();
 
@@ -47,6 +48,10 @@ const moduleRoutes = [
     {
         path: "/payment-methods",
         route: paymentMethodRoutes,
+    },
+    {
+        path: "/property-payment",
+        route: paymentRoutes,
     },
 ];
 

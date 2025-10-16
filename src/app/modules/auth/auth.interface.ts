@@ -21,6 +21,13 @@ export interface IFreeTireData {
     bookingLimit?: number;
 }
 
+export interface IHostStripeAccount {
+    stripeAccountId: string;
+    status: "pending" | "verified" | "rejected";
+    createdAt: Date;
+    verifiedAt?: Date;
+}
+
 // IUser interface
 export interface IUser {
     _id?: string;
@@ -68,6 +75,7 @@ export interface IUser {
 
     // stirpe
     stripeCustomerId?: string;
+    hostStripeAccount?: IHostStripeAccount;
 
     // Audit
     createdAt?: Date;
