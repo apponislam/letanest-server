@@ -1,8 +1,7 @@
 import { Socket } from "socket.io";
 
-// Store online users and their socket connections
-const userSockets = new Map<string, Set<string>>(); // userId -> socketIds
-const socketUsers = new Map<string, string>(); // socketId -> userId
+const userSockets = new Map<string, Set<string>>();
+const socketUsers = new Map<string, string>();
 
 export const setupSocketHandlers = (socket: Socket) => {
     // console.log("⚡ Client connected:", socket.id);
@@ -132,33 +131,3 @@ export const emitToConversation = (conversationId: string, event: string, data: 
     io.to(conversationId).emit(event, data);
     console.log(`📢 Emitted ${event} to conversation ${conversationId}`);
 };
-
-// export const emitToConversation = (conversationId: string, event: string, data: any) => {
-//     try {
-//         const io = require("./socket").getIO();
-//         if (!io) {
-//             console.warn("⚠️ [EMIT DEBUG] Socket.IO instance not initialized!");
-//             return;
-//         }
-
-//         const room = io.sockets.adapter.rooms.get(conversationId);
-//         console.log(`🔊 [EMIT DEBUG] Emitting ${event} to conversation: ${conversationId}`);
-//         console.log(`🔊 [EMIT DEBUG] Room exists: ${!!room}`);
-
-//         if (room) {
-//             const socketIds = Array.from(room) as string[];
-//             console.log(`🔊 [EMIT DEBUG] ${socketIds.length} sockets in room:`, socketIds);
-
-//             const userIdsInRoom = socketIds.map((socketId) => socketUsers.get(socketId)).filter(Boolean);
-
-//             console.log(`🔊 [EMIT DEBUG] User IDs in room:`, userIdsInRoom);
-//         } else {
-//             console.warn(`⚠️ [EMIT DEBUG] Room ${conversationId} does not exist!`);
-//         }
-
-//         io.to(conversationId).emit(event, data);
-//         console.log(`✅ [EMIT DEBUG] Emission completed for ${event}`);
-//     } catch (err) {
-//         console.error("❌ [EMIT DEBUG] Failed to emit:", err);
-//     }
-// };
