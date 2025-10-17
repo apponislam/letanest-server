@@ -201,9 +201,159 @@ const getPaymentsByUser = async (userId: string) => {
         .sort({ createdAt: -1 });
 };
 
+/**
+ * Get all payments (for admin)
+ */
+const getAllPayments = async (filters: any = {}, options: any = {}) => {
+    const { page = 1, limit = 10, sortBy = "createdAt", sortOrder = "desc" } = options;
+
+    const skip = (page - 1) * limit;
+    const sortOptions: any = {};
+    sortOptions[sortBy] = sortOrder === "desc" ? -1 : 1;
+
+    // Build filter query
+    const filterQuery: any = {};
+
+    if (filters.status) {
+        filterQuery.status = filters.status;
+    }
+
+    if (filters.propertyId) {
+        filterQuery.propertyId = new Types.ObjectId(filters.propertyId);
+    }
+
+    if (filters.userId) {
+        filterQuery.userId = new Types.ObjectId(filters.userId);
+    }
+
+    if (filters.startDate && filters.endDate) {
+        filterQuery.createdAt = {
+            $gte: new Date(filters.startDate),
+            $lte: new Date(filters.endDate),
+        };
+    }
+
+    const payments = await PaymentModel.find(filterQuery)
+        .populate("userId", "name email phone")
+        .populate({
+            path: "propertyId",
+            select: "createdBy propertyNumber title address",
+            populate: {
+                path: "createdBy",
+                select: "name",
+            },
+        })
+        .sort(sortOptions)
+        .skip(skip)
+        .limit(limit);
+
+    const total = await PaymentModel.countDocuments(filterQuery);
+
+    return {
+        payments,
+        meta: {
+            page,
+            limit,
+            total,
+            totalPages: Math.ceil(total / limit),
+        },
+    };
+};
+
+/**
+ * Get payment totals and statistics
+ */
+const getPaymentTotals = async () => {
+    const totals = await PaymentModel.aggregate([
+        {
+            $group: {
+                _id: null,
+                totalRevenue: { $sum: "$totalAmount" },
+                totalCommission: { $sum: "$commissionAmount" },
+                totalBookingFees: { $sum: "$bookingFee" },
+                totalExtraFees: { $sum: "$extraFee" },
+                totalPlatformTotal: { $sum: "$platformTotal" },
+                totalHostEarnings: { $sum: "$hostAmount" },
+                totalTransactions: { $sum: 1 },
+                completedTransactions: {
+                    $sum: { $cond: [{ $eq: ["$status", "completed"] }, 1, 0] },
+                },
+            },
+        },
+    ]);
+
+    // If no payments exist, return zeros
+    if (totals.length === 0) {
+        return {
+            totalRevenue: 0,
+            totalCommission: 0,
+            totalBookingFees: 0,
+            totalExtraFees: 0,
+            totalPlatformTotal: 0,
+            totalHostEarnings: 0,
+            totalTransactions: 0,
+            completedTransactions: 0,
+        };
+    }
+
+    return totals[0];
+};
+
+/**
+ * Get payment statistics (for admin dashboard)
+ */
+const getPaymentStatistics = async () => {
+    const totalPayments = await PaymentModel.countDocuments();
+    const completedPayments = await PaymentModel.countDocuments({ status: "completed" });
+    const pendingPayments = await PaymentModel.countDocuments({ status: "pending" });
+    const failedPayments = await PaymentModel.countDocuments({ status: "failed" });
+
+    const totalRevenue = await PaymentModel.aggregate([{ $match: { status: "completed" } }, { $group: { _id: null, total: { $sum: "$totalAmount" } } }]);
+
+    const platformRevenue = await PaymentModel.aggregate([{ $match: { status: "completed" } }, { $group: { _id: null, total: { $sum: "$platformTotal" } } }]);
+
+    const hostRevenue = await PaymentModel.aggregate([{ $match: { status: "completed" } }, { $group: { _id: null, total: { $sum: "$hostAmount" } } }]);
+
+    // Monthly revenue
+    const monthlyRevenue = await PaymentModel.aggregate([
+        { $match: { status: "completed" } },
+        {
+            $group: {
+                _id: {
+                    year: { $year: "$createdAt" },
+                    month: { $month: "$createdAt" },
+                },
+                total: { $sum: "$totalAmount" },
+                platform: { $sum: "$platformTotal" },
+                host: { $sum: "$hostAmount" },
+            },
+        },
+        { $sort: { "_id.year": -1, "_id.month": -1 } },
+    ]);
+
+    return {
+        totals: {
+            payments: totalPayments,
+            completed: completedPayments,
+            pending: pendingPayments,
+            failed: failedPayments,
+        },
+        revenue: {
+            total: totalRevenue[0]?.total || 0,
+            platform: platformRevenue[0]?.total || 0,
+            host: hostRevenue[0]?.total || 0,
+        },
+        monthly: monthlyRevenue,
+    };
+};
+
 export const paymentServices = {
     createPayment,
     confirmPayment,
     getPaymentById,
     getPaymentsByUser,
+    // For admin
+    getAllPayments,
+    getPaymentTotals,
+    getPaymentStatistics,
 };
