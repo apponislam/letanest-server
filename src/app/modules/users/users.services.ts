@@ -161,7 +161,7 @@ const connectStripeAccountService = async (userId: string) => {
     // }
 
     // Check if already has Stripe account
-    if (user.hostStripeAccount) {
+    if (user.hostStripeAccount && user.hostStripeAccount.status === "verified") {
         throw new ApiError(httpStatus.BAD_REQUEST, "Stripe account already connected");
     }
 

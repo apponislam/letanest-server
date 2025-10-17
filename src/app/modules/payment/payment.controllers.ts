@@ -68,9 +68,73 @@ const getMyPayments = catchAsync(async (req: Request, res: Response) => {
     });
 });
 
+/**
+ * Get all payments (admin only)
+ */
+const getAllPayments = catchAsync(async (req: Request, res: Response) => {
+    const filters = {
+        status: req.query.status as string,
+        propertyId: req.query.propertyId as string,
+        userId: req.query.userId as string,
+        startDate: req.query.startDate as string,
+        endDate: req.query.endDate as string,
+    };
+    console.log(filters);
+
+    const options = {
+        page: parseInt(req.query.page as string) || 1,
+        limit: parseInt(req.query.limit as string) || 10,
+        sortBy: (req.query.sortBy as string) || "createdAt",
+        sortOrder: (req.query.sortOrder as string) || "desc",
+    };
+    console.log(options);
+
+    const result = await paymentServices.getAllPayments(filters, options);
+
+    sendResponse(res, {
+        statusCode: httpStatus.OK,
+        success: true,
+        message: "All payments retrieved successfully",
+        data: result.payments,
+        meta: result.meta,
+    });
+});
+
+/**
+ * Get payment totals (admin only)
+ */
+const getPaymentTotals = catchAsync(async (req: Request, res: Response) => {
+    const totals = await paymentServices.getPaymentTotals();
+
+    sendResponse(res, {
+        statusCode: httpStatus.OK,
+        success: true,
+        message: "Payment totals retrieved successfully",
+        data: totals,
+    });
+});
+
+/**
+ * Get payment statistics (admin only)
+ */
+const getPaymentStats = catchAsync(async (req: Request, res: Response) => {
+    const stats = await paymentServices.getPaymentStatistics();
+
+    sendResponse(res, {
+        statusCode: httpStatus.OK,
+        success: true,
+        message: "Payment statistics retrieved successfully",
+        data: stats,
+    });
+});
+
 export const paymentControllers = {
     createPayment,
     confirmPayment,
     getPayment,
     getMyPayments,
+    // For admin
+    getAllPayments,
+    getPaymentTotals,
+    getPaymentStats,
 };
