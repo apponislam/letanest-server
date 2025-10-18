@@ -56,11 +56,19 @@ export interface IProperty extends IPropertyStep1, IPropertyStep2, IPropertyStep
 }
 
 export interface IPropertyQuery {
-    page?: number | string;
-    limit?: number | string;
+    page?: number;
+    limit?: number;
     search?: string;
     status?: string;
-    createdBy?: string;
+    minPrice?: number;
+    maxPrice?: number;
+    propertyType?: string;
+    guests?: number;
+    bedrooms?: number;
+    availableFrom?: string;
+    availableTo?: string;
+    location?: string;
+    amenities?: string | string[];
 }
 
 export interface IPropertyMeta {

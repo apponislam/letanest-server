@@ -48,23 +48,132 @@ const getSinglePropertyService = async (id: string): Promise<IProperty | null> =
 };
 
 // Update getAllPropertiesService to exclude deleted properties
+// const getAllPropertiesService = async (query: IPropertyQuery): Promise<IPropertyListResponse> => {
+//     const { page = 1, limit = 10, search, status, createdBy } = query;
+
+//     const filter: Record<string, any> = {
+//         isDeleted: false, // Add soft delete filter
+//     };
+
+//     if (search) {
+//         filter.$or = [{ title: { $regex: search, $options: "i" } }, { description: { $regex: search, $options: "i" } }, { location: { $regex: search, $options: "i" } }];
+//     }
+
+//     if (status) filter.status = status;
+//     if (createdBy) filter.createdBy = new Types.ObjectId(createdBy);
+
+//     const skip = (Number(page) - 1) * Number(limit);
+
+//     const [properties, total] = await Promise.all([PropertyModel.find(filter).skip(skip).limit(Number(limit)).sort({ createdAt: -1 }), PropertyModel.countDocuments(filter)]);
+
+//     return {
+//         properties,
+//         meta: {
+//             total,
+//             page: Number(page),
+//             limit: Number(limit),
+//             totalPages: Math.ceil(total / Number(limit)),
+//         },
+//     };
+// };
+
 const getAllPropertiesService = async (query: IPropertyQuery): Promise<IPropertyListResponse> => {
-    const { page = 1, limit = 10, search, status, createdBy } = query;
+    const { page = 1, limit = 10, search, status = "published", minPrice, maxPrice, propertyType, guests, bedrooms, availableFrom, availableTo, location, amenities } = query;
 
     const filter: Record<string, any> = {
-        isDeleted: false, // Add soft delete filter
+        isDeleted: false,
+        status: status,
     };
 
+    // Search filter
     if (search) {
         filter.$or = [{ title: { $regex: search, $options: "i" } }, { description: { $regex: search, $options: "i" } }, { location: { $regex: search, $options: "i" } }];
     }
 
-    if (status) filter.status = status;
-    if (createdBy) filter.createdBy = new Types.ObjectId(createdBy);
+    // Price filter
+    if (minPrice !== undefined || maxPrice !== undefined) {
+        filter.price = {};
+        if (minPrice !== undefined) filter.price.$gte = Number(minPrice);
+        if (maxPrice !== undefined) filter.price.$lte = Number(maxPrice);
+    }
+
+    // Property type filter
+    if (propertyType) {
+        filter.propertyType = { $regex: propertyType, $options: "i" };
+    }
+
+    // Guests filter - use maxGuests field
+    if (guests) {
+        filter.maxGuests = { $gte: Number(guests) };
+    }
+
+    // Bedrooms filter
+    if (bedrooms) {
+        filter.bedrooms = { $gte: Number(bedrooms) };
+    }
+
+    // Location filter
+    if (location) {
+        filter.location = { $regex: location, $options: "i" };
+    }
+
+    // Availability date filter
+    if (availableFrom || availableTo) {
+        // If both dates are provided
+        if (availableFrom && availableTo) {
+            const checkInDate = new Date(availableFrom);
+            const checkOutDate = new Date(availableTo);
+
+            filter.$and = [
+                // Property available on or before check-out date starts
+                {
+                    $or: [{ availableFrom: { $lte: checkOutDate } }, { availableFrom: null }],
+                },
+                // Property available until at least check-in date ends
+                {
+                    $or: [{ availableTo: { $gte: checkInDate } }, { availableTo: null }],
+                },
+            ];
+        }
+        // If only check-in date is provided
+        else if (availableFrom) {
+            const checkInDate = new Date(availableFrom);
+            filter.$or = [{ availableFrom: { $lte: checkInDate } }, { availableFrom: null }];
+        }
+        // If only check-out date is provided
+        else if (availableTo) {
+            const checkOutDate = new Date(availableTo);
+            filter.$or = [{ availableTo: { $gte: checkOutDate } }, { availableTo: null }];
+        }
+    }
+
+    // Amenities filter - FIXED
+    if (amenities) {
+        let amenitiesArray: string[];
+
+        if (typeof amenities === "string") {
+            // If it's a comma-separated string from URL
+            amenitiesArray = amenities.split(",").map((a) => a.trim());
+        } else if (Array.isArray(amenities)) {
+            // If it's already an array
+            amenitiesArray = amenities;
+        } else {
+            amenitiesArray = [];
+        }
+
+        // Filter out empty strings and create case-insensitive regex patterns
+        const amenitiesRegex = amenitiesArray.filter((amenity) => amenity.trim() !== "").map((amenity) => new RegExp(amenity.trim(), "i"));
+
+        if (amenitiesRegex.length > 0) {
+            filter.amenities = { $all: amenitiesRegex };
+        }
+    }
+
+    console.log("Final Filter:", JSON.stringify(filter, null, 2));
 
     const skip = (Number(page) - 1) * Number(limit);
 
-    const [properties, total] = await Promise.all([PropertyModel.find(filter).skip(skip).limit(Number(limit)).sort({ createdAt: -1 }), PropertyModel.countDocuments(filter)]);
+    const [properties, total] = await Promise.all([PropertyModel.find(filter).skip(skip).limit(Number(limit)).sort({ createdAt: -1 }).populate("createdBy", "name email"), PropertyModel.countDocuments(filter)]);
 
     return {
         properties,

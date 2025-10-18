@@ -82,6 +82,19 @@ const getSinglePropertyController = catchAsync(async (req: Request, res: Respons
     });
 });
 
+// const getAllPropertiesController = catchAsync(async (req: Request, res: Response) => {
+//     const query = req.query as unknown as IPropertyQuery;
+//     const data = await propertyServices.getAllPropertiesService(query);
+
+//     sendResponse(res, {
+//         statusCode: httpStatus.OK,
+//         success: true,
+//         message: "Properties retrieved successfully",
+//         data: data.properties,
+//         meta: data.meta,
+//     });
+// });
+
 const getAllPropertiesController = catchAsync(async (req: Request, res: Response) => {
     const query = req.query as unknown as IPropertyQuery;
     const data = await propertyServices.getAllPropertiesService(query);
