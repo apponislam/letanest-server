@@ -66,6 +66,11 @@ const paymentSchema = new Schema<IPayment>(
             ref: "Message",
             required: true,
         },
+        hostId: {
+            type: Schema.Types.ObjectId,
+            ref: "User",
+            required: true,
+        },
 
         status: {
             type: String,

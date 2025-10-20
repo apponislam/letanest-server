@@ -30,4 +30,6 @@ router.delete("/host/my-properties/:id", auth, propertyControllers.deleteHostPro
 
 router.get("/host/my-published-properties", auth, propertyControllers.getMyPublishedPropertiesController);
 
+router.get("/host/search-published-properties", auth, propertyControllers.searchMyPublishedPropertiesController);
+
 export const propertyRoutes = router;

@@ -47,36 +47,6 @@ const getSinglePropertyService = async (id: string): Promise<IProperty | null> =
         .populate("termsAndConditions"); // Populate terms and conditions
 };
 
-// Update getAllPropertiesService to exclude deleted properties
-// const getAllPropertiesService = async (query: IPropertyQuery): Promise<IPropertyListResponse> => {
-//     const { page = 1, limit = 10, search, status, createdBy } = query;
-
-//     const filter: Record<string, any> = {
-//         isDeleted: false, // Add soft delete filter
-//     };
-
-//     if (search) {
-//         filter.$or = [{ title: { $regex: search, $options: "i" } }, { description: { $regex: search, $options: "i" } }, { location: { $regex: search, $options: "i" } }];
-//     }
-
-//     if (status) filter.status = status;
-//     if (createdBy) filter.createdBy = new Types.ObjectId(createdBy);
-
-//     const skip = (Number(page) - 1) * Number(limit);
-
-//     const [properties, total] = await Promise.all([PropertyModel.find(filter).skip(skip).limit(Number(limit)).sort({ createdAt: -1 }), PropertyModel.countDocuments(filter)]);
-
-//     return {
-//         properties,
-//         meta: {
-//             total,
-//             page: Number(page),
-//             limit: Number(limit),
-//             totalPages: Math.ceil(total / Number(limit)),
-//         },
-//     };
-// };
-
 const getAllPropertiesService = async (query: IPropertyQuery): Promise<IPropertyListResponse> => {
     const { page = 1, limit = 10, search, status = "published", minPrice, maxPrice, propertyType, guests, bedrooms, availableFrom, availableTo, location, amenities } = query;
 
@@ -125,13 +95,11 @@ const getAllPropertiesService = async (query: IPropertyQuery): Promise<IProperty
             const checkOutDate = new Date(availableTo);
 
             filter.$and = [
-                // Property available on or before check-out date starts
                 {
-                    $or: [{ availableFrom: { $lte: checkOutDate } }, { availableFrom: null }],
+                    $or: [{ availableFrom: { $lte: checkInDate } }, { availableFrom: null }],
                 },
-                // Property available until at least check-in date ends
                 {
-                    $or: [{ availableTo: { $gte: checkInDate } }, { availableTo: null }],
+                    $or: [{ availableTo: { $gte: checkOutDate } }, { availableTo: null }],
                 },
             ];
         }
@@ -152,10 +120,8 @@ const getAllPropertiesService = async (query: IPropertyQuery): Promise<IProperty
         let amenitiesArray: string[];
 
         if (typeof amenities === "string") {
-            // If it's a comma-separated string from URL
             amenitiesArray = amenities.split(",").map((a) => a.trim());
         } else if (Array.isArray(amenities)) {
-            // If it's already an array
             amenitiesArray = amenities;
         } else {
             amenitiesArray = [];
@@ -367,6 +333,47 @@ const getMyPublishedPropertiesService = async (hostId: string) => {
     return properties;
 };
 
+const searchMyPublishedPropertiesService = async (
+    hostId: string,
+    query: {
+        page?: number;
+        limit?: number;
+        search?: string;
+    }
+) => {
+    if (!hostId) {
+        throw new Error("Host ID is required");
+    }
+
+    const page = Number(query.page) || 1;
+    const limit = Number(query.limit) || 10;
+    const skip = (page - 1) * limit;
+
+    // Build filter
+    const filter: any = {
+        createdBy: new Types.ObjectId(hostId),
+        status: "published",
+        isDeleted: false,
+    };
+
+    // Add search filter for title and propertyNumber
+    if (query.search) {
+        filter.$or = [{ title: { $regex: query.search, $options: "i" } }, { propertyNumber: { $regex: query.search, $options: "i" } }];
+    }
+
+    // Get properties with pagination
+    const [properties, total] = await Promise.all([PropertyModel.find(filter).select("propertyNumber _id createdBy price title description location propertyType coverPhoto createdAt").populate("createdBy", "name email").sort({ createdAt: -1 }).skip(skip).limit(limit), PropertyModel.countDocuments(filter)]);
+
+    return {
+        properties,
+        meta: {
+            page,
+            limit,
+            total,
+        },
+    };
+};
+
 export const propertyServices = {
     createPropertyService,
     updatePropertyService,
@@ -378,4 +385,5 @@ export const propertyServices = {
     getHostPropertiesService,
     deleteHostPropertyService,
     getMyPublishedPropertiesService,
+    searchMyPublishedPropertiesService,
 };

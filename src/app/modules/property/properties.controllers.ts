@@ -82,19 +82,6 @@ const getSinglePropertyController = catchAsync(async (req: Request, res: Respons
     });
 });
 
-// const getAllPropertiesController = catchAsync(async (req: Request, res: Response) => {
-//     const query = req.query as unknown as IPropertyQuery;
-//     const data = await propertyServices.getAllPropertiesService(query);
-
-//     sendResponse(res, {
-//         statusCode: httpStatus.OK,
-//         success: true,
-//         message: "Properties retrieved successfully",
-//         data: data.properties,
-//         meta: data.meta,
-//     });
-// });
-
 const getAllPropertiesController = catchAsync(async (req: Request, res: Response) => {
     const query = req.query as unknown as IPropertyQuery;
     const data = await propertyServices.getAllPropertiesService(query);
@@ -194,6 +181,25 @@ const getMyPublishedPropertiesController = catchAsync(async (req: Request, res: 
     });
 });
 
+const searchMyPublishedPropertiesController = catchAsync(async (req: Request, res: Response) => {
+    const hostId = req.user?._id;
+    const { page = 1, limit = 10, search = "" } = req.query;
+
+    const result = await propertyServices.searchMyPublishedPropertiesService(hostId, {
+        page: Number(page),
+        limit: Number(limit),
+        search: search as string,
+    });
+
+    sendResponse(res, {
+        statusCode: httpStatus.OK,
+        success: true,
+        message: "Properties searched successfully",
+        data: result.properties,
+        meta: result.meta,
+    });
+});
+
 export const propertyControllers = {
     createPropertyController,
     updatePropertyController,
@@ -205,4 +211,5 @@ export const propertyControllers = {
     getHostProperties,
     deleteHostProperty,
     getMyPublishedPropertiesController,
+    searchMyPublishedPropertiesController,
 };

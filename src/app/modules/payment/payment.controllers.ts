@@ -51,20 +51,21 @@ const getPayment = catchAsync(async (req: Request, res: Response) => {
     });
 });
 
-const getMyPayments = catchAsync(async (req: Request, res: Response) => {
+const getUserPayments = catchAsync(async (req: Request, res: Response) => {
     const userId = req.user?._id;
+    const { page = 1, limit = 10 } = req.query;
 
-    if (!userId) {
-        throw new ApiError(httpStatus.UNAUTHORIZED, "User not authenticated");
-    }
-
-    const payments = await paymentServices.getPaymentsByUser(userId.toString());
+    const result = await paymentServices.getPaymentsByUser(userId, {
+        page: Number(page),
+        limit: Number(limit),
+    });
 
     sendResponse(res, {
         statusCode: httpStatus.OK,
         success: true,
-        message: "Payments retrieved successfully",
-        data: payments,
+        message: "User payments retrieved successfully",
+        data: result.payments,
+        meta: result.meta,
     });
 });
 
@@ -128,13 +129,36 @@ const getPaymentStats = catchAsync(async (req: Request, res: Response) => {
     });
 });
 
+/**
+ * Get payments by host (host only)
+ */
+const getHostPayments = catchAsync(async (req: Request, res: Response) => {
+    const hostId = req.user?._id;
+    const { page = 1, limit = 10 } = req.query;
+
+    const result = await paymentServices.getPaymentsByHost(hostId, {
+        page: Number(page),
+        limit: Number(limit),
+    });
+
+    sendResponse(res, {
+        statusCode: httpStatus.OK,
+        success: true,
+        message: "Host payments retrieved successfully",
+        data: result.payments,
+        meta: result.meta,
+    });
+});
+
 export const paymentControllers = {
     createPayment,
     confirmPayment,
     getPayment,
-    getMyPayments,
+    getUserPayments,
     // For admin
     getAllPayments,
     getPaymentTotals,
     getPaymentStats,
+    // For Host
+    getHostPayments,
 };
