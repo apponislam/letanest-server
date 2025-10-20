@@ -26,6 +26,7 @@ export interface IPayment {
     propertyId: Types.ObjectId;
     conversationId: Types.ObjectId;
     messageId: Types.ObjectId;
+    hostId: Types.ObjectId;
 
     // Status - EXPAND to match actual backend logic
     status: "pending" | "completed" | "failed" | "canceled" | "processing" | "requires_action";
@@ -50,4 +51,5 @@ export interface CreatePaymentData {
     propertyId: string;
     conversationId: string;
     messageId: string;
+    hostId: string;
 }

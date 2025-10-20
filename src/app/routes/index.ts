@@ -10,6 +10,7 @@ import { messageRoutes } from "../modules/messages/message.routes";
 import { paymentMethodRoutes } from "../modules/paymentMethod/paymentMethod.routes";
 import { paymentRoutes } from "../modules/payment/payment.routes";
 import { dashboardRoutes } from "../modules/dashboard/dashboard.routes";
+import { ratingRoutes } from "../modules/rating/rating.routes";
 
 const router = express.Router();
 
@@ -57,6 +58,10 @@ const moduleRoutes = [
     {
         path: "/dashboard",
         route: dashboardRoutes,
+    },
+    {
+        path: "/rating",
+        route: ratingRoutes,
     },
 ];
 

@@ -106,6 +106,7 @@ const createPayment = async (data: CreatePaymentData) => {
         propertyId: new Types.ObjectId(data.propertyId),
         conversationId: new Types.ObjectId(data.conversationId),
         messageId: new Types.ObjectId(data.messageId),
+        hostId: new Types.ObjectId(host._id),
         status: "pending",
         checkInDate: data.checkInDate || null,
         checkOutDate: data.checkOutDate || null,
@@ -189,16 +190,32 @@ const getPaymentById = async (id: string) => {
 };
 
 /**
- * Get payments by user ID
+ * Get payments by user ID (for guests)
  */
-const getPaymentsByUser = async (userId: string) => {
-    if (!Types.ObjectId.isValid(userId)) {
-        throw new ApiError(httpStatus.BAD_REQUEST, "Invalid user ID");
-    }
+const getPaymentsByUser = async (userId: string, query: { page?: number; limit?: number }) => {
+    const page = Number(query.page) || 1;
+    const limit = Number(query.limit) || 10;
+    const skip = (page - 1) * limit;
 
-    return await PaymentModel.find({ userId: new Types.ObjectId(userId) })
-        .populate("propertyId", "propertyNumber title")
-        .sort({ createdAt: -1 });
+    const [payments, total] = await Promise.all([
+        PaymentModel.find({ userId: new Types.ObjectId(userId) })
+            .populate("hostId", "name email profileImg")
+            .populate("propertyId", "title location coverPhoto propertyType amenities")
+            .populate("messageId", "checkInDate checkOutDate") // Populate offer details
+            .sort({ createdAt: -1 })
+            .skip(skip)
+            .limit(limit),
+        PaymentModel.countDocuments({ userId: new Types.ObjectId(userId) }),
+    ]);
+
+    return {
+        payments,
+        meta: {
+            page,
+            limit,
+            total,
+        },
+    };
 };
 
 /**
@@ -347,6 +364,52 @@ const getPaymentStatistics = async () => {
     };
 };
 
+/**
+ * Get payments by host ID
+ */
+const getPaymentsByHost = async (hostId: string, query: { page?: number; limit?: number }) => {
+    const page = Number(query.page) || 1;
+    const limit = Number(query.limit) || 10;
+    const skip = (page - 1) * limit;
+
+    const [payments, total, totalAmountResult] = await Promise.all([
+        PaymentModel.find({ hostId: new Types.ObjectId(hostId) })
+            .populate("userId", "name email profileImg")
+            .populate("propertyId", "title location coverPhoto propertyType")
+            .sort({ createdAt: -1 })
+            .skip(skip)
+            .limit(limit),
+        PaymentModel.countDocuments({ hostId: new Types.ObjectId(hostId) }),
+        // Calculate total hostAmount
+        PaymentModel.aggregate([
+            {
+                $match: {
+                    hostId: new Types.ObjectId(hostId),
+                    status: "completed", // Only sum completed payments
+                },
+            },
+            {
+                $group: {
+                    _id: null,
+                    totalAmount: { $sum: "$hostAmount" },
+                },
+            },
+        ]),
+    ]);
+
+    const totalAmount = totalAmountResult.length > 0 ? totalAmountResult[0].totalAmount : 0;
+
+    return {
+        payments,
+        meta: {
+            page,
+            limit,
+            total,
+            totalAmount,
+        },
+    };
+};
+
 export const paymentServices = {
     createPayment,
     confirmPayment,
@@ -356,4 +419,6 @@ export const paymentServices = {
     getAllPayments,
     getPaymentTotals,
     getPaymentStatistics,
+    // For Host
+    getPaymentsByHost,
 };
