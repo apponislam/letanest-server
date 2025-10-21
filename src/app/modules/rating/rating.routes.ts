@@ -28,4 +28,8 @@ router.get("/site-ratings/user-rating", auth, ratingControllers.getUserSiteRatin
 router.patch("/:ratingId", auth, validateRequest(ratingValidations.updateRatingValidation), ratingControllers.updateRatingController);
 router.delete("/:ratingId", auth, ratingControllers.deleteRatingController);
 
+// ADMIN ONLY ROUTES
+router.get("/admin/all-ratings", auth, ratingControllers.getAllRatingsForAdminController);
+router.get("/admin/rating-stats", auth, ratingControllers.getAdminRatingStatsController);
+
 export const ratingRoutes = router;

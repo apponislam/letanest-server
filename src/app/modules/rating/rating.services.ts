@@ -418,17 +418,108 @@ const deleteRatingService = async (ratingId: string): Promise<IRating | null> =>
     return rating;
 };
 
+// Get all ratings for admin with filters
+interface GetAllRatingsFilter {
+    type?: RatingType;
+    page?: number;
+    limit?: number;
+    sortBy?: string;
+    sortOrder?: "asc" | "desc";
+    search?: string;
+}
+
+const getAllRatingsForAdminService = async (
+    filters: GetAllRatingsFilter
+): Promise<{
+    ratings: IRating[];
+    total: number;
+    page: number;
+    limit: number;
+}> => {
+    const { type, page = 1, limit = 10, sortBy = "createdAt", sortOrder = "desc", search } = filters;
+
+    const skip = (page - 1) * limit;
+
+    // Build filter query
+    const filterQuery: any = {};
+
+    if (type) filterQuery.type = type;
+
+    // Search functionality
+    if (search) {
+        const userSearchQuery = await RatingModel.find({
+            $or: [{ "userId.name": { $regex: search, $options: "i" } }, { "userId.email": { $regex: search, $options: "i" } }],
+        }).distinct("_id");
+
+        const propertySearchQuery = await RatingModel.find({
+            "propertyId.title": { $regex: search, $options: "i" },
+        }).distinct("_id");
+
+        filterQuery.$or = [{ _id: { $in: userSearchQuery } }, { _id: { $in: propertySearchQuery } }, { country: { $regex: search, $options: "i" } }, { description: { $regex: search, $options: "i" } }];
+    }
+
+    // Sort configuration
+    const sortConfig: any = {};
+    sortConfig[sortBy] = sortOrder === "desc" ? -1 : 1;
+
+    const [ratings, total] = await Promise.all([RatingModel.find(filterQuery).populate("userId", userPopulationFields).populate("propertyId", propertyPopulationFields).populate("hostId", userPopulationFields).sort(sortConfig).skip(skip).limit(limit), RatingModel.countDocuments(filterQuery)]);
+
+    return {
+        ratings,
+        total,
+        page,
+        limit,
+    };
+};
+
+// Get rating statistics for admin dashboard
+const getAdminRatingStatsService = async (): Promise<{
+    totalRatings: number;
+    siteRatings: number;
+    propertyRatings: number;
+    averageSiteRating: number;
+    averagePropertyRating: number;
+    recentRatings: IRating[];
+}> => {
+    const [totalRatings, siteRatings, propertyRatings, siteStats, propertyStats, recentRatings] = await Promise.all([
+        RatingModel.countDocuments(),
+        RatingModel.countDocuments({ type: RatingType.SITE }),
+        RatingModel.countDocuments({ type: RatingType.PROPERTY }),
+
+        // Average site rating
+        RatingModel.aggregate([{ $match: { type: RatingType.SITE } }, { $group: { _id: null, average: { $avg: "$overallExperience" } } }]),
+
+        // Average property rating
+        RatingModel.aggregate([{ $match: { type: RatingType.PROPERTY } }, { $group: { _id: null, average: { $avg: "$overallExperience" } } }]),
+
+        // Recent ratings (last 10)
+        RatingModel.find().populate("userId", userPopulationFields).populate("propertyId", propertyPopulationFields).populate("hostId", userPopulationFields).sort({ createdAt: -1 }).limit(10),
+    ]);
+
+    return {
+        totalRatings,
+        siteRatings,
+        propertyRatings,
+        averageSiteRating: siteStats.length > 0 ? Math.round(siteStats[0].average * 10) / 10 : 0,
+        averagePropertyRating: propertyStats.length > 0 ? Math.round(propertyStats[0].average * 10) / 10 : 0,
+        recentRatings,
+    };
+};
+
 export const ratingServices = {
     createRatingService,
     getPropertyRatingsService,
-    getHostRatingsService, // New service
+    getHostRatingsService,
     getPropertyRatingStatsService,
-    getHostRatingStatsService, // New service
+    getHostRatingStatsService,
     getSiteRatingsService,
     getSiteRatingStatsService,
     getUserPropertyRatingService,
     getUserSiteRatingService,
-    getUserHostRatingsService, // New service
+    getUserHostRatingsService,
     updateRatingService,
     deleteRatingService,
+    // new for admin
+    getAllRatingsForAdminService,
+    getAdminRatingStatsService,
 };

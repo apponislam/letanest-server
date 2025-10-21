@@ -2,6 +2,7 @@ import httpStatus from "http-status";
 import { ratingServices } from "./rating.services";
 import catchAsync from "../../../utils/catchAsync";
 import sendResponse from "../../../utils/sendResponse.";
+import { RatingType } from "./rating.interface";
 
 // Create a new rating (both property and site)
 const createRatingController = catchAsync(async (req, res) => {
@@ -180,17 +181,60 @@ const deleteRatingController = catchAsync(async (req, res) => {
     });
 });
 
+// Get all ratings for admin with filters
+const getAllRatingsForAdminController = catchAsync(async (req, res) => {
+    const { type, page = 1, limit = 10, sortBy = "createdAt", sortOrder = "desc", search } = req.query;
+
+    const filters = {
+        type: type as RatingType,
+        page: parseInt(page as string),
+        limit: parseInt(limit as string),
+        sortBy: sortBy as string,
+        sortOrder: sortOrder as "asc" | "desc",
+        search: search as string,
+    };
+
+    const result = await ratingServices.getAllRatingsForAdminService(filters);
+
+    sendResponse(res, {
+        statusCode: httpStatus.OK,
+        success: true,
+        message: "All ratings retrieved successfully for admin",
+        data: result.ratings,
+        meta: {
+            page: result.page,
+            limit: result.limit,
+            total: result.total,
+        },
+    });
+});
+
+// Get rating statistics for admin dashboard
+const getAdminRatingStatsController = catchAsync(async (req, res) => {
+    const stats = await ratingServices.getAdminRatingStatsService();
+
+    sendResponse(res, {
+        statusCode: httpStatus.OK,
+        success: true,
+        message: "Admin rating statistics retrieved successfully",
+        data: stats,
+    });
+});
+
 export const ratingControllers = {
     createRatingController,
     getPropertyRatingsController,
-    getHostRatingsController, // New controller
+    getHostRatingsController,
     getPropertyRatingStatsController,
-    getHostRatingStatsController, // New controller
+    getHostRatingStatsController,
     getSiteRatingsController,
     getSiteRatingStatsController,
     getUserPropertyRatingController,
     getUserSiteRatingController,
-    getUserHostRatingsController, // New controller
+    getUserHostRatingsController,
     updateRatingController,
     deleteRatingController,
+    // for new admin purposes
+    getAllRatingsForAdminController,
+    getAdminRatingStatsController,
 };

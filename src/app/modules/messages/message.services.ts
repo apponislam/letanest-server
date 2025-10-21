@@ -407,13 +407,13 @@ const createConversation = async (conversationData: ICreateConversationDto) => {
     });
 
     if (existingConversation) {
-        return await Conversation.findById(existingConversation._id).populate("participants", "name profileImg email phone").populate("lastMessage");
+        return await Conversation.findById(existingConversation._id).populate("participants", "name profileImg email phone role").populate("lastMessage");
     }
 
     const conversation = await Conversation.create(conversationData);
 
     const io = getIO();
-    const populatedConversation = await Conversation.findById(conversation._id).populate("participants", "name profileImg email phone");
+    const populatedConversation = await Conversation.findById(conversation._id).populate("participants", "name profileImg email phone role");
 
     conversationData.participants.forEach((participantId) => {
         io.to(participantId.toString()).emit("conversation:new", populatedConversation);
@@ -427,7 +427,7 @@ const getUserConversations = async (userId: string) => {
         participants: userId,
         isActive: true,
     })
-        .populate("participants", "name profileImg email phone")
+        .populate("participants", "name profileImg email phone role")
         .populate({
             path: "lastMessage",
             populate: {
@@ -462,7 +462,7 @@ const getConversationById = async (conversationId: string, userId: string) => {
         participants: userId,
         isActive: true,
     })
-        .populate("participants", "name profileImg email phone")
+        .populate("participants", "name profileImg email phone role")
         .populate({
             path: "lastMessage",
             populate: {
@@ -512,7 +512,7 @@ const createMessage = async (messageData: ICreateMessageDto) => {
         updatedAt: new Date(),
     });
 
-    const populatedMessage = await Message.findById(message._id).populate("sender", "name profileImg email phone").populate("propertyId", "propertyNumber price title location");
+    const populatedMessage = await Message.findById(message._id).populate("sender", "name profileImg email phone role").populate("propertyId", "propertyNumber price title location");
 
     if (!populatedMessage) {
         throw new ApiError(httpStatus.INTERNAL_SERVER_ERROR, "Failed to create message");
@@ -553,13 +553,13 @@ const getConversationMessages = async (conversationId: string, userId: string, p
 
     const skip = (page - 1) * limit;
 
-    const messages = await Message.find({ conversationId }).populate("sender", "name profileImg email phone").populate("propertyId", "propertyNumber price title location").sort({ createdAt: -1 }).skip(skip).limit(limit);
+    const messages = await Message.find({ conversationId }).populate("sender", "name profileImg email phone role").populate("propertyId", "propertyNumber price title location").sort({ createdAt: -1 }).skip(skip).limit(limit);
 
     return messages.reverse();
 };
 
 const getMessageById = async (messageId: string, userId: string) => {
-    const message = await Message.findById(messageId).populate("sender", "name profileImg email phone").populate("propertyId", "propertyNumber price title location");
+    const message = await Message.findById(messageId).populate("sender", "name profileImg email phone role").populate("propertyId", "propertyNumber price title location");
 
     if (!message) {
         throw new ApiError(httpStatus.NOT_FOUND, "Message not found");
@@ -596,7 +596,7 @@ const markMessageAsRead = async (messageId: string, userId: string) => {
     }
 
     // CHANGED: Use isRead instead of readBy
-    const updatedMessage = await Message.findByIdAndUpdate(messageId, { isRead: true }, { new: true }).populate("sender", "name profileImg email");
+    const updatedMessage = await Message.findByIdAndUpdate(messageId, { isRead: true }, { new: true }).populate("sender", "name profileImg email role");
 
     // NEW: Calculate updated unread count
     const unreadCount = await Message.countDocuments({
@@ -649,7 +649,7 @@ const rejectOffer = async (messageId: string, conversationId: string, userId: st
         },
         { new: true }
     )
-        .populate("sender", "name profileImg email phone")
+        .populate("sender", "name profileImg email phone role")
         .populate("propertyId", "propertyNumber price title images location");
 
     if (!updatedMessage) {
@@ -699,7 +699,7 @@ const acceptOffer = async (messageId: string, conversationId: string, userId: st
         },
         { new: true }
     )
-        .populate("sender", "name profileImg email phone")
+        .populate("sender", "name profileImg email phone role")
         .populate("propertyId", "propertyNumber price title images location");
 
     if (!updatedMessage) {
@@ -747,7 +747,7 @@ const markConversationAsRead = async (conversationId: string, userId: string) =>
 
     // Get the updated conversation with recalculated unread count
     const updatedConversation = await Conversation.findById(conversationId)
-        .populate("participants", "name profileImg email phone")
+        .populate("participants", "name profileImg email phone role")
         .populate({
             path: "lastMessage",
             populate: {

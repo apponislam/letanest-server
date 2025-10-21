@@ -8,6 +8,7 @@ import { stripeService } from "../subscription/stripe.services";
 import { PaymentModel } from "./payment.model";
 import { messageServices } from "../messages/message.services";
 import { Message } from "../messages/messages.model";
+import PDFDocument from "pdfkit";
 
 /**
  * Create a new payment
@@ -376,6 +377,7 @@ const getPaymentsByHost = async (hostId: string, query: { page?: number; limit?:
         PaymentModel.find({ hostId: new Types.ObjectId(hostId) })
             .populate("userId", "name email profileImg")
             .populate("propertyId", "title location coverPhoto propertyType")
+            .populate("messageId", "checkInDate checkOutDate")
             .sort({ createdAt: -1 })
             .skip(skip)
             .limit(limit),
@@ -410,6 +412,303 @@ const getPaymentsByHost = async (hostId: string, query: { page?: number; limit?:
     };
 };
 
+/**
+ * Generate PDF for payments within date range
+ */
+const generatePaymentsPDF = async (fromDate: string, toDate: string) => {
+    // Query payments within date range
+    const payments = await PaymentModel.find({
+        createdAt: {
+            $gte: new Date(fromDate),
+            $lte: new Date(toDate),
+        },
+    })
+        .populate("userId", "name email")
+        .populate("propertyId", "title")
+        .populate("hostId", "name email")
+        .sort({ createdAt: -1 });
+
+    if (payments.length === 0) {
+        throw new ApiError(httpStatus.NOT_FOUND, "No payments found in the selected date range");
+    }
+
+    // Create PDF document with proper margins
+    const doc = new PDFDocument({
+        margin: 40,
+        size: "A4",
+        bufferPages: true,
+    });
+
+    const buffers: Buffer[] = [];
+    doc.on("data", buffers.push.bind(buffers));
+
+    // Calculate totals
+    const totals = payments.reduce(
+        (acc, payment) => ({
+            totalRevenue: acc.totalRevenue + (payment.totalAmount || 0),
+            totalCommission: acc.totalCommission + (payment.commissionAmount || 0),
+            totalBookingFees: acc.totalBookingFees + (payment.bookingFee || 0),
+            totalExtraFees: acc.totalExtraFees + (payment.extraFee || 0),
+            totalPlatformTotal: acc.totalPlatformTotal + (payment.platformTotal || 0),
+            totalHostEarnings: acc.totalHostEarnings + (payment.hostAmount || 0),
+            totalTransactions: acc.totalTransactions + 1,
+        }),
+        {
+            totalRevenue: 0,
+            totalCommission: 0,
+            totalBookingFees: 0,
+            totalExtraFees: 0,
+            totalPlatformTotal: 0,
+            totalHostEarnings: 0,
+            totalTransactions: 0,
+        }
+    );
+
+    // ===== HEADER SECTION =====
+    doc.fillColor("#C9A94D")
+        .fontSize(24)
+        .font("Helvetica-Bold")
+        .text("TRANSACTION REPORT", 40, 40, { align: "center", width: doc.page.width - 80 });
+
+    // Date range
+    doc.fillColor("#666666")
+        .fontSize(12)
+        .font("Helvetica")
+        .text(`Date Range: ${new Date(fromDate).toLocaleDateString()} to ${new Date(toDate).toLocaleDateString()}`, 40, 75, {
+            align: "center",
+            width: doc.page.width - 80,
+        });
+
+    let yPosition = 110;
+
+    // ===== SUMMARY SECTION =====
+    doc.fillColor("#C9A94D").fontSize(18).font("Helvetica-Bold").text("Summary", 40, yPosition);
+    yPosition += 30;
+
+    // Auto-fit box height dynamically
+    const topPadding = 25;
+    const bottomPadding = 25;
+    const lineSpacing = 28;
+    const summaryItemsCount = 5; // commission, booking, extra, owner, host
+    const summaryBoxHeight = topPadding + bottomPadding + 35 + summaryItemsCount * lineSpacing + 25;
+
+    // Background box
+    doc.rect(40, yPosition, doc.page.width - 80, summaryBoxHeight)
+        .fillColor("#2D3546")
+        .fill();
+
+    // Start Y inside box
+    let currentY = yPosition + topPadding;
+
+    // Total Payments (main highlight)
+    doc.fillColor("#C9A94D")
+        .font("Helvetica-Bold")
+        .fontSize(16)
+        .text("Total Payments:", 60, currentY)
+        .text(`£${totals.totalRevenue.toFixed(2)}`, doc.page.width - 120, currentY, { align: "right" });
+
+    currentY += 30;
+
+    // Gold separator line
+    doc.moveTo(60, currentY)
+        .lineTo(doc.page.width - 60, currentY)
+        .strokeColor("#C9A94D")
+        .lineWidth(1)
+        .stroke();
+
+    currentY += 15;
+
+    // Secondary items (light gold text, consistent spacing)
+    const summaryItems = [
+        { label: "Commissions:", value: `£${totals.totalCommission.toFixed(2)}` },
+        { label: "Booking Fees:", value: `£${totals.totalBookingFees.toFixed(2)}` },
+        { label: "Extra Fees:", value: `£${totals.totalExtraFees.toFixed(2)}` },
+    ];
+
+    summaryItems.forEach((item) => {
+        doc.fillColor("#C9A94D")
+            .font("Helvetica")
+            .fontSize(12)
+            .text(item.label, 60, currentY)
+            .text(item.value, doc.page.width - 120, currentY, { align: "right" });
+        currentY += lineSpacing;
+    });
+
+    // Second separator
+    doc.moveTo(60, currentY - 8)
+        .lineTo(doc.page.width - 60, currentY - 8)
+        .strokeColor("#C9A94D")
+        .lineWidth(1)
+        .stroke();
+
+    currentY += 10;
+
+    // Owner Total & Host Received (bold)
+    const boldItems = [
+        { label: "Owner Total:", value: `£${totals.totalPlatformTotal.toFixed(2)}` },
+        { label: "Host Received:", value: `£${totals.totalHostEarnings.toFixed(2)}` },
+    ];
+
+    boldItems.forEach((item) => {
+        doc.fillColor("#C9A94D")
+            .font("Helvetica-Bold")
+            .fontSize(12)
+            .text(item.label, 60, currentY)
+            .text(item.value, doc.page.width - 120, currentY, { align: "right" });
+        currentY += lineSpacing;
+    });
+
+    yPosition += summaryBoxHeight + 40;
+
+    // ===== TRANSACTION DETAILS SECTION =====
+    // Check if we need a new page before transactions
+    if (yPosition > 500) {
+        doc.addPage();
+        yPosition = 40;
+    }
+
+    doc.fillColor("#C9A94D").fontSize(18).font("Helvetica-Bold").text("Transaction Details", 40, yPosition);
+
+    yPosition += 30;
+
+    // Table headers - WIDER COLUMNS
+    const headerY = yPosition;
+
+    // WIDER COLUMN WIDTHS to fit content properly
+    const columnWidths = [100, 90, 90, 70, 70, 80]; // Increased Payment ID and name columns
+    const totalTableWidth = columnWidths.reduce((sum, width) => sum + width, 0);
+
+    // Header background - DARK BLUE
+    doc.rect(40, headerY, totalTableWidth, 25)
+        .fillColor("#14213D") // Dark blue background
+        .fill();
+
+    // Header text - WHITE TEXT
+    doc.fillColor("#FFFFFF") // White text for headers
+        .fontSize(9)
+        .font("Helvetica-Bold");
+
+    let headerX = 45;
+    const headers = ["Payment ID", "Guest", "Host", "Amount", "Status", "Date"];
+
+    headers.forEach((header, i) => {
+        doc.text(header, headerX, headerY + 8, {
+            width: columnWidths[i] - 10,
+            align: "left",
+        });
+        headerX += columnWidths[i];
+    });
+
+    yPosition = headerY + 35;
+
+    // Transaction rows
+    payments.forEach((payment, index) => {
+        // Check if we need a new page
+        if (yPosition > doc.page.height - 80) {
+            doc.addPage();
+            yPosition = 40;
+
+            // Add table header to new page
+            const newHeaderY = yPosition;
+            doc.rect(40, newHeaderY, totalTableWidth, 25).fillColor("#14213D").fill();
+
+            let newHeaderX = 45;
+            headers.forEach((header, i) => {
+                doc.fillColor("#FFFFFF")
+                    .fontSize(9)
+                    .font("Helvetica-Bold")
+                    .text(header, newHeaderX, newHeaderY + 8, {
+                        width: columnWidths[i] - 10,
+                        align: "left",
+                    });
+                newHeaderX += columnWidths[i];
+            });
+
+            yPosition = newHeaderY + 35;
+        }
+
+        // Safe date conversion
+        const paymentDate = payment.paidAt || payment.createdAt;
+        const formattedDate = paymentDate ? new Date(paymentDate).toLocaleDateString() : "N/A";
+
+        // FULL Payment ID (no truncation) with wider column
+        const paymentId = payment.stripePaymentIntentId || "N/A";
+
+        const row = [
+            paymentId, // FULL Payment ID
+            (payment.userId as any)?.name || "N/A",
+            (payment.hostId as any)?.name || "N/A",
+            `£${payment.totalAmount}`,
+            payment.status.charAt(0).toUpperCase() + payment.status.slice(1),
+            formattedDate,
+        ];
+
+        // Alternate row background - DARK BACKGROUNDS
+        if (index % 2 === 0) {
+            doc.rect(40, yPosition - 5, totalTableWidth, 20)
+                .fillColor("#1a2030") // Dark gray background
+                .fill();
+
+            // WHITE TEXT for dark background
+            doc.fillColor("#FFFFFF");
+        } else {
+            // Lighter background for alternate rows
+            doc.rect(40, yPosition - 5, totalTableWidth, 20)
+                .fillColor("#2D3546") // Same as summary background
+                .fill();
+
+            // GOLD TEXT for lighter background to ensure visibility
+            doc.fillColor("#C9A94D");
+        }
+
+        doc.fontSize(8).font("Helvetica");
+
+        let cellX = 45;
+        row.forEach((cell, i) => {
+            // Use smaller font for long payment IDs
+            const fontSize = i === 0 && cell.length > 15 ? 7 : 8;
+            doc.fontSize(fontSize).text(cell, cellX, yPosition, {
+                width: columnWidths[i] - 10,
+                align: "left",
+                ellipsis: true, // Add ellipsis if text is too long
+            });
+            cellX += columnWidths[i];
+        });
+
+        yPosition += 25;
+    });
+
+    // ===== FOOTER =====
+    const pageCount = doc.bufferedPageRange().count;
+
+    for (let i = 0; i < pageCount; i++) {
+        doc.switchToPage(i);
+
+        // Page number - GOLD TEXT
+        doc.fillColor("#C9A94D")
+            .fontSize(10)
+            .text(`Page ${i + 1} of ${pageCount}`, 40, doc.page.height - 30, { align: "center", width: doc.page.width - 80 });
+
+        // Generated date - GRAY TEXT
+        doc.fillColor("#666666")
+            .fontSize(8)
+            .text(`Generated on ${new Date().toLocaleDateString()} at ${new Date().toLocaleTimeString()}`, 40, doc.page.height - 15, { align: "center", width: doc.page.width - 80 });
+    }
+
+    doc.end();
+
+    return new Promise<Buffer>((resolve, reject) => {
+        doc.on("end", () => {
+            const pdfData = Buffer.concat(buffers);
+            resolve(pdfData);
+        });
+
+        doc.on("error", (error) => {
+            reject(error);
+        });
+    });
+};
+
 export const paymentServices = {
     createPayment,
     confirmPayment,
@@ -419,6 +718,7 @@ export const paymentServices = {
     getAllPayments,
     getPaymentTotals,
     getPaymentStatistics,
+    generatePaymentsPDF,
     // For Host
     getPaymentsByHost,
 };

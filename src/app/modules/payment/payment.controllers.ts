@@ -150,6 +150,41 @@ const getHostPayments = catchAsync(async (req: Request, res: Response) => {
     });
 });
 
+/**
+ * Download payments PDF (admin only)
+ */
+const downloadPaymentsPDF = catchAsync(async (req: Request, res: Response) => {
+    const { fromDate, toDate } = req.body;
+
+    // Validate dates
+    if (!fromDate || !toDate) {
+        throw new ApiError(httpStatus.BAD_REQUEST, "Both fromDate and toDate are required");
+    }
+
+    // Validate date format
+    const from = new Date(fromDate);
+    const to = new Date(toDate);
+
+    if (isNaN(from.getTime()) || isNaN(to.getTime())) {
+        throw new ApiError(httpStatus.BAD_REQUEST, "Invalid date format");
+    }
+
+    if (from > to) {
+        throw new ApiError(httpStatus.BAD_REQUEST, "fromDate cannot be after toDate");
+    }
+
+    // Generate PDF
+    const pdfBuffer = await paymentServices.generatePaymentsPDF(fromDate, toDate);
+
+    // Set response headers for PDF download
+    res.setHeader("Content-Type", "application/pdf");
+    res.setHeader("Content-Disposition", `attachment; filename=transactions-${fromDate}-to-${toDate}.pdf`);
+    res.setHeader("Content-Length", pdfBuffer.length);
+
+    // Send PDF
+    res.send(pdfBuffer);
+});
+
 export const paymentControllers = {
     createPayment,
     confirmPayment,
@@ -159,6 +194,7 @@ export const paymentControllers = {
     getAllPayments,
     getPaymentTotals,
     getPaymentStats,
+    downloadPaymentsPDF,
     // For Host
     getHostPayments,
 };
