@@ -53,7 +53,7 @@ const registerUser = async (data: RegisterInput & { profileImg?: string }) => {
     const { password, ...userWithoutPassword } = createdUser.toObject();
 
     setTimeout(() => {
-        const verificationUrl = `${process.env.FRONTEND_URL}/verify-email?token=${token}&id=${createdUser._id}`;
+        const verificationUrl = `${config.client_url}/verify-email?token=${token}&id=${createdUser._id}`;
         sendVerificationEmail({
             to: createdUser.email,
             name: createdUser.name,
