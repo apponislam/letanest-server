@@ -39,8 +39,20 @@ const getPropertyStatusStats = catchAsync(async (req: Request, res: Response) =>
     });
 });
 
+const getSiteStats = catchAsync(async (req: Request, res: Response) => {
+    const analytics = await dashboardServices.getSiteStatsService();
+
+    sendResponse(res, {
+        statusCode: httpStatus.OK,
+        success: true,
+        message: "Property analytics retrieved successfully",
+        data: analytics,
+    });
+});
+
 export const dashboardControllers = {
     getDashboardStats,
     getRevenueChartData,
     getPropertyStatusStats,
+    getSiteStats,
 };

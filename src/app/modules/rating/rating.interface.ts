@@ -9,6 +9,7 @@ export interface IRating extends Document {
     type: RatingType;
     propertyId?: mongoose.Types.ObjectId;
     userId: mongoose.Types.ObjectId;
+    hostId?: mongoose.Types.ObjectId;
     communication?: number;
     accuracy?: number;
     cleanliness?: number;

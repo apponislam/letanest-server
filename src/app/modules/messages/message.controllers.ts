@@ -145,6 +145,32 @@ const acceptOffer = catchAsync(async (req, res) => {
     });
 });
 
+const markConversationAsRead = catchAsync(async (req, res) => {
+    const { conversationId } = req.params;
+    console.log(conversationId);
+    const userId = req.user._id;
+    const result = await messageServices.markConversationAsRead(conversationId, userId.toString());
+
+    sendResponse(res, {
+        success: true,
+        statusCode: httpStatus.OK,
+        message: "Conversation marked as read",
+        data: result, // Use the result directly
+    });
+});
+
+const getTotalUnreadCount = catchAsync(async (req, res) => {
+    const userId = req.user._id;
+    const result = await messageServices.getTotalUnreadCount(userId.toString());
+
+    sendResponse(res, {
+        success: true,
+        statusCode: httpStatus.OK,
+        message: "Total unread count fetched successfully",
+        data: result,
+    });
+});
+
 export const messageControllers = {
     createConversation,
     getUserConversations,
@@ -155,4 +181,7 @@ export const messageControllers = {
     markAsRead,
     rejectOffer,
     acceptOffer,
+    //mark all read
+    markConversationAsRead,
+    getTotalUnreadCount,
 };

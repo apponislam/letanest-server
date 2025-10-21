@@ -1,6 +1,7 @@
 import { UserModel } from "../auth/auth.model";
 import { PropertyModel } from "../property/properties.model";
 import { PaymentModel } from "../payment/payment.model";
+import { RatingModel } from "../rating/rating.model";
 
 /**
  * Get dashboard statistics
@@ -247,8 +248,32 @@ const getPropertyStatusStats = async () => {
     };
 };
 
+const getSiteStatsService = async () => {
+    // 1. All published properties count
+    const publishedPropertiesCount = await PropertyModel.countDocuments({
+        status: "published",
+        isDeleted: false,
+    });
+
+    // 2. ALL ratings with 3+ stars (both property and site)
+    const goodRatingsCount = await RatingModel.countDocuments({
+        overallExperience: { $gte: 3 },
+    });
+
+    // 3. Years since 2025
+    const currentYear = new Date().getFullYear();
+    const yearsSince2025 = currentYear - 2025;
+
+    return {
+        publishedPropertiesCount,
+        propertiesWithGoodRatingsCount: goodRatingsCount,
+        yearsSince2025: Math.max(0, yearsSince2025),
+    };
+};
+
 export const dashboardServices = {
     getDashboardStats,
     getRevenueChartData,
     getPropertyStatusStats,
+    getSiteStatsService,
 };

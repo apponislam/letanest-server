@@ -14,27 +14,21 @@ export type MessageType = (typeof MESSAGE_TYPES)[keyof typeof MESSAGE_TYPES];
 export interface IMessage {
     _id?: Types.ObjectId;
     conversationId: Types.ObjectId;
-    sender: Types.ObjectId; // User ID who sent the message
+    sender: Types.ObjectId;
     type: MessageType;
-    text?: string; // For text messages
-
-    // For offer messages
+    text?: string;
     propertyId?: string;
     checkInDate?: string;
     checkOutDate?: string;
     agreedFee?: number;
     bookingFee?: number;
     total?: number;
-
-    // For accepted messages
     propertyName?: string;
     address?: string;
     manager?: string;
     phone?: string;
-
-    // For rejected messages
     reason?: string;
-
+    isRead?: boolean;
     createdAt?: Date;
     updatedAt?: Date;
 }
@@ -44,7 +38,11 @@ export interface IConversation {
     _id?: Types.ObjectId;
     participants: Types.ObjectId[];
     lastMessage?: Types.ObjectId;
-    unreadCount?: number;
+    // unreadCount?: number;
+    unreadCounts?: {
+        // NEW: Per-user unread counts
+        [userId: string]: number;
+    };
     isActive?: boolean;
     createdAt?: Date;
     updatedAt?: Date;
@@ -53,12 +51,12 @@ export interface IConversation {
 // Simple DTO for creating messages
 export interface ICreateMessageDto {
     conversationId: string;
-    sender: string; // User ID
+    sender: string;
     type: MessageType;
     text?: string;
     propertyId?: string;
-    checkInDate?: string; // ✅ check-in
-    checkOutDate?: string; // ✅ check-out
+    checkInDate?: string;
+    checkOutDate?: string;
     agreedFee?: number;
     bookingFee?: number;
     total?: number;
@@ -67,12 +65,18 @@ export interface ICreateMessageDto {
     manager?: string;
     phone?: string;
     reason?: string;
+    isRead?: boolean;
 }
 
 // DTO for creating conversation
 export interface ICreateConversationDto {
-    participants: string[]; // User IDs
-    propertyId?: string; // Optional property reference
+    participants: string[];
+    propertyId?: string;
+}
+
+export interface IMarkAsReadDto {
+    conversationId: string;
+    messageId: string;
 }
 
 // Query interfaces

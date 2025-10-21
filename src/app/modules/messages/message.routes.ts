@@ -4,9 +4,14 @@ import { messageControllers } from "./message.controllers";
 
 const router = express.Router();
 
+router.get("/unread-count", auth, messageControllers.getTotalUnreadCount);
+
 router.post("/conversations", auth, messageControllers.createConversation);
 router.get("/conversations/my-conversations", auth, messageControllers.getUserConversations);
 router.get("/conversations/:conversationId", auth, messageControllers.getConversationById);
+
+// NEW: Mark all messages in a conversation as read
+router.patch("/conversations/:conversationId/read", auth, messageControllers.markConversationAsRead);
 
 router.post("/messages", auth, messageControllers.sendMessage);
 router.get("/messages/conversation/:conversationId", auth, messageControllers.getConversationMessages);

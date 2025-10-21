@@ -37,12 +37,6 @@ const registerUser = async (data: RegisterInput & { profileImg?: string }) => {
     const createdUser = await UserModel.create(userData);
 
     // Send verification email
-    const verificationUrl = `${process.env.FRONTEND_URL}/verify-email?token=${createdUser.verificationToken}&id=${createdUser._id}`;
-    await sendVerificationEmail({
-        to: createdUser.email,
-        name: createdUser.name,
-        verificationUrl,
-    });
 
     // Generate JWT tokens
     const jwtPayload = {
@@ -57,6 +51,15 @@ const registerUser = async (data: RegisterInput & { profileImg?: string }) => {
     const refreshToken = jwtHelper.generateToken(jwtPayload, config.jwt_refresh_secret as string, config.jwt_refresh_expire as string);
 
     const { password, ...userWithoutPassword } = createdUser.toObject();
+
+    setTimeout(() => {
+        const verificationUrl = `${process.env.FRONTEND_URL}/verify-email?token=${token}&id=${createdUser._id}`;
+        sendVerificationEmail({
+            to: createdUser.email,
+            name: createdUser.name,
+            verificationUrl,
+        }).catch(console.error);
+    }, 0);
 
     return { user: userWithoutPassword, accessToken, refreshToken };
 };

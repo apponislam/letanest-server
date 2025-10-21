@@ -15,6 +15,13 @@ const ratingSchema = new Schema<IRating>(
                 return this.type === RatingType.PROPERTY;
             },
         },
+        hostId: {
+            type: Schema.Types.ObjectId,
+            ref: "User",
+            required: function () {
+                return this.type === RatingType.PROPERTY;
+            },
+        },
         userId: {
             type: Schema.Types.ObjectId,
             ref: "User",
@@ -83,6 +90,15 @@ ratingSchema.index(
     }
 );
 
+// Compound index for property ratings with hostId
+ratingSchema.index(
+    { hostId: 1, userId: 1 },
+    {
+        unique: true,
+        partialFilterExpression: { type: RatingType.PROPERTY },
+    }
+);
+
 // Index for site ratings (one rating per user for site)
 ratingSchema.index(
     { userId: 1 },
@@ -91,5 +107,10 @@ ratingSchema.index(
         partialFilterExpression: { type: RatingType.SITE },
     }
 );
+
+// Index for efficient queries
+ratingSchema.index({ hostId: 1, type: 1 });
+ratingSchema.index({ propertyId: 1, type: 1 });
+ratingSchema.index({ userId: 1, type: 1 });
 
 export const RatingModel = mongoose.model<IRating>("Rating", ratingSchema);
