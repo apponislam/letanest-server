@@ -7,5 +7,6 @@ const router = Router();
 router.get("/stats", auth, dashboardControllers.getDashboardStats);
 router.get("/revenue-chart", auth, dashboardControllers.getRevenueChartData);
 router.get("/property-status", auth, dashboardControllers.getPropertyStatusStats);
+router.get("/site-stats", dashboardControllers.getSiteStats);
 
 export const dashboardRoutes = router;

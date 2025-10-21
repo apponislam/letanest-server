@@ -34,6 +34,20 @@ const getPropertyRatingsController = catchAsync(async (req, res) => {
     });
 });
 
+// Get all ratings for a specific host
+const getHostRatingsController = catchAsync(async (req, res) => {
+    const { hostId } = req.params;
+
+    const ratings = await ratingServices.getHostRatingsService(hostId);
+
+    sendResponse(res, {
+        statusCode: httpStatus.OK,
+        success: true,
+        message: "Host ratings retrieved successfully",
+        data: ratings,
+    });
+});
+
 // Get property rating statistics
 const getPropertyRatingStatsController = catchAsync(async (req, res) => {
     const { propertyId } = req.params;
@@ -48,15 +62,37 @@ const getPropertyRatingStatsController = catchAsync(async (req, res) => {
     });
 });
 
+// Get host rating statistics
+const getHostRatingStatsController = catchAsync(async (req, res) => {
+    const { hostId } = req.params;
+
+    const stats = await ratingServices.getHostRatingStatsService(hostId);
+
+    sendResponse(res, {
+        statusCode: httpStatus.OK,
+        success: true,
+        message: "Host rating statistics retrieved successfully",
+        data: stats,
+    });
+});
+
 // Get all site ratings
 const getSiteRatingsController = catchAsync(async (req, res) => {
-    const ratings = await ratingServices.getSiteRatingsService();
+    const page = parseInt(req.query.page as string) || 1;
+    const limit = parseInt(req.query.limit as string) || 10;
+
+    const { ratings, total } = await ratingServices.getSiteRatingsService(page, limit);
 
     sendResponse(res, {
         statusCode: httpStatus.OK,
         success: true,
         message: "Site ratings retrieved successfully",
         data: ratings,
+        meta: {
+            page,
+            limit,
+            total,
+        },
     });
 });
 
@@ -101,6 +137,21 @@ const getUserSiteRatingController = catchAsync(async (req, res) => {
     });
 });
 
+// Get user's ratings for a specific host
+const getUserHostRatingsController = catchAsync(async (req, res) => {
+    const { hostId } = req.params;
+    const userId = req.user?._id;
+
+    const ratings = await ratingServices.getUserHostRatingsService(userId, hostId);
+
+    sendResponse(res, {
+        statusCode: httpStatus.OK,
+        success: true,
+        message: "User host ratings retrieved successfully",
+        data: ratings,
+    });
+});
+
 // Update a rating
 const updateRatingController = catchAsync(async (req, res) => {
     const { ratingId } = req.params;
@@ -132,11 +183,14 @@ const deleteRatingController = catchAsync(async (req, res) => {
 export const ratingControllers = {
     createRatingController,
     getPropertyRatingsController,
+    getHostRatingsController, // New controller
     getPropertyRatingStatsController,
+    getHostRatingStatsController, // New controller
     getSiteRatingsController,
     getSiteRatingStatsController,
     getUserPropertyRatingController,
     getUserSiteRatingController,
+    getUserHostRatingsController, // New controller
     updateRatingController,
     deleteRatingController,
 };

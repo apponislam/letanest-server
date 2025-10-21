@@ -11,10 +11,10 @@ router.post("/", auth, authorize(["ADMIN", "HOST"]), uploadPropertyFiles, proper
 router.put("/:id", auth, authorize(["ADMIN", "HOST"]), uploadPropertyFiles, propertyControllers.updatePropertyController);
 
 // Anyone authenticated can view single property
-router.get("/:id", auth, propertyControllers.getSinglePropertyController);
+router.get("/:id", propertyControllers.getSinglePropertyController);
 
 // Listing with pagination, search, filter
-router.get("/", auth, propertyControllers.getAllPropertiesController);
+router.get("/", propertyControllers.getAllPropertiesController);
 
 router.get("/admin/published", auth, authorize(["ADMIN"]), propertyControllers.getAllPublishedPropertiesController);
 

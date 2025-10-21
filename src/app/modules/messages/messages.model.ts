@@ -39,6 +39,10 @@ const messageSchema = new Schema<IMessage>(
         manager: String,
         phone: String,
         reason: String,
+        isRead: {
+            type: Boolean,
+            default: false,
+        },
     },
     {
         timestamps: true,
@@ -61,9 +65,15 @@ const conversationSchema = new Schema<IConversation>(
             type: Schema.Types.ObjectId,
             ref: "Message",
         },
-        unreadCount: {
-            type: Number,
-            default: 0,
+        // unreadCount: {
+        //     type: Number,
+        //     default: 0,
+        // },
+        unreadCounts: {
+            // NEW: Per-user unread counts
+            type: Map,
+            of: Number,
+            default: {},
         },
         isActive: {
             type: Boolean,

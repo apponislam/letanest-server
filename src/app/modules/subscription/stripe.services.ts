@@ -620,7 +620,7 @@ export class StripeService {
                 status: account.charges_enabled && account.payouts_enabled ? "verified" : "pending",
             };
 
-            console.log("✅ Account status retrieved:", accountId, status);
+            // console.log("✅ Account status retrieved:", accountId, status);
             return status;
         } catch (error) {
             console.error("Error getting account status:", error);
