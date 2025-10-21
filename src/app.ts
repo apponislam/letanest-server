@@ -10,7 +10,7 @@ import { webhookController } from "./app/modules/subscription/webhook.controller
 const app: Application = express();
 
 const corsOptions = {
-    origin: ["http://localhost:3000", "http://10.10.7.50:3000"],
+    origin: ["http://localhost:3000", "http://10.10.7.50:3000", "http://206.162.244.155:3050"],
     methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization"],
     credentials: true,
