@@ -12,6 +12,7 @@ import { paymentRoutes } from "../modules/payment/payment.routes";
 import { dashboardRoutes } from "../modules/dashboard/dashboard.routes";
 import { ratingRoutes } from "../modules/rating/rating.routes";
 import { contactRoutes } from "../modules/contact/contact.route";
+import { pageConfigRoutes } from "../modules/pages/pages.routes";
 
 const router = express.Router();
 
@@ -67,6 +68,10 @@ const moduleRoutes = [
     {
         path: "/contact",
         route: contactRoutes,
+    },
+    {
+        path: "/page-config",
+        route: pageConfigRoutes,
     },
 ];
 

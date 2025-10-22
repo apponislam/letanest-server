@@ -9,7 +9,7 @@ const router = express.Router();
 
 router.get("/", auth, authorize([roles.ADMIN]), userControllers.getAllUsersController);
 
-// ✅ Admin-only: Get single user
+// Get single user
 router.get("/:id", auth, userControllers.getSingleUserController);
 
 router.patch("/profile", auth, uploadProfileImage, userControllers.updateUserProfileController);
@@ -24,5 +24,8 @@ router.post("/stripe/connect", auth, userControllers.connectStripeAccountControl
 router.get("/stripe/status", auth, userControllers.getStripeAccountStatusController);
 router.get("/stripe/dashboard", auth, userControllers.getStripeDashboardController);
 router.post("/stripe/disconnect", auth, userControllers.disconnectStripeAccountController);
+
+// get me
+router.get("/me/profile", auth, userControllers.getMyProfileController);
 
 export const userRoutes = router;
