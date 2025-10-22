@@ -169,6 +169,23 @@ const disconnectStripeAccountController = catchAsync(async (req: Request, res: R
     });
 });
 
+const getMyProfileController = catchAsync(async (req: Request, res: Response) => {
+    const userId = req.user?._id;
+
+    if (!userId) {
+        throw new ApiError(httpStatus.UNAUTHORIZED, "User not authenticated");
+    }
+
+    const user = await userServices.getMyProfileService(userId);
+
+    sendResponse(res, {
+        statusCode: httpStatus.OK,
+        success: true,
+        message: "User profile retrieved successfully",
+        data: user,
+    });
+});
+
 export const userControllers = {
     getAllUsersController,
     getSingleUserController,
@@ -180,4 +197,6 @@ export const userControllers = {
     getStripeAccountStatusController,
     getStripeDashboardController,
     disconnectStripeAccountController,
+    // get my profile
+    getMyProfileController,
 };

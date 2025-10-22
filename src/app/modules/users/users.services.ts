@@ -296,6 +296,63 @@ const disconnectStripeAccountService = async (userId: string) => {
     };
 };
 
+const getMyProfileService = async (userId: Types.ObjectId): Promise<any> => {
+    const user = await UserModel.findById(userId)
+        .select("-password")
+        .populate({
+            path: "subscriptions.subscription",
+            model: "UserSubscription",
+            populate: {
+                path: "subscription",
+                model: "Subscription",
+                select: "badge",
+            },
+        })
+        .populate({
+            path: "freeTireSub",
+            model: "Subscription",
+            select: "billingPeriod bookingFee level paymentLink type freeBookings listingLimit commission",
+        })
+        .lean();
+
+    if (!user) {
+        throw new ApiError(httpStatus.NOT_FOUND, "User not found");
+    }
+
+    // Return structured profile data
+    return {
+        profile: {
+            _id: user._id,
+            name: user.name,
+            email: user.email,
+            phone: user.phone,
+            profileImg: user.profileImg,
+            gender: user.gender,
+            address: user.address,
+            role: user.role,
+            isActive: user.isActive,
+            createdAt: user.createdAt,
+            updatedAt: user.updatedAt,
+        },
+        subscriptions: {
+            activeSubscriptions: user.subscriptions,
+            freeTier: {
+                used: user.freeTireUsed,
+                expiry: user.freeTireExpiry,
+                subscription: user.freeTireSub,
+                data: user.freeTireData,
+            },
+        },
+        stripe: user.hostStripeAccount
+            ? {
+                  accountId: user.hostStripeAccount.stripeAccountId,
+                  status: user.hostStripeAccount.status,
+                  verifiedAt: user.hostStripeAccount.verifiedAt,
+              }
+            : null,
+    };
+};
+
 export const userServices = {
     getAllUsersService,
     getSingleUserService,
@@ -307,4 +364,7 @@ export const userServices = {
     getStripeAccountStatusService,
     getStripeDashboardService,
     disconnectStripeAccountService,
+
+    // my profile
+    getMyProfileService,
 };
