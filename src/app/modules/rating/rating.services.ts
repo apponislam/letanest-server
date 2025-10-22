@@ -506,6 +506,35 @@ const getAdminRatingStatsService = async (): Promise<{
     };
 };
 
+const checkUserPropertiesRatingService = async (userId: string, propertyIds: string[]): Promise<{ propertyId: string; hasRated: boolean }[]> => {
+    // Filter out undefined/null propertyIds
+    const validPropertyIds = propertyIds.filter((id) => id && mongoose.Types.ObjectId.isValid(id));
+
+    if (validPropertyIds.length === 0) {
+        return [];
+    }
+
+    const ratings = await RatingModel.find({
+        type: RatingType.PROPERTY,
+        userId: new mongoose.Types.ObjectId(userId),
+        propertyId: { $in: validPropertyIds.map((id) => new mongoose.Types.ObjectId(id)) },
+    });
+
+    // Create a map for quick lookup
+    const ratingMap = new Map();
+    ratings.forEach((rating) => {
+        if (rating.propertyId) {
+            ratingMap.set(rating.propertyId.toString(), true);
+        }
+    });
+
+    // Return array with hasRated status for each property
+    return validPropertyIds.map((propertyId) => ({
+        propertyId,
+        hasRated: ratingMap.has(propertyId),
+    }));
+};
+
 export const ratingServices = {
     createRatingService,
     getPropertyRatingsService,
@@ -522,4 +551,7 @@ export const ratingServices = {
     // new for admin
     getAllRatingsForAdminService,
     getAdminRatingStatsService,
+
+    // check rated properties
+    checkUserPropertiesRatingService,
 };
