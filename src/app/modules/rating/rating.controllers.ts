@@ -3,6 +3,7 @@ import { ratingServices } from "./rating.services";
 import catchAsync from "../../../utils/catchAsync";
 import sendResponse from "../../../utils/sendResponse.";
 import { RatingType } from "./rating.interface";
+import ApiError from "../../../errors/ApiError";
 
 // Create a new rating (both property and site)
 const createRatingController = catchAsync(async (req, res) => {
@@ -221,6 +222,28 @@ const getAdminRatingStatsController = catchAsync(async (req, res) => {
     });
 });
 
+const checkUserPropertiesRatingController = catchAsync(async (req, res) => {
+    const userId = req.user?._id;
+    const { propertyIds } = req.body;
+
+    if (!userId) {
+        throw new ApiError(httpStatus.UNAUTHORIZED, "User not authenticated");
+    }
+
+    if (!propertyIds || !Array.isArray(propertyIds)) {
+        throw new ApiError(httpStatus.BAD_REQUEST, "Property IDs array is required");
+    }
+
+    const result = await ratingServices.checkUserPropertiesRatingService(userId.toString(), propertyIds);
+
+    sendResponse(res, {
+        statusCode: httpStatus.OK,
+        success: true,
+        message: "User rating status retrieved successfully",
+        data: result,
+    });
+});
+
 export const ratingControllers = {
     createRatingController,
     getPropertyRatingsController,
@@ -237,4 +260,6 @@ export const ratingControllers = {
     // for new admin purposes
     getAllRatingsForAdminController,
     getAdminRatingStatsController,
+    // check rated properties
+    checkUserPropertiesRatingController,
 };

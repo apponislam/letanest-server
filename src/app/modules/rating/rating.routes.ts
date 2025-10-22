@@ -32,4 +32,6 @@ router.delete("/:ratingId", auth, ratingControllers.deleteRatingController);
 router.get("/admin/all-ratings", auth, ratingControllers.getAllRatingsForAdminController);
 router.get("/admin/rating-stats", auth, ratingControllers.getAdminRatingStatsController);
 
+router.post("/check-user-ratings", auth, ratingControllers.checkUserPropertiesRatingController);
+
 export const ratingRoutes = router;
