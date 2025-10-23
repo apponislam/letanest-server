@@ -333,6 +333,7 @@ const getMyProfileService = async (userId: Types.ObjectId): Promise<any> => {
             isActive: user.isActive,
             createdAt: user.createdAt,
             updatedAt: user.updatedAt,
+            verificationStatus: user.verificationStatus,
         },
         subscriptions: {
             activeSubscriptions: user.subscriptions,

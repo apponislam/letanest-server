@@ -47,7 +47,7 @@ const createPropertyController = catchAsync(async (req: Request, res: Response) 
 });
 
 const updatePropertyController = catchAsync(async (req: Request, res: Response) => {
-    const files = req.files as MulterFiles; // type assertion
+    const files = req.files as MulterFiles;
     const coverPhotoFile = files?.coverPhoto?.[0];
     const photosFiles = files?.photos || [];
 
