@@ -38,7 +38,12 @@ const createPropertyService = async (data: IProperty): Promise<IProperty> => {
 };
 
 const updatePropertyService = async (id: string, data: Partial<IProperty>): Promise<IProperty | null> => {
-    return PropertyModel.findByIdAndUpdate(id, data, { new: true });
+    const updateData = {
+        ...data,
+        status: "pending" as const,
+    };
+
+    return PropertyModel.findByIdAndUpdate(id, updateData, { new: true });
 };
 
 const getSinglePropertyService = async (id: string): Promise<IProperty | null> => {
