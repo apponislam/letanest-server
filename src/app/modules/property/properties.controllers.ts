@@ -200,6 +200,17 @@ const searchMyPublishedPropertiesController = catchAsync(async (req: Request, re
     });
 });
 
+const getMaxRoundedPriceController = catchAsync(async (req: Request, res: Response) => {
+    const maxRoundedPrice = await propertyServices.getMaxRoundedPriceService();
+
+    sendResponse(res, {
+        statusCode: httpStatus.OK,
+        success: true,
+        message: "Maximum rounded price retrieved successfully",
+        data: { maxRoundedPrice },
+    });
+});
+
 export const propertyControllers = {
     createPropertyController,
     updatePropertyController,
@@ -212,4 +223,7 @@ export const propertyControllers = {
     deleteHostProperty,
     getMyPublishedPropertiesController,
     searchMyPublishedPropertiesController,
+
+    // max price
+    getMaxRoundedPriceController,
 };

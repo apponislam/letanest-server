@@ -32,4 +32,6 @@ router.get("/host/my-published-properties", auth, propertyControllers.getMyPubli
 
 router.get("/host/search-published-properties", auth, propertyControllers.searchMyPublishedPropertiesController);
 
+router.get("/property/max-price", propertyControllers.getMaxRoundedPriceController);
+
 export const propertyRoutes = router;

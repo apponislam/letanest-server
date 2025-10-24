@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <title>Admin Payments Report - LetANest</title>
+        <style>
+            * {
+                margin: 0;
+                padding: 0;
+                box-sizing: border-box;
+            }
+            body {
+                font-family: "Helvetica", "Arial", sans-serif;
+                background: white;
+                padding: 20px;
+                color: #333;
+                font-size: 10px;
+                line-height: 1.2;
+            }
+            .report-container {
+                max-width: 1100px;
+                margin: 0 auto;
+            }
+            .header {
+                text-align: center;
+                margin-bottom: 20px;
+                padding-bottom: 15px;
+                border-bottom: 2px solid #c9a94d;
+            }
+            .logo {
+                color: #c9a94d;
+                font-size: 24px;
+                font-weight: bold;
+                margin-bottom: 5px;
+            }
+            .report-title {
+                color: #14213d;
+                font-size: 20px;
+                font-weight: bold;
+                margin-bottom: 5px;
+            }
+            .report-period {
+                color: #666;
+                font-size: 14px;
+                margin-bottom: 10px;
+            }
+            .summary-section {
+                display: grid;
+                grid-template-columns: repeat(3, 1fr);
+                gap: 10px;
+                margin-bottom: 20px;
+            }
+            .summary-card {
+                background: #f8f9fa;
+                padding: 12px;
+                border-radius: 5px;
+                text-align: center;
+                border-left: 4px solid #c9a94d;
+            }
+            .summary-card.main {
+                background: linear-gradient(135deg, #c9a94d 0%, #b8973e 100%);
+                color: white;
+            }
+            .summary-value {
+                font-size: 16px;
+                font-weight: bold;
+                color: #14213d;
+                margin-bottom: 3px;
+            }
+            .summary-card.main .summary-value {
+                color: white;
+                font-size: 18px;
+            }
+            .summary-label {
+                font-size: 10px;
+                color: #666;
+                text-transform: uppercase;
+            }
+            .summary-card.main .summary-label {
+                color: white;
+            }
+            .stats-grid {
+                display: grid;
+                grid-template-columns: repeat(4, 1fr);
+                gap: 8px;
+                margin-bottom: 15px;
+            }
+            .stat-item {
+                background: #f8f9fa;
+                padding: 8px;
+                border-radius: 4px;
+                text-align: center;
+                border: 1px solid #e9ecef;
+            }
+            .stat-value {
+                font-size: 12px;
+                font-weight: bold;
+                color: #14213d;
+                margin-bottom: 2px;
+            }
+            .stat-label {
+                font-size: 8px;
+                color: #666;
+                text-transform: uppercase;
+            }
+            .section-title {
+                font-size: 14px;
+                font-weight: bold;
+                color: #14213d;
+                margin: 15px 0 10px;
+                padding-bottom: 5px;
+                border-bottom: 1px solid #c9a94d;
+            }
+            .report-table {
+                width: 100%;
+                border-collapse: collapse;
+                margin-bottom: 20px;
+                background: white;
+                font-size: 8px;
+            }
+            .report-table th {
+                background: #14213d;
+                color: white;
+                padding: 6px 4px;
+                text-align: left;
+                font-weight: bold;
+                font-size: 7px;
+                border: 1px solid #14213d;
+            }
+            .report-table td {
+                padding: 4px;
+                border: 1px solid #ddd;
+                font-size: 7px;
+                line-height: 1.1;
+            }
+            .report-table tr:nth-child(even) {
+                background: #f8f9fa;
+            }
+            .text-right {
+                text-align: right;
+            }
+            .text-center {
+                text-align: center;
+            }
+            .status-badge {
+                display: inline-block;
+                padding: 2px 4px;
+                border-radius: 8px;
+                font-size: 6px;
+                font-weight: bold;
+                text-transform: uppercase;
+            }
+            .status-completed {
+                background: #d4edda;
+                color: #155724;
+            }
+            .status-pending {
+                background: #fff3cd;
+                color: #856404;
+            }
+            .status-failed {
+                background: #f8d7da;
+                color: #721c24;
+            }
+            .status-processing {
+                background: #cce7ff;
+                color: #004085;
+            }
+            .footer {
+                text-align: center;
+                color: #666;
+                font-size: 8px;
+                margin-top: 20px;
+                padding-top: 10px;
+                border-top: 1px solid #ddd;
+            }
+        </style>
+    </head>
+    <body>
+        <div class="report-container">
+            <!-- Header -->
+            <div class="header">
+                <div class="logo">LetANest</div>
+                <h1 class="report-title">ADMIN PAYMENTS REPORT</h1>
+                <div class="report-period">Period: {{fromDate}} to {{toDate}}</div>
+                <div style="color: #666; font-size: 10px">Generated on: {{reportDate}} at {{reportTime}}</div>
+            </div>
+
+            <!-- Summary Section -->
+            <div class="summary-section">
+                <div class="summary-card main">
+                    <div class="summary-value">£{{totalRevenue}}</div>
+                    <div class="summary-label">Total Revenue</div>
+                </div>
+                <div class="summary-card">
+                    <div class="summary-value">{{totalTransactions}}</div>
+                    <div class="summary-label">Total Transactions</div>
+                </div>
+                <div class="summary-card">
+                    <div class="summary-value">£{{totalCommission}}</div>
+                    <div class="summary-label">Platform Commission</div>
+                </div>
+            </div>
+
+            <!-- Financial Breakdown -->
+            <div class="section-title">Financial Breakdown</div>
+            <div class="stats-grid">
+                <div class="stat-item">
+                    <div class="stat-value">£{{totalBookingFees}}</div>
+                    <div class="stat-label">Booking Fees</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value">£{{totalExtraFees}}</div>
+                    <div class="stat-label">Extra Fees</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value">£{{totalPlatformTotal}}</div>
+                    <div class="stat-label">Owner Total</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value">£{{totalHostEarnings}}</div>
+                    <div class="stat-label">Host Earnings</div>
+                </div>
+            </div>
+
+            <!-- Transactions Table -->
+            <div class="section-title">Transaction Details</div>
+            <table class="report-table">
+                <thead>
+                    <tr>
+                        <th width="3%">#</th>
+                        <th width="12%">Payment ID</th>
+                        <th width="8%">Guest</th>
+                        <th width="8%">Host</th>
+                        <th width="10%">Property</th>
+                        <th width="7%">Amount</th>
+                        <th width="7%">Commission</th>
+                        <th width="7%">Booking Fee</th>
+                        <th width="7%">Host Amount</th>
+                        <th width="6%">Status</th>
+                        <th width="6%">Date</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {{paymentsTable}}
+                </tbody>
+            </table>
+
+            <!-- Footer -->
+            <div class="footer">
+                <p>This is a confidential computer-generated report for administrative use only.</p>
+                <p>
+                    ©
+                    <script>
+                        document.write(new Date().getFullYear());
+                    </script>
+                    LetANest. All rights reserved.
+                </p>
+            </div>
+        </div>
+    </body>
+</html>
