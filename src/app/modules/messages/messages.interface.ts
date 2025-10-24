@@ -50,6 +50,7 @@ export interface IConversation {
 
 // Simple DTO for creating messages
 export interface ICreateMessageDto {
+    skip: boolean;
     conversationId: string;
     sender: string;
     type: MessageType;
