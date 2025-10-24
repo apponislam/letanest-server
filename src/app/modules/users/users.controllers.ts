@@ -186,6 +186,17 @@ const getMyProfileController = catchAsync(async (req: Request, res: Response) =>
     });
 });
 
+const getRandomAdminController = catchAsync(async (req: Request, res: Response) => {
+    const admin = await userServices.getRandomAdminService();
+
+    sendResponse(res, {
+        statusCode: admin ? httpStatus.OK : httpStatus.NOT_FOUND,
+        success: !!admin,
+        message: admin ? "Random admin retrieved successfully" : "No admin found",
+        data: admin || null,
+    });
+});
+
 export const userControllers = {
     getAllUsersController,
     getSingleUserController,
@@ -199,4 +210,6 @@ export const userControllers = {
     disconnectStripeAccountController,
     // get my profile
     getMyProfileController,
+    // randorm admin
+    getRandomAdminController,
 };

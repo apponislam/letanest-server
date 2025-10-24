@@ -354,6 +354,12 @@ const getMyProfileService = async (userId: Types.ObjectId): Promise<any> => {
     };
 };
 
+const getRandomAdminService = async (): Promise<any> => {
+    const admin = await UserModel.aggregate([{ $match: { role: "ADMIN", isActive: true } }, { $sample: { size: 1 } }, { $project: { _id: 1, name: 1, email: 1, phone: 1, profileImg: 1, role: 1 } }]);
+
+    return admin.length > 0 ? admin[0] : null;
+};
+
 export const userServices = {
     getAllUsersService,
     getSingleUserService,
@@ -368,4 +374,7 @@ export const userServices = {
 
     // my profile
     getMyProfileService,
+
+    // random admin
+    getRandomAdminService,
 };

@@ -59,6 +59,19 @@ const sendMessage = catchAsync(async (req, res) => {
     });
 });
 
+const sendMessageAuto = catchAsync(async (req, res) => {
+    const message = await messageServices.createMessage({
+        ...req.body,
+    });
+
+    sendResponse(res, {
+        success: true,
+        statusCode: httpStatus.CREATED,
+        message: "Message sent successfully",
+        data: message,
+    });
+});
+
 const getConversationMessages = catchAsync(async (req, res) => {
     const { conversationId } = req.params;
     const userId = req.user._id;
@@ -176,6 +189,7 @@ export const messageControllers = {
     getUserConversations,
     getConversationById,
     sendMessage,
+    sendMessageAuto,
     getConversationMessages,
     getMessageById,
     markAsRead,
