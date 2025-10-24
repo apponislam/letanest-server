@@ -63,6 +63,7 @@ export interface IPropertyQuery {
     minPrice?: number;
     maxPrice?: number;
     propertyType?: string;
+    propertyTypes?: string | string[];
     guests?: number;
     bedrooms?: number;
     availableFrom?: string;

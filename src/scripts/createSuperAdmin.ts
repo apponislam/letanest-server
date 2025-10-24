@@ -1,4 +1,3 @@
-import mongoose from "mongoose";
 import bcrypt from "bcrypt";
 import { UserModel } from "../app/modules/auth/auth.model";
 import config from "../app/config";

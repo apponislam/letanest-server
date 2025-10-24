@@ -53,7 +53,7 @@ const getSinglePropertyService = async (id: string): Promise<IProperty | null> =
 };
 
 const getAllPropertiesService = async (query: IPropertyQuery): Promise<IPropertyListResponse> => {
-    const { page = 1, limit = 10, search, status = "published", minPrice, maxPrice, propertyType, guests, bedrooms, availableFrom, availableTo, location, amenities } = query;
+    const { page = 1, limit = 10, search, status = "published", minPrice, maxPrice, propertyType, propertyTypes, guests, bedrooms, availableFrom, availableTo, location, amenities } = query;
 
     const filter: Record<string, any> = {
         isDeleted: false,
@@ -72,8 +72,32 @@ const getAllPropertiesService = async (query: IPropertyQuery): Promise<IProperty
         if (maxPrice !== undefined) filter.price.$lte = Number(maxPrice);
     }
 
-    // Property type filter
-    if (propertyType) {
+    // // Property type filter
+    // if (propertyType) {
+    //     filter.propertyType = { $regex: propertyType, $options: "i" };
+    // }
+
+    // Property type filter - SUPPORT BOTH SINGLE AND MULTIPLE
+    if (propertyTypes) {
+        // Handle comma-separated property types (from multiple selection)
+        let propertyTypesArray: string[];
+
+        if (typeof propertyTypes === "string") {
+            propertyTypesArray = propertyTypes.split(",").map((type) => type.trim());
+        } else if (Array.isArray(propertyTypes)) {
+            propertyTypesArray = propertyTypes;
+        } else {
+            propertyTypesArray = [];
+        }
+
+        // Filter out empty strings and create case-insensitive regex patterns
+        const propertyTypesRegex = propertyTypesArray.filter((type) => type.trim() !== "").map((type) => new RegExp(type.trim(), "i"));
+
+        if (propertyTypesRegex.length > 0) {
+            filter.propertyType = { $in: propertyTypesRegex };
+        }
+    } else if (propertyType) {
+        // Fallback to single property type for backward compatibility
         filter.propertyType = { $regex: propertyType, $options: "i" };
     }
 
@@ -140,7 +164,7 @@ const getAllPropertiesService = async (query: IPropertyQuery): Promise<IProperty
         }
     }
 
-    console.log("Final Filter:", JSON.stringify(filter, null, 2));
+    // console.log("Final Filter:", JSON.stringify(filter, null, 2));
 
     const skip = (Number(page) - 1) * Number(limit);
 
@@ -379,6 +403,30 @@ const searchMyPublishedPropertiesService = async (
     };
 };
 
+const getMaxRoundedPriceService = async (): Promise<number> => {
+    // Find the maximum price from all published properties
+    const maxPriceProperty = await PropertyModel.findOne(
+        {
+            isDeleted: false,
+            status: "published",
+        },
+        { price: 1 }
+    )
+        .sort({ price: -1 })
+        .limit(1);
+
+    if (!maxPriceProperty || !maxPriceProperty.price) {
+        return 10000; // Default max price if no properties found
+    }
+
+    const maxPrice = maxPriceProperty.price;
+
+    // Round up to nearest thousand
+    const roundedMaxPrice = Math.ceil(maxPrice / 1000) * 1000;
+
+    return roundedMaxPrice;
+};
+
 export const propertyServices = {
     createPropertyService,
     updatePropertyService,
@@ -391,4 +439,7 @@ export const propertyServices = {
     deleteHostPropertyService,
     getMyPublishedPropertiesService,
     searchMyPublishedPropertiesService,
+
+    // max price
+    getMaxRoundedPriceService,
 };

@@ -25,14 +25,17 @@ const createRatingController = catchAsync(async (req, res) => {
 // Get all ratings for a specific property
 const getPropertyRatingsController = catchAsync(async (req, res) => {
     const { propertyId } = req.params;
+    const page = parseInt(req.query.page as string) || 1;
+    const limit = parseInt(req.query.limit as string) || 10;
 
-    const ratings = await ratingServices.getPropertyRatingsService(propertyId);
+    const { ratings, total } = await ratingServices.getPropertyRatingsService(propertyId, page, limit);
 
     sendResponse(res, {
         statusCode: httpStatus.OK,
         success: true,
         message: "Property ratings retrieved successfully",
         data: ratings,
+        meta: { page, limit, total },
     });
 });
 

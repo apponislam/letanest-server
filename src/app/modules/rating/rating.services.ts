@@ -111,17 +111,27 @@ const createRatingService = async (ratingData: CreateRatingData): Promise<IRatin
 };
 
 // Get all ratings for a specific property
-const getPropertyRatingsService = async (propertyId: string): Promise<IRating[]> => {
-    const ratings = await RatingModel.find({
-        propertyId: new mongoose.Types.ObjectId(propertyId),
-        type: RatingType.PROPERTY,
-    })
-        .populate("userId", userPopulationFields)
-        .populate("propertyId", propertyPopulationFields)
-        .populate("hostId", userPopulationFields)
-        .sort({ createdAt: -1 });
+const getPropertyRatingsService = async (propertyId: string, page: number = 1, limit: number = 10): Promise<{ ratings: IRating[]; total: number }> => {
+    const skip = (page - 1) * limit;
 
-    return ratings;
+    const [ratings, total] = await Promise.all([
+        RatingModel.find({
+            propertyId: new mongoose.Types.ObjectId(propertyId),
+            type: RatingType.PROPERTY,
+        })
+            .populate("userId", userPopulationFields)
+            .populate("propertyId", propertyPopulationFields)
+            .populate("hostId", userPopulationFields)
+            .sort({ createdAt: -1 })
+            .skip(skip)
+            .limit(limit),
+        RatingModel.countDocuments({
+            propertyId: new mongoose.Types.ObjectId(propertyId),
+            type: RatingType.PROPERTY,
+        }),
+    ]);
+
+    return { ratings, total };
 };
 
 // Get all ratings for a specific host
