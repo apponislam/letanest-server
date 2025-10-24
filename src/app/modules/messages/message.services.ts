@@ -14,6 +14,10 @@ const createConversation = async (conversationData: ICreateConversationDto) => {
     });
 
     if (existingConversation) {
+        await Conversation.findByIdAndUpdate(existingConversation._id, {
+            updatedAt: new Date(),
+        });
+
         return await Conversation.findById(existingConversation._id).populate("participants", "name profileImg email phone role").populate("lastMessage");
     }
 

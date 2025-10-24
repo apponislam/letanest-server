@@ -14,6 +14,7 @@ router.get("/conversations/:conversationId", auth, messageControllers.getConvers
 router.patch("/conversations/:conversationId/read", auth, messageControllers.markConversationAsRead);
 
 router.post("/messages", auth, messageControllers.sendMessage);
+router.post("/messages/auto", messageControllers.sendMessageAuto);
 router.get("/messages/conversation/:conversationId", auth, messageControllers.getConversationMessages);
 router.get("/messages/:messageId", auth, messageControllers.getMessageById);
 router.patch("/messages/:messageId/read", auth, messageControllers.markAsRead);

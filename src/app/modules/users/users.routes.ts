@@ -28,4 +28,6 @@ router.post("/stripe/disconnect", auth, userControllers.disconnectStripeAccountC
 // get me
 router.get("/me/profile", auth, userControllers.getMyProfileController);
 
+router.get("/random/admin", auth, userControllers.getRandomAdminController);
+
 export const userRoutes = router;
