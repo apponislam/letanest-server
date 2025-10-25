@@ -52,12 +52,6 @@ const registerUser = (data) => __awaiter(void 0, void 0, void 0, function* () {
     // Create user
     const createdUser = yield auth_model_1.UserModel.create(userData);
     // Send verification email
-    const verificationUrl = `${process.env.FRONTEND_URL}/verify-email?token=${createdUser.verificationToken}&id=${createdUser._id}`;
-    yield (0, emailVerifyMail_1.sendVerificationEmail)({
-        to: createdUser.email,
-        name: createdUser.name,
-        verificationUrl,
-    });
     // Generate JWT tokens
     const jwtPayload = {
         _id: createdUser._id,
@@ -69,6 +63,14 @@ const registerUser = (data) => __awaiter(void 0, void 0, void 0, function* () {
     const accessToken = jwtHelpers_1.jwtHelper.generateToken(jwtPayload, config_1.default.jwt_access_secret, config_1.default.jwt_access_expire);
     const refreshToken = jwtHelpers_1.jwtHelper.generateToken(jwtPayload, config_1.default.jwt_refresh_secret, config_1.default.jwt_refresh_expire);
     const _a = createdUser.toObject(), { password } = _a, userWithoutPassword = __rest(_a, ["password"]);
+    setTimeout(() => {
+        const verificationUrl = `${config_1.default.client_url}/verify-email?token=${token}&id=${createdUser._id}`;
+        (0, emailVerifyMail_1.sendVerificationEmail)({
+            to: createdUser.email,
+            name: createdUser.name,
+            verificationUrl,
+        }).catch(console.error);
+    }, 0);
     return { user: userWithoutPassword, accessToken, refreshToken };
 });
 const resendVerificationEmailService = (userId) => __awaiter(void 0, void 0, void 0, function* () {
@@ -132,7 +134,7 @@ const getMeService = (userId) => __awaiter(void 0, void 0, void 0, function* () 
 const refreshToken = (token) => __awaiter(void 0, void 0, void 0, function* () {
     if (!token)
         throw new ApiError_1.default(http_status_1.default.UNAUTHORIZED, "Refresh token is required");
-    const decoded = jsonwebtoken_1.default.verify(token, process.env.JWT_REFRESH_SECRET);
+    const decoded = jsonwebtoken_1.default.verify(token, config_1.default.jwt_refresh_secret);
     const user = yield auth_model_1.UserModel.findById(decoded._id);
     if (!user)
         throw new ApiError_1.default(http_status_1.default.NOT_FOUND, "User not found");
@@ -143,7 +145,7 @@ const refreshToken = (token) => __awaiter(void 0, void 0, void 0, function* () {
         profileImg: user.profileImg,
         role: user.role,
     };
-    const newAccessToken = jwtHelpers_1.jwtHelper.generateToken(jwtPayload, config_1.default.jwt_refresh_secret, config_1.default.jwt_refresh_expire);
+    const newAccessToken = jwtHelpers_1.jwtHelper.generateToken(jwtPayload, config_1.default.jwt_access_secret, config_1.default.jwt_access_expire);
     const _a = user.toObject(), { password } = _a, userWithoutPassword = __rest(_a, ["password"]);
     return { accessToken: newAccessToken, user: userWithoutPassword };
 });

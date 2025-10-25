@@ -3,140 +3,226 @@
     <head>
         <meta charset="UTF-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-        <title>Letanest backend server</title>
-        <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet" />
+        <title>Letanest Server</title>
         <style>
-            /* Reset & base styles */
             * {
                 margin: 0;
                 padding: 0;
                 box-sizing: border-box;
             }
+
             body {
-                font-family: "Inter", sans-serif;
-                background: linear-gradient(135deg, #667eea, #764ba2);
-                color: #fff;
-                min-height: 100vh;
+                height: 100vh;
                 display: flex;
-                flex-direction: column;
-            }
-            header {
-                padding: 2rem;
-                text-align: center;
-                background: rgba(0, 0, 0, 0.2);
-                box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
-            }
-            header h1 {
-                font-size: 2.5rem;
-                font-weight: 700;
-            }
-            header p {
-                margin-top: 0.5rem;
-                font-size: 1.2rem;
-                color: #e0e0e0;
-            }
-            main {
-                flex: 1;
-                display: flex;
-                flex-direction: column;
-                align-items: center;
                 justify-content: center;
-                padding: 2rem;
+                align-items: center;
+                background: linear-gradient(135deg, #14213d 0%, #1a2a4a 100%);
+                color: #c9a94d;
+                font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
                 text-align: center;
+                overflow: hidden;
             }
-            main h2 {
-                font-size: 2rem;
-                margin-bottom: 1rem;
-            }
-            main p {
-                font-size: 1.1rem;
+
+            .container {
                 max-width: 600px;
-                line-height: 1.6;
-                color: #f0f0f0;
+                padding: 2rem;
             }
-            footer {
-                text-align: center;
-                padding: 1rem;
-                background: rgba(0, 0, 0, 0.2);
-                font-size: 0.9rem;
+
+            .logo {
+                font-size: 4rem;
+                margin-bottom: 1rem;
+                animation: float 3s ease-in-out infinite;
             }
-            .btn {
-                display: inline-block;
-                margin-top: 1.5rem;
-                padding: 0.75rem 1.5rem;
-                font-size: 1rem;
+
+            @keyframes float {
+                0%,
+                100% {
+                    transform: translateY(0px);
+                }
+                50% {
+                    transform: translateY(-10px);
+                }
+            }
+
+            h1 {
+                font-size: 3rem;
+                margin-bottom: 1rem;
+                font-weight: 700;
+                background: linear-gradient(135deg, #c9a94d, #ffd700);
+                -webkit-background-clip: text;
+                -webkit-text-fill-color: transparent;
+                background-clip: text;
+            }
+
+            .status {
+                display: inline-flex;
+                align-items: center;
+                gap: 0.5rem;
+                background: rgba(201, 169, 77, 0.1);
+                border: 1px solid #c9a94d;
+                padding: 0.5rem 1.5rem;
+                border-radius: 50px;
+                margin-bottom: 2rem;
                 font-weight: 600;
-                color: #fff;
-                background: #ff6b6b;
-                border-radius: 8px;
-                text-decoration: none;
-                transition: background 0.3s ease;
             }
+
+            .status::before {
+                content: "";
+                width: 8px;
+                height: 8px;
+                background: #4caf50;
+                border-radius: 50%;
+                animation: pulse 2s infinite;
+            }
+
+            @keyframes pulse {
+                0%,
+                100% {
+                    opacity: 1;
+                }
+                50% {
+                    opacity: 0.5;
+                }
+            }
+
+            .description {
+                font-size: 1.2rem;
+                line-height: 1.6;
+                margin-bottom: 2.5rem;
+                color: rgba(201, 169, 77, 0.9);
+            }
+
+            .features {
+                display: grid;
+                grid-template-columns: repeat(2, 1fr);
+                gap: 1rem;
+                margin-bottom: 2.5rem;
+            }
+
+            .feature {
+                background: rgba(201, 169, 77, 0.05);
+                border: 1px solid rgba(201, 169, 77, 0.2);
+                padding: 1rem;
+                border-radius: 12px;
+                transition: transform 0.3s ease;
+            }
+
+            .feature:hover {
+                transform: translateY(-2px);
+                border-color: #c9a94d;
+            }
+
+            .feature-icon {
+                font-size: 1.5rem;
+                margin-bottom: 0.5rem;
+            }
+
+            .feature-text {
+                font-size: 0.9rem;
+                color: rgba(201, 169, 77, 0.8);
+            }
+
+            .actions {
+                display: flex;
+                gap: 1rem;
+                justify-content: center;
+            }
+
+            .btn {
+                background: #c9a94d;
+                color: #14213d;
+                padding: 1rem 2rem;
+                text-decoration: none;
+                border-radius: 12px;
+                font-weight: 600;
+                transition: all 0.3s ease;
+                border: 2px solid transparent;
+            }
+
             .btn:hover {
-                background: #ff5252;
+                background: transparent;
+                color: #c9a94d;
+                border-color: #c9a94d;
+                transform: translateY(-2px);
+            }
+
+            .btn-secondary {
+                background: transparent;
+                color: #c9a94d;
+                border-color: #c9a94d;
+            }
+
+            .btn-secondary:hover {
+                background: #c9a94d;
+                color: #14213d;
+            }
+
+            /* Background animation */
+            .bg-pattern {
+                position: absolute;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                background: radial-gradient(circle at 20% 80%, rgba(201, 169, 77, 0.1) 0%, transparent 50%), radial-gradient(circle at 80% 20%, rgba(201, 169, 77, 0.05) 0%, transparent 50%), radial-gradient(circle at 40% 40%, rgba(201, 169, 77, 0.08) 0%, transparent 50%);
+                z-index: -1;
+            }
+
+            @media (max-width: 768px) {
+                .container {
+                    padding: 1rem;
+                }
+
+                h1 {
+                    font-size: 2.2rem;
+                }
+
+                .features {
+                    grid-template-columns: 1fr;
+                }
+
+                .actions {
+                    flex-direction: column;
+                    align-items: center;
+                }
+
+                .btn {
+                    width: 100%;
+                    max-width: 250px;
+                }
             }
         </style>
     </head>
     <body>
-        <header>
-            <h1>🚀 Welcome to My Server</h1>
-            <p>Your backend is running smoothly!</p>
-        </header>
-        <main>
-            <h2>Server is Live</h2>
-            <p>This server template is ready to handle your API requests, file uploads, authentication, and more. Use this page as a friendly landing page to check that everything is running correctly.</p>
-            <a href="/api" class="btn">Go to API</a>
-        </main>
-        <footer>&copy; 2025 My Server. All rights reserved.</footer>
-        <script src="https://cdn.jsdelivr.net/npm/socket.io-client@4.8.1/dist/socket.io.min.js"></script>
+        <div class="bg-pattern"></div>
+        <div class="container">
+            <div class="logo">🏠</div>
+            <h1>Letanest Server</h1>
 
-        <script>
-            const userId = "68c2150728ab5befa45047f7"; // replace with your actual user ID
-            const socket = io("http://localhost:5000");
+            <div class="status">
+                <span>Server Running</span>
+            </div>
 
-            socket.on("connect", () => {
-                console.log("✅ Connected to Socket.IO server:", socket.id);
+            <p class="description">Your backend server is live and ready to handle property management, bookings, payments, and user authentication with optimal performance.</p>
 
-                // Join personal room
-                socket.emit("joinRoom", userId);
-                console.log("📥 Joining room for user:", userId);
-
-                // Update location every 5 seconds
-                setInterval(() => {
-                    if (navigator.geolocation) {
-                        navigator.geolocation.getCurrentPosition(
-                            (position) => {
-                                const latitude = position.coords.latitude;
-                                const longitude = position.coords.longitude;
-                                const speed = position.coords.speed ?? 0;
-                                const heading = position.coords.heading ?? 0;
-
-                                socket.emit("updateLocation", { userId, latitude, longitude, speed, heading });
-                                console.log("📡 Sent real location update:", { latitude, longitude, speed, heading });
-                            },
-                            (err) => {
-                                console.error("❌ Geolocation error:", err);
-                            }
-                        );
-                    } else {
-                        console.error("❌ Geolocation not supported by this browser.");
-                    }
-                }, 5000);
-            });
-
-            // Listen for all users' location updates
-            socket.on("locationUpdated", (data) => {
-                console.log("🌍 All users' locations:", data);
-            });
-
-            // Listen for distances from this user to all other users
-            socket.on("usersDistance", (distances) => {
-                console.log("📏 Distances from me to all other users:", distances);
-            });
-
-            socket.on("disconnect", () => {
-                console.log("❌ Disconnected from server");
-            });
-        </script>
+            <div class="features">
+                <div class="feature">
+                    <div class="feature-icon">🔐</div>
+                    <div class="feature-text">Secure Authentication</div>
+                </div>
+                <div class="feature">
+                    <div class="feature-icon">🏘️</div>
+                    <div class="feature-text">Property Management</div>
+                </div>
+                <div class="feature">
+                    <div class="feature-icon">💳</div>
+                    <div class="feature-text">Payment Processing</div>
+                </div>
+                <div class="feature">
+                    <div class="feature-icon">⚡</div>
+                    <div class="feature-text">High Performance</div>
+                </div>
+            </div>
+        </div>
     </body>
 </html>

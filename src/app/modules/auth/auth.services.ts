@@ -74,8 +74,10 @@ const resendVerificationEmailService = async (userId: string) => {
     user.verificationTokenExpiry = expiry;
     await user.save();
 
-    const verificationUrl = `${process.env.FRONTEND_URL}/verify-email?token=${token}&id=${user._id}`;
-    await sendVerificationEmail({ to: user.email, name: user.name, verificationUrl });
+    setTimeout(() => {
+        const verificationUrl = `${config.client_url}/verify-email?token=${token}&id=${user._id}`;
+        sendVerificationEmail({ to: user.email, name: user.name, verificationUrl }).catch(console.error);
+    }, 0);
 
     return { email: user.email, sent: true };
 };
@@ -165,7 +167,9 @@ const requestPasswordResetOtp = async (email: string) => {
     user.resetPasswordOtpExpiry = expiry;
     await user.save();
 
-    await sendOtpEmail({ to: user.email, name: user.name, otp });
+    process.nextTick(() => {
+        sendOtpEmail({ to: user.email, name: user.name, otp }).catch(console.error);
+    });
     return { message: "An OTP has been sent to your email" };
 };
 
@@ -195,7 +199,10 @@ const resendPasswordResetOtp = async (email: string) => {
     user.resetPasswordOtpExpiry = expiry;
     await user.save();
 
-    await sendOtpEmail({ to: user.email, name: user.name, otp });
+    process.nextTick(() => {
+        sendOtpEmail({ to: user.email, name: user.name, otp }).catch(console.error);
+    });
+
     return { message: "A new OTP has been sent to your email" };
 };
 

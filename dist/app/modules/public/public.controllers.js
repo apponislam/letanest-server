@@ -48,9 +48,21 @@ const getTermsByTargetController = (0, catchAsync_1.default)((req, res) => __awa
     const terms = yield public_services_1.termsService.getTermsByTargetService(req.params.target);
     (0, sendResponse_1.default)(res, { statusCode: http_status_1.default.OK, success: true, message: `Terms & Conditions for ${req.params.target} retrieved successfully`, data: terms });
 }));
-const getPropertyTermsController = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    const term = yield public_services_1.termsService.getPropertyTermsService(req.params.propertyId);
-    (0, sendResponse_1.default)(res, { statusCode: http_status_1.default.OK, success: true, message: "Property-specific Terms & Conditions retrieved successfully", data: term });
+// const getPropertyTermsController = catchAsync(async (req, res) => {
+//     const term = await termsService.getPropertyTermsService(req.params.propertyId);
+//     sendResponse(res, { statusCode: httpStatus.OK, success: true, message: "Property-specific Terms & Conditions retrieved successfully", data: term });
+// });
+const getMyDefaultHostTermsController = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    var _a;
+    if (!((_a = req.user) === null || _a === void 0 ? void 0 : _a._id))
+        throw new Error("Unauthorized: user not logged in");
+    const result = yield public_services_1.termsService.getMyDefaultHostTermsService(req.user._id);
+    (0, sendResponse_1.default)(res, {
+        statusCode: http_status_1.default.OK,
+        success: true,
+        message: "Default Host Terms & Conditions retrieved successfully",
+        data: result,
+    });
 }));
 exports.termsController = {
     createTermsController,
@@ -60,5 +72,6 @@ exports.termsController = {
     updateTermController,
     deleteTermController,
     getTermsByTargetController,
-    getPropertyTermsController,
+    // getPropertyTermsController,
+    getMyDefaultHostTermsController,
 };

@@ -53,6 +53,8 @@ export interface IProperty extends IPropertyStep1, IPropertyStep2, IPropertyStep
     updatedAt?: Date;
     status?: "pending" | "published" | "rejected" | "hidden";
     isDeleted?: boolean;
+    featured?: boolean;
+    trending?: boolean;
 }
 
 export interface IPropertyQuery {
@@ -70,13 +72,15 @@ export interface IPropertyQuery {
     availableTo?: string;
     location?: string;
     amenities?: string | string[];
+    rating?: string;
+    type?: "featured" | "trending";
 }
 
 export interface IPropertyMeta {
     total: number;
     page: number;
     limit: number;
-    totalPages: number;
+    // totalPages: number;
     totalAmount?: number;
 }
 

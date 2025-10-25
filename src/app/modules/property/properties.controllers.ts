@@ -4,6 +4,7 @@ import httpStatus from "http-status";
 import sendResponse from "../../../utils/sendResponse.";
 import { propertyServices } from "./properties.services";
 import { IProperty, IPropertyQuery } from "./properties.interface";
+import ApiError from "../../../errors/ApiError";
 
 interface MulterFiles {
     coverPhoto?: Express.Multer.File[];
@@ -211,6 +212,40 @@ const getMaxRoundedPriceController = catchAsync(async (req: Request, res: Respon
     });
 });
 
+const toggleFeaturedStatusController = catchAsync(async (req: Request, res: Response) => {
+    const { id } = req.params;
+
+    const result = await propertyServices.toggleFeaturedStatusService(id);
+
+    if (!result) {
+        throw new ApiError(httpStatus.NOT_FOUND, "Property not found");
+    }
+
+    sendResponse(res, {
+        statusCode: httpStatus.OK,
+        success: true,
+        message: `Property ${result.featured ? "set as" : "removed from"} featured successfully`,
+        data: result,
+    });
+});
+
+const toggleTrendingStatusController = catchAsync(async (req: Request, res: Response) => {
+    const { id } = req.params;
+
+    const result = await propertyServices.toggleTrendingStatusService(id);
+
+    if (!result) {
+        throw new ApiError(httpStatus.NOT_FOUND, "Property not found");
+    }
+
+    sendResponse(res, {
+        statusCode: httpStatus.OK,
+        success: true,
+        message: `Property ${result.trending ? "set as" : "removed from"} trending successfully`,
+        data: result,
+    });
+});
+
 export const propertyControllers = {
     createPropertyController,
     updatePropertyController,
@@ -226,4 +261,8 @@ export const propertyControllers = {
 
     // max price
     getMaxRoundedPriceController,
+
+    // Toggle
+    toggleFeaturedStatusController,
+    toggleTrendingStatusController,
 };
