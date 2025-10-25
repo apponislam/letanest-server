@@ -52,6 +52,14 @@ const PropertySchema = new Schema<IProperty>(
             default: "pending",
         },
         isDeleted: { type: Boolean, default: false },
+        featured: {
+            type: Boolean,
+            default: null,
+        },
+        trending: {
+            type: Boolean,
+            default: null,
+        },
     },
     {
         timestamps: true,

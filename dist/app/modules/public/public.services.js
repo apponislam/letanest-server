@@ -51,7 +51,6 @@ const createTermsService = (data, userId) => __awaiter(void 0, void 0, void 0, f
             throw new ApiError_1.default(http_status_1.default.BAD_REQUEST, `Admin T&C for ${finalData.target} already exists`);
         }
     }
-    // ... rest of your host logic
     console.log("✅ Creating new terms with final data:", finalData);
     return public_model_1.TermsAndConditionsModel.create(finalData);
 });
@@ -82,11 +81,20 @@ const deleteTermService = (id) => __awaiter(void 0, void 0, void 0, function* ()
 const getTermsByTargetService = (target) => __awaiter(void 0, void 0, void 0, function* () {
     return public_model_1.TermsAndConditionsModel.find({ target }).populate("createdBy", "name email");
 });
-const getPropertyTermsService = (propertyId) => __awaiter(void 0, void 0, void 0, function* () {
-    const term = yield public_model_1.TermsAndConditionsModel.findOne({ propertyId }).populate("createdBy", "name email");
-    if (!term)
-        throw new ApiError_1.default(http_status_1.default.NOT_FOUND, "Property-specific T&C not found");
-    return term;
+// const getPropertyTermsService = async (propertyId: string) => {
+//     const term = await TermsAndConditionsModel.findOne({ propertyId }).populate("createdBy", "name email");
+//     if (!term) throw new ApiError(httpStatus.NOT_FOUND, "Property-specific T&C not found");
+//     return term;
+// };
+const getMyDefaultHostTermsService = (userId) => __awaiter(void 0, void 0, void 0, function* () {
+    const defaultTerms = yield public_model_1.TermsAndConditionsModel.findOne({
+        hostTarget: "default",
+        createdBy: userId,
+    }).select("_id createdBy");
+    if (!defaultTerms) {
+        throw new ApiError_1.default(http_status_1.default.NOT_FOUND, "Default host terms and conditions not found for this user");
+    }
+    return defaultTerms;
 });
 exports.termsService = {
     createTermsService,
@@ -96,5 +104,6 @@ exports.termsService = {
     updateTermService,
     deleteTermService,
     getTermsByTargetService,
-    getPropertyTermsService,
+    // getPropertyTermsService,
+    getMyDefaultHostTermsService,
 };

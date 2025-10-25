@@ -17,14 +17,14 @@ const config_1 = __importDefault(require("./app/config"));
 const mongoose_1 = __importDefault(require("mongoose"));
 const http_1 = __importDefault(require("http"));
 const createSuperAdmin_1 = __importDefault(require("./scripts/createSuperAdmin"));
-const socketHelper_1 = require("./socket/socketHelper");
+const socket_1 = require("./socket/socket");
 let server;
 function main() {
     return __awaiter(this, void 0, void 0, function* () {
         try {
             yield mongoose_1.default.connect(config_1.default.mongodb_url);
             server = http_1.default.createServer(app_1.default);
-            (0, socketHelper_1.initSocket)(server);
+            (0, socket_1.initSocket)(server);
             (0, createSuperAdmin_1.default)();
             // server.listen(Number(config.port), config.ip || "0.0.0.0", () => {
             //     console.log(`✅ App listening on port ${config.port}`);

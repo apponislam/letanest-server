@@ -16,10 +16,12 @@ router.get("/:id", propertyControllers.getSinglePropertyController);
 // Listing with pagination, search, filter
 router.get("/", propertyControllers.getAllPropertiesController);
 
-router.get("/admin/published", auth, authorize(["ADMIN"]), propertyControllers.getAllPublishedPropertiesController);
+router.get("/admin/published", auth, propertyControllers.getAllPublishedPropertiesController);
 
 router.get("/admin/all", auth, authorize(["ADMIN"]), propertyControllers.getAllNonPublishedPropertiesController);
 
+router.patch("/:id/toggle-featured", auth, authorize(["ADMIN"]), propertyControllers.toggleFeaturedStatusController);
+router.patch("/:id/toggle-trending", auth, authorize(["ADMIN"]), propertyControllers.toggleTrendingStatusController);
 router.patch("/:id/status", auth, authorize(["ADMIN"]), propertyControllers.changePropertyStatusController);
 
 // Host
