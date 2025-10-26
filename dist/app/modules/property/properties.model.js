@@ -90,6 +90,14 @@ const PropertySchema = new mongoose_1.Schema({
         default: "pending",
     },
     isDeleted: { type: Boolean, default: false },
+    featured: {
+        type: Boolean,
+        default: null,
+    },
+    trending: {
+        type: Boolean,
+        default: null,
+    },
 }, {
     timestamps: true,
     versionKey: false,
