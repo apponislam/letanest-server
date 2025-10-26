@@ -67,17 +67,11 @@ const getTermsByTargetService = async (target: string) => {
     return TermsAndConditionsModel.find({ target }).populate("createdBy", "name email");
 };
 
-// const getPropertyTermsService = async (propertyId: string) => {
-//     const term = await TermsAndConditionsModel.findOne({ propertyId }).populate("createdBy", "name email");
-//     if (!term) throw new ApiError(httpStatus.NOT_FOUND, "Property-specific T&C not found");
-//     return term;
-// };
-
 const getMyDefaultHostTermsService = async (userId: string) => {
     const defaultTerms = await TermsAndConditionsModel.findOne({
         hostTarget: "default",
         createdBy: userId,
-    }).select("_id createdBy");
+    });
 
     if (!defaultTerms) {
         throw new ApiError(httpStatus.NOT_FOUND, "Default host terms and conditions not found for this user");
