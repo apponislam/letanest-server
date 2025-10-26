@@ -17,6 +17,7 @@ const catchAsync_1 = __importDefault(require("../../../utils/catchAsync"));
 const http_status_1 = __importDefault(require("http-status"));
 const sendResponse_1 = __importDefault(require("../../../utils/sendResponse."));
 const properties_services_1 = require("./properties.services");
+const ApiError_1 = __importDefault(require("../../../errors/ApiError"));
 const createPropertyController = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     var _a, _b;
     const files = req.files;
@@ -181,6 +182,32 @@ const getMaxRoundedPriceController = (0, catchAsync_1.default)((req, res) => __a
         data: { maxRoundedPrice },
     });
 }));
+const toggleFeaturedStatusController = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const { id } = req.params;
+    const result = yield properties_services_1.propertyServices.toggleFeaturedStatusService(id);
+    if (!result) {
+        throw new ApiError_1.default(http_status_1.default.NOT_FOUND, "Property not found");
+    }
+    (0, sendResponse_1.default)(res, {
+        statusCode: http_status_1.default.OK,
+        success: true,
+        message: `Property ${result.featured ? "set as" : "removed from"} featured successfully`,
+        data: result,
+    });
+}));
+const toggleTrendingStatusController = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const { id } = req.params;
+    const result = yield properties_services_1.propertyServices.toggleTrendingStatusService(id);
+    if (!result) {
+        throw new ApiError_1.default(http_status_1.default.NOT_FOUND, "Property not found");
+    }
+    (0, sendResponse_1.default)(res, {
+        statusCode: http_status_1.default.OK,
+        success: true,
+        message: `Property ${result.trending ? "set as" : "removed from"} trending successfully`,
+        data: result,
+    });
+}));
 exports.propertyControllers = {
     createPropertyController,
     updatePropertyController,
@@ -195,4 +222,7 @@ exports.propertyControllers = {
     searchMyPublishedPropertiesController,
     // max price
     getMaxRoundedPriceController,
+    // Toggle
+    toggleFeaturedStatusController,
+    toggleTrendingStatusController,
 };

@@ -83,8 +83,10 @@ const resendVerificationEmailService = (userId) => __awaiter(void 0, void 0, voi
     user.verificationToken = token;
     user.verificationTokenExpiry = expiry;
     yield user.save();
-    const verificationUrl = `${process.env.FRONTEND_URL}/verify-email?token=${token}&id=${user._id}`;
-    yield (0, emailVerifyMail_1.sendVerificationEmail)({ to: user.email, name: user.name, verificationUrl });
+    setTimeout(() => {
+        const verificationUrl = `${config_1.default.client_url}/verify-email?token=${token}&id=${user._id}`;
+        (0, emailVerifyMail_1.sendVerificationEmail)({ to: user.email, name: user.name, verificationUrl }).catch(console.error);
+    }, 0);
     return { email: user.email, sent: true };
 });
 const verifyEmailService = (userId, token) => __awaiter(void 0, void 0, void 0, function* () {
@@ -157,7 +159,9 @@ const requestPasswordResetOtp = (email) => __awaiter(void 0, void 0, void 0, fun
     user.resetPasswordOtp = otp;
     user.resetPasswordOtpExpiry = expiry;
     yield user.save();
-    yield (0, sendOtpEmail_1.sendOtpEmail)({ to: user.email, name: user.name, otp });
+    process.nextTick(() => {
+        (0, sendOtpEmail_1.sendOtpEmail)({ to: user.email, name: user.name, otp }).catch(console.error);
+    });
     return { message: "An OTP has been sent to your email" };
 });
 const verifyOtp = (email, otp) => __awaiter(void 0, void 0, void 0, function* () {
@@ -181,7 +185,9 @@ const resendPasswordResetOtp = (email) => __awaiter(void 0, void 0, void 0, func
     user.resetPasswordOtp = otp;
     user.resetPasswordOtpExpiry = expiry;
     yield user.save();
-    yield (0, sendOtpEmail_1.sendOtpEmail)({ to: user.email, name: user.name, otp });
+    process.nextTick(() => {
+        (0, sendOtpEmail_1.sendOtpEmail)({ to: user.email, name: user.name, otp }).catch(console.error);
+    });
     return { message: "A new OTP has been sent to your email" };
 });
 const resetPasswordWithToken = (resetToken, newPassword) => __awaiter(void 0, void 0, void 0, function* () {

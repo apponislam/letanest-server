@@ -16,7 +16,7 @@ router.get("/:id", propertyControllers.getSinglePropertyController);
 // Listing with pagination, search, filter
 router.get("/", propertyControllers.getAllPropertiesController);
 
-router.get("/admin/published", auth, propertyControllers.getAllPublishedPropertiesController);
+router.get("/admin/published", propertyControllers.getAllPublishedPropertiesController);
 
 router.get("/admin/all", auth, authorize(["ADMIN"]), propertyControllers.getAllNonPublishedPropertiesController);
 

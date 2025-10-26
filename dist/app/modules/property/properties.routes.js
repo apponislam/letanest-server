@@ -16,8 +16,10 @@ router.put("/:id", auth_1.default, (0, authorize_1.default)(["ADMIN", "HOST"]), 
 router.get("/:id", properties_controllers_1.propertyControllers.getSinglePropertyController);
 // Listing with pagination, search, filter
 router.get("/", properties_controllers_1.propertyControllers.getAllPropertiesController);
-router.get("/admin/published", auth_1.default, (0, authorize_1.default)(["ADMIN"]), properties_controllers_1.propertyControllers.getAllPublishedPropertiesController);
+router.get("/admin/published", properties_controllers_1.propertyControllers.getAllPublishedPropertiesController);
 router.get("/admin/all", auth_1.default, (0, authorize_1.default)(["ADMIN"]), properties_controllers_1.propertyControllers.getAllNonPublishedPropertiesController);
+router.patch("/:id/toggle-featured", auth_1.default, (0, authorize_1.default)(["ADMIN"]), properties_controllers_1.propertyControllers.toggleFeaturedStatusController);
+router.patch("/:id/toggle-trending", auth_1.default, (0, authorize_1.default)(["ADMIN"]), properties_controllers_1.propertyControllers.toggleTrendingStatusController);
 router.patch("/:id/status", auth_1.default, (0, authorize_1.default)(["ADMIN"]), properties_controllers_1.propertyControllers.changePropertyStatusController);
 // Host
 router.get("/host/my-properties", auth_1.default, properties_controllers_1.propertyControllers.getHostProperties);
