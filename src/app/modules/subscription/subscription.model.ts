@@ -50,6 +50,11 @@ const subscriptionSchema = new Schema<ISubscription>(
         features: [subscriptionFeatureSchema],
         badge: { type: String },
 
+        isDeleted: {
+            type: Boolean,
+            default: false,
+        },
+
         // Metadata
         description: { type: String, required: true },
         isActive: { type: Boolean, default: true },
@@ -61,7 +66,7 @@ const subscriptionSchema = new Schema<ISubscription>(
 
 // Add indexes for better performance
 subscriptionSchema.index({ type: 1, level: 1 });
-subscriptionSchema.index({ isActive: 1 });
+subscriptionSchema.index({ isDeleted: 1, isActive: 1 });
 subscriptionSchema.index({ stripeProductId: 1 });
 subscriptionSchema.index({ stripePriceId: 1 });
 

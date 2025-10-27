@@ -79,16 +79,16 @@ const getAllPayments = catchAsync(async (req: Request, res: Response) => {
         userId: req.query.userId as string,
         startDate: req.query.startDate as string,
         endDate: req.query.endDate as string,
+        search: req.query.search as string,
     };
-    console.log(filters);
 
     const options = {
         page: parseInt(req.query.page as string) || 1,
         limit: parseInt(req.query.limit as string) || 10,
         sortBy: (req.query.sortBy as string) || "createdAt",
         sortOrder: (req.query.sortOrder as string) || "desc",
+        search: req.query.search as string,
     };
-    console.log(options);
 
     const result = await paymentServices.getAllPayments(filters, options);
 
@@ -134,11 +134,12 @@ const getPaymentStats = catchAsync(async (req: Request, res: Response) => {
  */
 const getHostPayments = catchAsync(async (req: Request, res: Response) => {
     const hostId = req.user?._id;
-    const { page = 1, limit = 10 } = req.query;
+    const { page = 1, limit = 10, search } = req.query;
 
     const result = await paymentServices.getPaymentsByHost(hostId, {
         page: Number(page),
         limit: Number(limit),
+        search: search as string,
     });
 
     sendResponse(res, {
@@ -149,41 +150,6 @@ const getHostPayments = catchAsync(async (req: Request, res: Response) => {
         meta: result.meta,
     });
 });
-
-// /**
-//  * Download payments PDF (admin only)
-//  */
-// const downloadPaymentsPDF = catchAsync(async (req: Request, res: Response) => {
-//     const { fromDate, toDate } = req.body;
-
-//     // Validate dates
-//     if (!fromDate || !toDate) {
-//         throw new ApiError(httpStatus.BAD_REQUEST, "Both fromDate and toDate are required");
-//     }
-
-//     // Validate date format
-//     const from = new Date(fromDate);
-//     const to = new Date(toDate);
-
-//     if (isNaN(from.getTime()) || isNaN(to.getTime())) {
-//         throw new ApiError(httpStatus.BAD_REQUEST, "Invalid date format");
-//     }
-
-//     if (from > to) {
-//         throw new ApiError(httpStatus.BAD_REQUEST, "fromDate cannot be after toDate");
-//     }
-
-//     // Generate PDF
-//     const pdfBuffer = await paymentServices.generatePaymentsPDF(fromDate, toDate);
-
-//     // Set response headers for PDF download
-//     res.setHeader("Content-Type", "application/pdf");
-//     res.setHeader("Content-Disposition", `attachment; filename=transactions-${fromDate}-to-${toDate}.pdf`);
-//     res.setHeader("Content-Length", pdfBuffer.length);
-
-//     // Send PDF
-//     res.send(pdfBuffer);
-// });
 
 export const paymentControllers = {
     createPayment,

@@ -14,6 +14,7 @@ router.get("/admin/type/:type", subscriptionController.getSubscriptionsByTypeFor
 router.get("/type/:type/level/:level", subscriptionController.getSubscriptionByTypeAndLevel);
 router.get("/default/:type", subscriptionController.getDefaultSubscription);
 router.get("/:id", subscriptionController.getSubscription);
+router.delete("/:id", auth, authorize([roles.ADMIN]), subscriptionController.deleteSubscription);
 
 // Admin only routes
 router.post("/", auth, authorize([roles.ADMIN]), subscriptionController.createSubscription);

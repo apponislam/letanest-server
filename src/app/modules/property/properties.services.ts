@@ -586,9 +586,9 @@ const deleteHostPropertyService = async (hostId: string, propertyId: string) => 
     }
 
     // Check if property is published
-    if (property.status === "published") {
-        throw new Error("Cannot delete published properties");
-    }
+    // if (property.status === "published") {
+    //     throw new Error("Cannot delete published properties");
+    // }
 
     // Soft delete - set isDeleted to true instead of removing from database
     const result = await PropertyModel.findByIdAndUpdate(
