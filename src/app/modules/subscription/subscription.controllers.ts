@@ -231,6 +231,18 @@ const getCheckoutSession = catchAsync(async (req: Request, res: Response) => {
     });
 });
 
+const deleteSubscription = catchAsync(async (req: Request, res: Response) => {
+    const { id } = req.params;
+    const subscription = await subscriptionService.deleteSubscription(id);
+
+    sendResponse(res, {
+        statusCode: httpStatus.OK,
+        success: true,
+        message: "Subscription deleted successfully",
+        data: subscription,
+    });
+});
+
 export const subscriptionController = {
     createSubscription,
     getAllSubscriptions,
@@ -244,4 +256,7 @@ export const subscriptionController = {
     toggleSubscriptionStatus,
     createCheckoutSession,
     getCheckoutSession,
+
+    // delete route
+    deleteSubscription,
 };

@@ -92,15 +92,15 @@ const getSubscriptionById = async (id: string): Promise<ISubscription | null> =>
 };
 
 const getSubscriptionsByType = async (type: "GUEST" | "HOST"): Promise<ISubscription[]> => {
-    return await Subscription.find({ type, isActive: true }).sort({ cost: 1 });
+    return await Subscription.find({ type, isActive: true, isDeleted: false }).sort({ cost: 1 });
 };
 
 const getSubscriptionsByTypeForAdmin = async (type: "GUEST" | "HOST"): Promise<ISubscription[]> => {
-    return await Subscription.find({ type }).sort({ cost: 1 });
+    return await Subscription.find({ type, isDeleted: false }).sort({ cost: 1 });
 };
 
 const getActiveSubscriptionsByTypeAndLevel = async (type: "GUEST" | "HOST", level: "free" | "premium" | "gold"): Promise<ISubscription | null> => {
-    return await Subscription.findOne({ type, level, isActive: true });
+    return await Subscription.findOne({ type, level, isActive: true, isDeleted: false });
 };
 
 const updateSubscription = async (id: string, updateData: Partial<ISubscription>): Promise<ISubscription | null> => {
@@ -181,6 +181,26 @@ const activateFreeTierForUser = async (userId: string, subscription: ISubscripti
     }
 };
 
+const deleteSubscription = async (id: string): Promise<ISubscription | null> => {
+    const subscription = await Subscription.findById(id);
+
+    if (!subscription) {
+        throw new ApiError(httpStatus.NOT_FOUND, "Subscription not found");
+    }
+
+    // Soft delete - only set isDeleted to true
+    const deletedSubscription = await Subscription.findByIdAndUpdate(
+        id,
+        {
+            isDeleted: true,
+            isActive: false, // Also deactivate when deleting
+        },
+        { new: true }
+    );
+
+    return deletedSubscription;
+};
+
 export const subscriptionService = {
     createSubscription,
     getAllSubscriptions,
@@ -196,4 +216,7 @@ export const subscriptionService = {
     toggleSubscriptionStatus,
     isFreeTier,
     activateFreeTierForUser,
+
+    // Delete route
+    deleteSubscription,
 };

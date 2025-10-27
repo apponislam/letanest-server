@@ -9,7 +9,6 @@ const router = Router();
 router.get("/admin", auth, paymentControllers.getAllPayments);
 router.get("/admin/totals", auth, paymentControllers.getPaymentTotals);
 router.get("/admin/stats/statistics", auth, paymentControllers.getPaymentStats);
-// router.post("/admin/download-pdf", auth, paymentControllers.downloadPaymentsPDF);
 router.post("/admin/download-pdf", auth, paymentTemplate.generatePaymentsPDF);
 
 // other routes

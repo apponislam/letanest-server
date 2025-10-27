@@ -27,11 +27,8 @@ export interface IPayment {
     conversationId: Types.ObjectId;
     messageId: Types.ObjectId;
     hostId: Types.ObjectId;
-
-    // Status - EXPAND to match actual backend logic
     status: "pending" | "completed" | "failed" | "canceled" | "processing" | "requires_action";
-    stripePaymentStatus?: string; // Store actual Stripe status
-
+    stripePaymentStatus?: string;
     createdAt?: Date;
     paidAt?: Date;
 }

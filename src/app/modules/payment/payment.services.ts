@@ -224,48 +224,181 @@ const getPaymentsByUser = async (userId: string, query: { page?: number; limit?:
  */
 const getAllPayments = async (filters: any = {}, options: any = {}) => {
     const { page = 1, limit = 10, sortBy = "createdAt", sortOrder = "desc" } = options;
+    const search = filters.search || options.search;
 
     const skip = (page - 1) * limit;
-    const sortOptions: any = {};
-    sortOptions[sortBy] = sortOrder === "desc" ? -1 : 1;
 
-    // Build filter query
-    const filterQuery: any = {};
+    // If no search, use the simple approach
+    if (!search) {
+        const filterQuery: any = {};
 
-    if (filters.status) {
-        filterQuery.status = filters.status;
+        if (filters.status) {
+            filterQuery.status = filters.status;
+        }
+
+        if (filters.propertyId) {
+            filterQuery.propertyId = new Types.ObjectId(filters.propertyId);
+        }
+
+        if (filters.userId) {
+            filterQuery.userId = new Types.ObjectId(filters.userId);
+        }
+
+        if (filters.startDate && filters.endDate) {
+            filterQuery.createdAt = {
+                $gte: new Date(filters.startDate),
+                $lte: new Date(filters.endDate),
+            };
+        }
+
+        const sortOptions: any = {};
+        sortOptions[sortBy] = sortOrder === "desc" ? -1 : 1;
+
+        const payments = await PaymentModel.find(filterQuery)
+            .populate("userId", "name email phone")
+            .populate({
+                path: "propertyId",
+                select: "createdBy propertyNumber title address",
+                populate: {
+                    path: "createdBy",
+                    select: "name",
+                },
+            })
+            .sort(sortOptions)
+            .skip(skip)
+            .limit(limit);
+
+        const total = await PaymentModel.countDocuments(filterQuery);
+
+        return {
+            payments,
+            meta: {
+                page,
+                limit,
+                total,
+            },
+        };
     }
 
-    if (filters.propertyId) {
-        filterQuery.propertyId = new Types.ObjectId(filters.propertyId);
-    }
+    // If search exists, use aggregation
+    const aggregationPipeline: any[] = [
+        // Lookup user (guest)
+        {
+            $lookup: {
+                from: "users",
+                localField: "userId",
+                foreignField: "_id",
+                as: "userId",
+            },
+        },
+        { $unwind: { path: "$userId", preserveNullAndEmptyArrays: true } },
 
-    if (filters.userId) {
-        filterQuery.userId = new Types.ObjectId(filters.userId);
-    }
+        // Lookup property
+        {
+            $lookup: {
+                from: "properties",
+                localField: "propertyId",
+                foreignField: "_id",
+                as: "propertyId",
+            },
+        },
+        { $unwind: { path: "$propertyId", preserveNullAndEmptyArrays: true } },
 
+        // Lookup property creator (host)
+        {
+            $lookup: {
+                from: "users",
+                localField: "propertyId.createdBy",
+                foreignField: "_id",
+                as: "propertyCreatedBy",
+            },
+        },
+        { $unwind: { path: "$propertyCreatedBy", preserveNullAndEmptyArrays: true } },
+
+        // Search across all fields
+        {
+            $match: {
+                $or: [
+                    { stripePaymentIntentId: { $regex: search, $options: "i" } },
+                    { "userId.name": { $regex: search, $options: "i" } }, // Guest name
+                    { "propertyCreatedBy.name": { $regex: search, $options: "i" } }, // Host name
+                    { "propertyId.title": { $regex: search, $options: "i" } }, // Property title
+                ],
+            },
+        },
+    ];
+
+    // Add other filters
+    const matchStage: any = {};
+    if (filters.status) matchStage.status = filters.status;
+    if (filters.propertyId) matchStage.propertyId = new Types.ObjectId(filters.propertyId);
+    if (filters.userId) matchStage.userId = new Types.ObjectId(filters.userId);
     if (filters.startDate && filters.endDate) {
-        filterQuery.createdAt = {
+        matchStage.createdAt = {
             $gte: new Date(filters.startDate),
             $lte: new Date(filters.endDate),
         };
     }
 
-    const payments = await PaymentModel.find(filterQuery)
-        .populate("userId", "name email phone")
-        .populate({
-            path: "propertyId",
-            select: "createdBy propertyNumber title address",
-            populate: {
-                path: "createdBy",
-                select: "name",
-            },
-        })
-        .sort(sortOptions)
-        .skip(skip)
-        .limit(limit);
+    if (Object.keys(matchStage).length > 0) {
+        aggregationPipeline.push({ $match: matchStage });
+    }
 
-    const total = await PaymentModel.countDocuments(filterQuery);
+    // Count total
+    const countPipeline = [...aggregationPipeline, { $count: "total" }];
+
+    // Get data with pagination and project to match your frontend structure
+    aggregationPipeline.push({ $sort: { [sortBy]: sortOrder === "desc" ? -1 : 1 } });
+    aggregationPipeline.push({ $skip: skip });
+    aggregationPipeline.push({ $limit: limit });
+
+    // Project to match your frontend expected structure
+    aggregationPipeline.push({
+        $project: {
+            _id: 1,
+            stripePaymentIntentId: 1,
+            agreedFee: 1,
+            bookingFee: 1,
+            extraFee: 1,
+            totalAmount: 1,
+            commissionRate: 1,
+            commissionAmount: 1,
+            hostAmount: 1,
+            platformTotal: 1,
+            checkInDate: 1,
+            checkOutDate: 1,
+            userId: {
+                _id: "$userId._id",
+                name: "$userId.name",
+                email: "$userId.email",
+                phone: "$userId.phone",
+            },
+            propertyId: {
+                _id: "$propertyId._id",
+                propertyNumber: "$propertyId.propertyNumber",
+                title: "$propertyId.title",
+                address: "$propertyId.address",
+                createdBy: {
+                    _id: "$propertyCreatedBy._id",
+                    name: "$propertyCreatedBy.name",
+                },
+            },
+            conversationId: 1,
+            messageId: 1,
+            hostId: 1,
+            status: 1,
+            stripePaymentStatus: 1,
+            createdAt: 1,
+            paidAt: 1,
+        },
+    });
+
+    console.log("Search term:", search);
+    console.log("Aggregation Pipeline:", JSON.stringify(aggregationPipeline, null, 2));
+
+    const [payments, totalResult] = await Promise.all([PaymentModel.aggregate(aggregationPipeline), PaymentModel.aggregate(countPipeline)]);
+
+    const total = totalResult.length > 0 ? totalResult[0].total : 0;
 
     return {
         payments,
@@ -273,7 +406,6 @@ const getAllPayments = async (filters: any = {}, options: any = {}) => {
             page,
             limit,
             total,
-            totalPages: Math.ceil(total / limit),
         },
     };
 };
@@ -368,37 +500,172 @@ const getPaymentStatistics = async () => {
 /**
  * Get payments by host ID
  */
-const getPaymentsByHost = async (hostId: string, query: { page?: number; limit?: number }) => {
+const getPaymentsByHost = async (hostId: string, query: { page?: number; limit?: number; search?: string }) => {
     const page = Number(query.page) || 1;
     const limit = Number(query.limit) || 10;
     const skip = (page - 1) * limit;
+    const search = query.search;
 
-    const [payments, total, totalAmountResult] = await Promise.all([
-        PaymentModel.find({ hostId: new Types.ObjectId(hostId) })
-            .populate("userId", "name email profileImg")
-            .populate("propertyId", "title location coverPhoto propertyType")
-            .populate("messageId", "checkInDate checkOutDate")
-            .sort({ createdAt: -1 })
-            .skip(skip)
-            .limit(limit),
-        PaymentModel.countDocuments({ hostId: new Types.ObjectId(hostId) }),
-        // Calculate total hostAmount
-        PaymentModel.aggregate([
-            {
-                $match: {
-                    hostId: new Types.ObjectId(hostId),
-                    status: "completed", // Only sum completed payments
+    // If no search, use simple approach
+    if (!search) {
+        const [payments, total, totalAmountResult] = await Promise.all([
+            PaymentModel.find({ hostId: new Types.ObjectId(hostId) })
+                .populate("userId", "name email profileImg")
+                .populate("propertyId", "title location coverPhoto propertyType")
+                .populate("messageId", "checkInDate checkOutDate")
+                .sort({ createdAt: -1 })
+                .skip(skip)
+                .limit(limit),
+            PaymentModel.countDocuments({ hostId: new Types.ObjectId(hostId) }),
+            // Calculate total hostAmount
+            PaymentModel.aggregate([
+                {
+                    $match: {
+                        hostId: new Types.ObjectId(hostId),
+                        status: "completed",
+                    },
                 },
-            },
-            {
-                $group: {
-                    _id: null,
-                    totalAmount: { $sum: "$hostAmount" },
+                {
+                    $group: {
+                        _id: null,
+                        totalAmount: { $sum: "$hostAmount" },
+                    },
                 },
-            },
-        ]),
-    ]);
+            ]),
+        ]);
 
+        const totalAmount = totalAmountResult.length > 0 ? totalAmountResult[0].totalAmount : 0;
+
+        return {
+            payments,
+            meta: {
+                page,
+                limit,
+                total,
+                totalAmount,
+            },
+        };
+    }
+
+    // If search exists, use aggregation
+    const aggregationPipeline: any[] = [
+        {
+            $match: {
+                hostId: new Types.ObjectId(hostId),
+            },
+        },
+        // Lookup user (guest)
+        {
+            $lookup: {
+                from: "users",
+                localField: "userId",
+                foreignField: "_id",
+                as: "userId",
+            },
+        },
+        { $unwind: { path: "$userId", preserveNullAndEmptyArrays: true } },
+
+        // Lookup property
+        {
+            $lookup: {
+                from: "properties",
+                localField: "propertyId",
+                foreignField: "_id",
+                as: "propertyId",
+            },
+        },
+        { $unwind: { path: "$propertyId", preserveNullAndEmptyArrays: true } },
+
+        // Lookup message
+        {
+            $lookup: {
+                from: "messages",
+                localField: "messageId",
+                foreignField: "_id",
+                as: "messageId",
+            },
+        },
+        { $unwind: { path: "$messageId", preserveNullAndEmptyArrays: true } },
+
+        // Search across all fields
+        {
+            $match: {
+                $or: [
+                    { stripePaymentIntentId: { $regex: search, $options: "i" } },
+                    { "userId.name": { $regex: search, $options: "i" } }, // Guest name
+                    { "propertyId.title": { $regex: search, $options: "i" } }, // Property title
+                ],
+            },
+        },
+    ];
+
+    // Count total
+    const countPipeline = [...aggregationPipeline, { $count: "total" }];
+
+    // Get data with pagination
+    aggregationPipeline.push({ $sort: { createdAt: -1 } });
+    aggregationPipeline.push({ $skip: skip });
+    aggregationPipeline.push({ $limit: limit });
+
+    // Project to match frontend structure
+    aggregationPipeline.push({
+        $project: {
+            _id: 1,
+            stripePaymentIntentId: 1,
+            agreedFee: 1,
+            bookingFee: 1,
+            extraFee: 1,
+            totalAmount: 1,
+            commissionRate: 1,
+            commissionAmount: 1,
+            hostAmount: 1,
+            platformTotal: 1,
+            checkInDate: 1,
+            checkOutDate: 1,
+            status: 1,
+            stripePaymentStatus: 1,
+            createdAt: 1,
+            paidAt: 1,
+            userId: {
+                _id: "$userId._id",
+                name: "$userId.name",
+                email: "$userId.email",
+                profileImg: "$userId.profileImg",
+            },
+            propertyId: {
+                _id: "$propertyId._id",
+                title: "$propertyId.title",
+                location: "$propertyId.location",
+                coverPhoto: "$propertyId.coverPhoto",
+                propertyType: "$propertyId.propertyType",
+            },
+            messageId: {
+                _id: "$messageId._id",
+                checkInDate: "$messageId.checkInDate",
+                checkOutDate: "$messageId.checkOutDate",
+            },
+        },
+    });
+
+    // Calculate total amount for completed payments
+    const totalAmountPipeline = [
+        {
+            $match: {
+                hostId: new Types.ObjectId(hostId),
+                status: "completed",
+            },
+        },
+        {
+            $group: {
+                _id: null,
+                totalAmount: { $sum: "$hostAmount" },
+            },
+        },
+    ];
+
+    const [payments, totalResult, totalAmountResult] = await Promise.all([PaymentModel.aggregate(aggregationPipeline), PaymentModel.aggregate(countPipeline), PaymentModel.aggregate(totalAmountPipeline)]);
+
+    const total = totalResult.length > 0 ? totalResult[0].total : 0;
     const totalAmount = totalAmountResult.length > 0 ? totalAmountResult[0].totalAmount : 0;
 
     return {

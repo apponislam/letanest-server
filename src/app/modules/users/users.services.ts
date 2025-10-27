@@ -48,8 +48,13 @@ const getSingleUserService = async (id: string): Promise<IUser | null> => {
 };
 
 const updateUserProfileService = async (userId: Types.ObjectId, updateData: IUpdateUserProfile, profileImg?: Express.Multer.File): Promise<IUser | null> => {
+    let fullName = updateData.firstName;
+    if (updateData.lastName && updateData.lastName.trim() !== "") {
+        fullName = `${updateData.firstName} ${updateData.lastName}`;
+    }
+
     const updateFields: any = {
-        name: `${updateData.firstName} ${updateData.lastName}`,
+        name: fullName.trim(), // Trim to remove any accidental spaces
         phone: updateData.phone,
         address: updateData.address,
         gender: updateData.gender,
@@ -81,30 +86,6 @@ const getMySubscriptionsService = async (userId: Types.ObjectId): Promise<IUser 
 
     return user;
 };
-
-// ONLY THIS NEW SERVICE - Activate free tier
-// const activateFreeTierService = async (userId: Types.ObjectId, subscriptionId: string) => {
-//     // Calculate expiry date (30 days from now for free tier)
-//     const freeTireExpiry = new Date();
-//     freeTireExpiry.setDate(freeTireExpiry.getDate() + 30);
-
-//     // Update user with free tier data
-//     const updatedUser = await UserModel.findByIdAndUpdate(
-//         userId,
-//         {
-//             freeTireUsed: true,
-//             freeTireExpiry: freeTireExpiry,
-//             freeTireSub: new Types.ObjectId(subscriptionId),
-//         },
-//         { new: true }
-//     ).populate("freeTireSub");
-
-//     return {
-//         freeTireUsed: updatedUser?.freeTireUsed,
-//         freeTireExpiry: updatedUser?.freeTireExpiry,
-//         freeTireSub: updatedUser?.freeTireSub,
-//     };
-// };
 
 const activateFreeTierService = async (userId: Types.ObjectId, subscriptionId: string) => {
     // Calculate expiry date (30 days from now for free tier)
