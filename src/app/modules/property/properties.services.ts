@@ -617,7 +617,7 @@ const getMyPublishedPropertiesService = async (hostId: string) => {
         status: "published",
         isDeleted: false,
     })
-        .select("propertyNumber _id createdBy price")
+        .select("propertyNumber _id createdBy price availableFrom availableTo")
         .populate("createdBy", "name email")
         .sort({ createdAt: -1 });
 

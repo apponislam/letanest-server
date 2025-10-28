@@ -80,7 +80,6 @@ export interface IPropertyMeta {
     total: number;
     page: number;
     limit: number;
-    // totalPages: number;
     totalAmount?: number;
 }
 

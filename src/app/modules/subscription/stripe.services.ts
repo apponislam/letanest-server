@@ -188,6 +188,78 @@ export class StripeService {
         }
     }
 
+    // async createCheckoutSessionWithUser(priceId: string, metadata: CheckoutSessionMetadata, customerId?: string) {
+    //     try {
+    //         console.log("🎯 Creating authenticated checkout session with metadata:", metadata);
+    //         console.log("💰 Price ID:", priceId);
+    //         console.log("👤 Customer ID:", customerId);
+
+    //         // Build the session parameters
+    //         const sessionParams: any = {
+    //             mode: "subscription",
+    //             payment_method_types: ["card"],
+    //             line_items: [
+    //                 {
+    //                     price: priceId,
+    //                     quantity: 1,
+    //                 },
+    //             ],
+    //             customer_email: metadata.userEmail,
+    //             success_url: `${config.client_url}/payment/success?session_id={CHECKOUT_SESSION_ID}`,
+    //             cancel_url: `${config.client_url}/payment/cancel`,
+
+    //             // CRITICAL: Add comprehensive metadata
+    //             metadata: {
+    //                 userId: metadata.userId,
+    //                 subscriptionPlanId: metadata.subscriptionPlanId,
+    //                 type: metadata.type,
+    //                 level: metadata.level,
+    //                 userEmail: metadata.userEmail,
+    //                 userName: metadata.userName,
+    //                 source: "authenticated_checkout",
+    //             },
+
+    //             // Also add to subscription data
+    //             subscription_data: {
+    //                 metadata: {
+    //                     userId: metadata.userId,
+    //                     subscriptionPlanId: metadata.subscriptionPlanId,
+    //                     type: metadata.type,
+    //                     level: metadata.level,
+    //                     userEmail: metadata.userEmail,
+    //                     userName: metadata.userName,
+    //                     realUserId: metadata.userId,
+    //                 },
+    //             },
+    //         };
+
+    //         // FIX: Only add customer if provided, don't use customer_creation in subscription mode
+    //         if (customerId) {
+    //             sessionParams.customer = customerId;
+    //             console.log("✅ Using existing customer:", customerId);
+    //         } else {
+    //             console.log("ℹ️ No customer ID provided - Stripe will create one automatically");
+    //         }
+
+    //         console.log("📦 Session params:", JSON.stringify(sessionParams, null, 2));
+
+    //         const session = await stripe.checkout.sessions.create(sessionParams);
+
+    //         console.log("✅ Authenticated checkout session created:", session.id);
+    //         console.log("🔗 Checkout URL:", session.url);
+    //         return session;
+    //     } catch (error: any) {
+    //         console.error("❌ STRIPE ERROR DETAILS:");
+    //         console.error("Error type:", error.type);
+    //         console.error("Error code:", error.code);
+    //         console.error("Error message:", error.message);
+
+    //         throw new Error(`Failed to create checkout session: ${error.message}`);
+    //     }
+    // }
+
+    // Create customer in Stripe
+
     async createCheckoutSessionWithUser(priceId: string, metadata: CheckoutSessionMetadata, customerId?: string) {
         try {
             console.log("🎯 Creating authenticated checkout session with metadata:", metadata);
@@ -204,7 +276,6 @@ export class StripeService {
                         quantity: 1,
                     },
                 ],
-                customer_email: metadata.userEmail,
                 success_url: `${config.client_url}/payment/success?session_id={CHECKOUT_SESSION_ID}`,
                 cancel_url: `${config.client_url}/payment/cancel`,
 
@@ -233,13 +304,15 @@ export class StripeService {
                 },
             };
 
-            // FIX: Only add customer if provided, don't use customer_creation in subscription mode
+            // FIX: Only use one approach - either customer (existing) or customer_email (new)
             if (customerId) {
+                // Use existing customer
                 sessionParams.customer = customerId;
                 console.log("✅ Using existing customer:", customerId);
             } else {
-                console.log("ℹ️ No customer ID provided - Stripe will create one automatically");
-                // Don't add customer_creation - Stripe will handle customer creation automatically
+                // Create new customer with email
+                sessionParams.customer_email = metadata.userEmail;
+                console.log("✅ Creating new customer with email:", metadata.userEmail);
             }
 
             console.log("📦 Session params:", JSON.stringify(sessionParams, null, 2));
@@ -259,7 +332,6 @@ export class StripeService {
         }
     }
 
-    // Create customer in Stripe
     async createCustomer(userId: string, email: string, name?: string) {
         try {
             const customer = await stripe.customers.create({

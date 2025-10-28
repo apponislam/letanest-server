@@ -6,6 +6,7 @@ export const MESSAGE_TYPES = {
     OFFER: "offer",
     ACCEPTED: "accepted",
     REJECTED: "rejected",
+    REQUEST: "request",
 } as const;
 
 export type MessageType = (typeof MESSAGE_TYPES)[keyof typeof MESSAGE_TYPES];
@@ -26,6 +27,7 @@ export interface IMessage {
     propertyName?: string;
     address?: string;
     manager?: string;
+    guestNo?: string;
     phone?: string;
     reason?: string;
     isRead?: boolean;

@@ -67,6 +67,7 @@ export interface IUser {
     gender?: "Male" | "Female" | "Other";
 
     subscriptions?: IUserSubscriptionRef[];
+    currentSubscription?: Types.ObjectId;
 
     freeTireUsed?: boolean;
     freeTireExpiry?: Date;

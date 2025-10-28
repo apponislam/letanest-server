@@ -45,8 +45,8 @@ export const upload = multer({
     storage,
     fileFilter,
     limits: {
-        fileSize: 5 * 1024 * 1024, // 5MB
-        files: 21, // coverPhoto + 20 photos
+        fileSize: 15 * 1024 * 1024,
+        files: 21,
     },
 });
 
@@ -68,15 +68,12 @@ export const uploadPropertyFiles = (req: Request, res: Response, next: NextFunct
             let statusCode = 400;
 
             if (err.code === "LIMIT_FILE_SIZE") {
-                errorMessage = "File too large. Maximum size is 5MB.";
+                errorMessage = "File too large. Maximum size is 15MB.";
             } else if (err.code === "LIMIT_FILE_COUNT") {
                 errorMessage = "Too many files. Maximum 20 photos allowed.";
             } else if (err.code === "LIMIT_UNEXPECTED_FILE") {
                 errorMessage = 'Unexpected file field. Use "coverPhoto" and "photos" only.';
             }
-
-            // Don't throw ApiError here - let Multer handle file cleanup
-            // Just pass the error to the next middleware
             return next(new ApiError(statusCode, errorMessage));
         }
 
