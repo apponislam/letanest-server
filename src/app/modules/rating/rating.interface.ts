@@ -5,6 +5,12 @@ export enum RatingType {
     SITE = "site",
 }
 
+export enum RatingStatus {
+    PENDING = "pending",
+    APPROVED = "approved",
+    REJECTED = "rejected",
+}
+
 export interface IRating extends Document {
     type: RatingType;
     propertyId?: mongoose.Types.ObjectId;
@@ -17,6 +23,8 @@ export interface IRating extends Document {
     overallExperience: number;
     country?: string;
     description?: string;
+    isDeleted: boolean;
+    status: RatingStatus;
     createdAt: Date;
     updatedAt: Date;
 }

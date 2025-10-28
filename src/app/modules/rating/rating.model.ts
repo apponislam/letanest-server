@@ -1,5 +1,5 @@
 import mongoose, { Schema } from "mongoose";
-import { IRating, RatingType } from "./rating.interface";
+import { IRating, RatingType, RatingStatus } from "./rating.interface";
 
 const ratingSchema = new Schema<IRating>(
     {
@@ -71,9 +71,17 @@ const ratingSchema = new Schema<IRating>(
                 return this.type === RatingType.SITE;
             },
         },
+        isDeleted: { type: Boolean, default: false },
         description: {
             type: String,
             maxlength: 500,
+        },
+        status: {
+            type: String,
+            enum: Object.values(RatingStatus),
+            default: function () {
+                return this.type === RatingType.SITE ? RatingStatus.PENDING : RatingStatus.APPROVED;
+            },
         },
     },
     {
@@ -81,30 +89,41 @@ const ratingSchema = new Schema<IRating>(
     }
 );
 
-// Compound index for property ratings (one rating per user per property)
+// FIXED: Only keep propertyId+userId as unique index
 ratingSchema.index(
     { propertyId: 1, userId: 1 },
     {
         unique: true,
-        partialFilterExpression: { type: RatingType.PROPERTY },
+        partialFilterExpression: {
+            type: RatingType.PROPERTY,
+            isDeleted: false,
+            status: { $in: [RatingStatus.APPROVED, RatingStatus.PENDING] }, // Include pending ratings
+        },
     }
 );
 
-// Compound index for property ratings with hostId
+// FIXED: Remove unique constraint from hostId+userId - allow multiple properties from same host
 ratingSchema.index(
     { hostId: 1, userId: 1 },
     {
-        unique: true,
-        partialFilterExpression: { type: RatingType.PROPERTY },
+        // REMOVED: unique: true - this was causing the duplicate key error
+        partialFilterExpression: {
+            type: RatingType.PROPERTY,
+            isDeleted: false,
+        },
     }
 );
 
-// Index for site ratings (one rating per user for site)
+// Site rating unique index - one site rating per user
 ratingSchema.index(
     { userId: 1 },
     {
         unique: true,
-        partialFilterExpression: { type: RatingType.SITE },
+        partialFilterExpression: {
+            type: RatingType.SITE,
+            isDeleted: false,
+            status: { $in: [RatingStatus.APPROVED, RatingStatus.PENDING] }, // Include pending ratings
+        },
     }
 );
 
@@ -112,5 +131,8 @@ ratingSchema.index(
 ratingSchema.index({ hostId: 1, type: 1 });
 ratingSchema.index({ propertyId: 1, type: 1 });
 ratingSchema.index({ userId: 1, type: 1 });
+ratingSchema.index({ status: 1, type: 1 });
+ratingSchema.index({ createdAt: 1, status: 1 });
+ratingSchema.index({ isDeleted: 1 });
 
 export const RatingModel = mongoose.model<IRating>("Rating", ratingSchema);
