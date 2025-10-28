@@ -1,6 +1,574 @@
+// import httpStatus from "http-status";
+// import mongoose from "mongoose";
+// import { IRating, RatingType } from "./rating.interface";
+// import ApiError from "../../../errors/ApiError";
+// import { RatingModel } from "./rating.model";
+
+// interface CreateRatingData {
+//     type: RatingType;
+//     userId: mongoose.Types.ObjectId;
+//     propertyId?: mongoose.Types.ObjectId;
+//     hostId?: mongoose.Types.ObjectId; // Added hostId
+//     communication?: number;
+//     accuracy?: number;
+//     cleanliness?: number;
+//     checkInExperience?: number;
+//     overallExperience: number;
+//     country?: string;
+//     description?: string;
+// }
+
+// interface PropertyRatingStats {
+//     averageRating: number;
+//     totalRatings: number;
+//     communication: number;
+//     accuracy: number;
+//     cleanliness: number;
+//     checkInExperience: number;
+//     overallExperience: number;
+//     ratingDistribution: {
+//         1: number;
+//         2: number;
+//         3: number;
+//         4: number;
+//         5: number;
+//     };
+// }
+
+// interface SiteRatingStats {
+//     averageRating: number;
+//     totalRatings: number;
+//     countryStats: { country: string; count: number; average: number }[];
+//     ratingDistribution: {
+//         1: number;
+//         2: number;
+//         3: number;
+//         4: number;
+//         5: number;
+//     };
+// }
+
+// // User population fields
+// const userPopulationFields = "name email phone profileImg role";
+
+// // Property population fields
+// const propertyPopulationFields = "title description location propertyType maxGuests bedrooms bathrooms price coverPhoto photos status";
+
+// // Create a new rating
+// const createRatingService = async (ratingData: CreateRatingData): Promise<IRating> => {
+//     // Validate propertyId and hostId are provided for property ratings
+//     if (ratingData.type === RatingType.PROPERTY) {
+//         if (!ratingData.propertyId) {
+//             throw new ApiError(httpStatus.BAD_REQUEST, "Property ID is required for property ratings");
+//         }
+//         if (!ratingData.hostId) {
+//             throw new ApiError(httpStatus.BAD_REQUEST, "Host ID is required for property ratings");
+//         }
+
+//         // Validate property-specific fields
+//         const requiredFields = ["communication", "accuracy", "cleanliness", "checkInExperience"];
+//         for (const field of requiredFields) {
+//             if (!(field in ratingData)) {
+//                 throw new ApiError(httpStatus.BAD_REQUEST, `${field} is required for property ratings`);
+//             }
+//         }
+
+//         // Check if user already rated this property
+//         const existingRating = await RatingModel.findOne({
+//             userId: ratingData.userId,
+//             propertyId: ratingData.propertyId,
+//             type: RatingType.PROPERTY,
+//         });
+
+//         if (existingRating) {
+//             throw new ApiError(httpStatus.BAD_REQUEST, "You have already rated this property");
+//         }
+//     }
+
+//     // Validate country is provided for site ratings
+//     if (ratingData.type === RatingType.SITE && !ratingData.country) {
+//         throw new ApiError(httpStatus.BAD_REQUEST, "Country is required for site ratings");
+//     }
+
+//     // Check if user already rated the site (for site ratings)
+//     if (ratingData.type === RatingType.SITE) {
+//         const existingRating = await RatingModel.findOne({
+//             userId: ratingData.userId,
+//             type: RatingType.SITE,
+//         });
+
+//         if (existingRating) {
+//             throw new ApiError(httpStatus.BAD_REQUEST, "You have already rated the site");
+//         }
+//     }
+
+//     const rating = await RatingModel.create(ratingData);
+
+//     // Populate the created rating
+//     const populatedRating = await RatingModel.findById(rating._id).populate("userId", userPopulationFields).populate("propertyId", propertyPopulationFields).populate("hostId", userPopulationFields); // Populate host info
+
+//     return populatedRating as IRating;
+// };
+
+// // Get all ratings for a specific property
+// const getPropertyRatingsService = async (propertyId: string, page: number = 1, limit: number = 10): Promise<{ ratings: IRating[]; total: number }> => {
+//     const skip = (page - 1) * limit;
+
+//     const [ratings, total] = await Promise.all([
+//         RatingModel.find({
+//             propertyId: new mongoose.Types.ObjectId(propertyId),
+//             type: RatingType.PROPERTY,
+//         })
+//             .populate("userId", userPopulationFields)
+//             .populate("propertyId", propertyPopulationFields)
+//             .populate("hostId", userPopulationFields)
+//             .sort({ createdAt: -1 })
+//             .skip(skip)
+//             .limit(limit),
+//         RatingModel.countDocuments({
+//             propertyId: new mongoose.Types.ObjectId(propertyId),
+//             type: RatingType.PROPERTY,
+//         }),
+//     ]);
+
+//     return { ratings, total };
+// };
+
+// // Get all ratings for a specific host
+// const getHostRatingsService = async (hostId: string): Promise<IRating[]> => {
+//     const ratings = await RatingModel.find({
+//         hostId: new mongoose.Types.ObjectId(hostId),
+//         type: RatingType.PROPERTY,
+//     })
+//         .populate("userId", userPopulationFields)
+//         .populate("propertyId", propertyPopulationFields)
+//         .populate("hostId", userPopulationFields)
+//         .sort({ createdAt: -1 });
+
+//     return ratings;
+// };
+
+// // Get property rating statistics
+// const getPropertyRatingStatsService = async (propertyId: string): Promise<PropertyRatingStats> => {
+//     const stats = await RatingModel.aggregate([
+//         {
+//             $match: {
+//                 propertyId: new mongoose.Types.ObjectId(propertyId),
+//                 type: RatingType.PROPERTY,
+//             },
+//         },
+//         {
+//             $group: {
+//                 _id: null,
+//                 averageRating: { $avg: "$overallExperience" },
+//                 totalRatings: { $sum: 1 },
+//                 communication: { $avg: "$communication" },
+//                 accuracy: { $avg: "$accuracy" },
+//                 cleanliness: { $avg: "$cleanliness" },
+//                 checkInExperience: { $avg: "$checkInExperience" },
+//                 overallExperience: { $avg: "$overallExperience" },
+//                 rating1: { $sum: { $cond: [{ $eq: ["$overallExperience", 1] }, 1, 0] } },
+//                 rating2: { $sum: { $cond: [{ $eq: ["$overallExperience", 2] }, 1, 0] } },
+//                 rating3: { $sum: { $cond: [{ $eq: ["$overallExperience", 3] }, 1, 0] } },
+//                 rating4: { $sum: { $cond: [{ $eq: ["$overallExperience", 4] }, 1, 0] } },
+//                 rating5: { $sum: { $cond: [{ $eq: ["$overallExperience", 5] }, 1, 0] } },
+//             },
+//         },
+//     ]);
+
+//     if (stats.length === 0) {
+//         return {
+//             averageRating: 0,
+//             totalRatings: 0,
+//             communication: 0,
+//             accuracy: 0,
+//             cleanliness: 0,
+//             checkInExperience: 0,
+//             overallExperience: 0,
+//             ratingDistribution: { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 },
+//         };
+//     }
+
+//     const stat = stats[0];
+//     return {
+//         averageRating: Math.round(stat.averageRating * 10) / 10,
+//         totalRatings: stat.totalRatings,
+//         communication: Math.round(stat.communication * 10) / 10,
+//         accuracy: Math.round(stat.accuracy * 10) / 10,
+//         cleanliness: Math.round(stat.cleanliness * 10) / 10,
+//         checkInExperience: Math.round(stat.checkInExperience * 10) / 10,
+//         overallExperience: Math.round(stat.overallExperience * 10) / 10,
+//         ratingDistribution: {
+//             1: stat.rating1,
+//             2: stat.rating2,
+//             3: stat.rating3,
+//             4: stat.rating4,
+//             5: stat.rating5,
+//         },
+//     };
+// };
+
+// // Get host rating statistics
+// const getHostRatingStatsService = async (hostId: string): Promise<PropertyRatingStats> => {
+//     const stats = await RatingModel.aggregate([
+//         {
+//             $match: {
+//                 hostId: new mongoose.Types.ObjectId(hostId),
+//                 type: RatingType.PROPERTY,
+//             },
+//         },
+//         {
+//             $group: {
+//                 _id: null,
+//                 averageRating: { $avg: "$overallExperience" },
+//                 totalRatings: { $sum: 1 },
+//                 communication: { $avg: "$communication" },
+//                 accuracy: { $avg: "$accuracy" },
+//                 cleanliness: { $avg: "$cleanliness" },
+//                 checkInExperience: { $avg: "$checkInExperience" },
+//                 overallExperience: { $avg: "$overallExperience" },
+//                 rating1: { $sum: { $cond: [{ $eq: ["$overallExperience", 1] }, 1, 0] } },
+//                 rating2: { $sum: { $cond: [{ $eq: ["$overallExperience", 2] }, 1, 0] } },
+//                 rating3: { $sum: { $cond: [{ $eq: ["$overallExperience", 3] }, 1, 0] } },
+//                 rating4: { $sum: { $cond: [{ $eq: ["$overallExperience", 4] }, 1, 0] } },
+//                 rating5: { $sum: { $cond: [{ $eq: ["$overallExperience", 5] }, 1, 0] } },
+//             },
+//         },
+//     ]);
+
+//     if (stats.length === 0) {
+//         return {
+//             averageRating: 0,
+//             totalRatings: 0,
+//             communication: 0,
+//             accuracy: 0,
+//             cleanliness: 0,
+//             checkInExperience: 0,
+//             overallExperience: 0,
+//             ratingDistribution: { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 },
+//         };
+//     }
+
+//     const stat = stats[0];
+//     return {
+//         averageRating: Math.round(stat.averageRating * 10) / 10,
+//         totalRatings: stat.totalRatings,
+//         communication: Math.round(stat.communication * 10) / 10,
+//         accuracy: Math.round(stat.accuracy * 10) / 10,
+//         cleanliness: Math.round(stat.cleanliness * 10) / 10,
+//         checkInExperience: Math.round(stat.checkInExperience * 10) / 10,
+//         overallExperience: Math.round(stat.overallExperience * 10) / 10,
+//         ratingDistribution: {
+//             1: stat.rating1,
+//             2: stat.rating2,
+//             3: stat.rating3,
+//             4: stat.rating4,
+//             5: stat.rating5,
+//         },
+//     };
+// };
+
+// // Get all site ratings
+// const getSiteRatingsService = async (
+//     page: number = 1,
+//     limit: number = 10
+// ): Promise<{
+//     ratings: IRating[];
+//     total: number;
+// }> => {
+//     const skip = (page - 1) * limit;
+
+//     const [ratings, total] = await Promise.all([
+//         RatingModel.find({
+//             type: RatingType.SITE,
+//         })
+//             .populate("userId", userPopulationFields)
+//             .sort({ createdAt: -1 })
+//             .skip(skip)
+//             .limit(limit),
+
+//         RatingModel.countDocuments({
+//             type: RatingType.SITE,
+//         }),
+//     ]);
+
+//     return {
+//         ratings,
+//         total,
+//     };
+// };
+
+// // Get site rating statistics
+// const getSiteRatingStatsService = async (): Promise<SiteRatingStats> => {
+//     const stats = await RatingModel.aggregate([
+//         {
+//             $match: {
+//                 type: RatingType.SITE,
+//             },
+//         },
+//         {
+//             $group: {
+//                 _id: null,
+//                 averageRating: { $avg: "$overallExperience" },
+//                 totalRatings: { $sum: 1 },
+//                 rating1: { $sum: { $cond: [{ $eq: ["$overallExperience", 1] }, 1, 0] } },
+//                 rating2: { $sum: { $cond: [{ $eq: ["$overallExperience", 2] }, 1, 0] } },
+//                 rating3: { $sum: { $cond: [{ $eq: ["$overallExperience", 3] }, 1, 0] } },
+//                 rating4: { $sum: { $cond: [{ $eq: ["$overallExperience", 4] }, 1, 0] } },
+//                 rating5: { $sum: { $cond: [{ $eq: ["$overallExperience", 5] }, 1, 0] } },
+//             },
+//         },
+//     ]);
+
+//     const countryStats = await RatingModel.aggregate([
+//         {
+//             $match: {
+//                 type: RatingType.SITE,
+//             },
+//         },
+//         {
+//             $group: {
+//                 _id: "$country",
+//                 count: { $sum: 1 },
+//                 average: { $avg: "$overallExperience" },
+//             },
+//         },
+//         {
+//             $project: {
+//                 country: "$_id",
+//                 count: 1,
+//                 average: { $round: ["$average", 1] },
+//             },
+//         },
+//         {
+//             $sort: { count: -1 },
+//         },
+//     ]);
+
+//     if (stats.length === 0) {
+//         return {
+//             averageRating: 0,
+//             totalRatings: 0,
+//             countryStats: [],
+//             ratingDistribution: { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 },
+//         };
+//     }
+
+//     const stat = stats[0];
+//     return {
+//         averageRating: Math.round(stat.averageRating * 10) / 10,
+//         totalRatings: stat.totalRatings,
+//         countryStats,
+//         ratingDistribution: {
+//             1: stat.rating1,
+//             2: stat.rating2,
+//             3: stat.rating3,
+//             4: stat.rating4,
+//             5: stat.rating5,
+//         },
+//     };
+// };
+
+// // Get user's rating for a specific property
+// const getUserPropertyRatingService = async (userId: string, propertyId: string): Promise<IRating | null> => {
+//     const rating = await RatingModel.findOne({
+//         userId: new mongoose.Types.ObjectId(userId),
+//         propertyId: new mongoose.Types.ObjectId(propertyId),
+//         type: RatingType.PROPERTY,
+//     })
+//         .populate("userId", userPopulationFields)
+//         .populate("propertyId", propertyPopulationFields)
+//         .populate("hostId", userPopulationFields);
+
+//     return rating;
+// };
+
+// // Get user's site rating
+// const getUserSiteRatingService = async (userId: string): Promise<IRating | null> => {
+//     const rating = await RatingModel.findOne({
+//         userId: new mongoose.Types.ObjectId(userId),
+//         type: RatingType.SITE,
+//     }).populate("userId", userPopulationFields);
+
+//     return rating;
+// };
+
+// // Get user's ratings for host properties
+// const getUserHostRatingsService = async (userId: string, hostId: string): Promise<IRating[]> => {
+//     const ratings = await RatingModel.find({
+//         userId: new mongoose.Types.ObjectId(userId),
+//         hostId: new mongoose.Types.ObjectId(hostId),
+//         type: RatingType.PROPERTY,
+//     })
+//         .populate("userId", userPopulationFields)
+//         .populate("propertyId", propertyPopulationFields)
+//         .populate("hostId", userPopulationFields)
+//         .sort({ createdAt: -1 });
+
+//     return ratings;
+// };
+
+// // Update a rating
+// const updateRatingService = async (ratingId: string, updateData: Partial<IRating>): Promise<IRating | null> => {
+//     const rating = await RatingModel.findByIdAndUpdate(ratingId, updateData, {
+//         new: true,
+//         runValidators: true,
+//     })
+//         .populate("userId", userPopulationFields)
+//         .populate("propertyId", propertyPopulationFields)
+//         .populate("hostId", userPopulationFields);
+
+//     return rating;
+// };
+
+// // Delete a rating
+// const deleteRatingService = async (ratingId: string): Promise<IRating | null> => {
+//     const rating = await RatingModel.findByIdAndDelete(ratingId).populate("userId", userPopulationFields).populate("propertyId", propertyPopulationFields).populate("hostId", userPopulationFields);
+
+//     return rating;
+// };
+
+// // Get all ratings for admin with filters
+// interface GetAllRatingsFilter {
+//     type?: RatingType;
+//     page?: number;
+//     limit?: number;
+//     sortBy?: string;
+//     sortOrder?: "asc" | "desc";
+//     search?: string;
+// }
+
+// const getAllRatingsForAdminService = async (
+//     filters: GetAllRatingsFilter
+// ): Promise<{
+//     ratings: IRating[];
+//     total: number;
+//     page: number;
+//     limit: number;
+// }> => {
+//     const { type, page = 1, limit = 10, sortBy = "createdAt", sortOrder = "desc", search } = filters;
+
+//     const skip = (page - 1) * limit;
+
+//     // Build filter query
+//     const filterQuery: any = {};
+
+//     if (type) filterQuery.type = type;
+
+//     // Search functionality
+//     if (search) {
+//         const userSearchQuery = await RatingModel.find({
+//             $or: [{ "userId.name": { $regex: search, $options: "i" } }, { "userId.email": { $regex: search, $options: "i" } }],
+//         }).distinct("_id");
+
+//         const propertySearchQuery = await RatingModel.find({
+//             "propertyId.title": { $regex: search, $options: "i" },
+//         }).distinct("_id");
+
+//         filterQuery.$or = [{ _id: { $in: userSearchQuery } }, { _id: { $in: propertySearchQuery } }, { country: { $regex: search, $options: "i" } }, { description: { $regex: search, $options: "i" } }];
+//     }
+
+//     // Sort configuration
+//     const sortConfig: any = {};
+//     sortConfig[sortBy] = sortOrder === "desc" ? -1 : 1;
+
+//     const [ratings, total] = await Promise.all([RatingModel.find(filterQuery).populate("userId", userPopulationFields).populate("propertyId", propertyPopulationFields).populate("hostId", userPopulationFields).sort(sortConfig).skip(skip).limit(limit), RatingModel.countDocuments(filterQuery)]);
+
+//     return {
+//         ratings,
+//         total,
+//         page,
+//         limit,
+//     };
+// };
+
+// // Get rating statistics for admin dashboard
+// const getAdminRatingStatsService = async (): Promise<{
+//     totalRatings: number;
+//     siteRatings: number;
+//     propertyRatings: number;
+//     averageSiteRating: number;
+//     averagePropertyRating: number;
+//     recentRatings: IRating[];
+// }> => {
+//     const [totalRatings, siteRatings, propertyRatings, siteStats, propertyStats, recentRatings] = await Promise.all([
+//         RatingModel.countDocuments(),
+//         RatingModel.countDocuments({ type: RatingType.SITE }),
+//         RatingModel.countDocuments({ type: RatingType.PROPERTY }),
+
+//         // Average site rating
+//         RatingModel.aggregate([{ $match: { type: RatingType.SITE } }, { $group: { _id: null, average: { $avg: "$overallExperience" } } }]),
+
+//         // Average property rating
+//         RatingModel.aggregate([{ $match: { type: RatingType.PROPERTY } }, { $group: { _id: null, average: { $avg: "$overallExperience" } } }]),
+
+//         // Recent ratings (last 10)
+//         RatingModel.find().populate("userId", userPopulationFields).populate("propertyId", propertyPopulationFields).populate("hostId", userPopulationFields).sort({ createdAt: -1 }).limit(10),
+//     ]);
+
+//     return {
+//         totalRatings,
+//         siteRatings,
+//         propertyRatings,
+//         averageSiteRating: siteStats.length > 0 ? Math.round(siteStats[0].average * 10) / 10 : 0,
+//         averagePropertyRating: propertyStats.length > 0 ? Math.round(propertyStats[0].average * 10) / 10 : 0,
+//         recentRatings,
+//     };
+// };
+
+// const checkUserPropertiesRatingService = async (userId: string, propertyIds: string[]): Promise<{ propertyId: string; hasRated: boolean }[]> => {
+//     // Filter out undefined/null propertyIds
+//     const validPropertyIds = propertyIds.filter((id) => id && mongoose.Types.ObjectId.isValid(id));
+
+//     if (validPropertyIds.length === 0) {
+//         return [];
+//     }
+
+//     const ratings = await RatingModel.find({
+//         type: RatingType.PROPERTY,
+//         userId: new mongoose.Types.ObjectId(userId),
+//         propertyId: { $in: validPropertyIds.map((id) => new mongoose.Types.ObjectId(id)) },
+//     });
+
+//     // Create a map for quick lookup
+//     const ratingMap = new Map();
+//     ratings.forEach((rating) => {
+//         if (rating.propertyId) {
+//             ratingMap.set(rating.propertyId.toString(), true);
+//         }
+//     });
+
+//     // Return array with hasRated status for each property
+//     return validPropertyIds.map((propertyId) => ({
+//         propertyId,
+//         hasRated: ratingMap.has(propertyId),
+//     }));
+// };
+
+// export const ratingServices = {
+//     createRatingService,
+//     getPropertyRatingsService,
+//     getHostRatingsService,
+//     getPropertyRatingStatsService,
+//     getHostRatingStatsService,
+//     getSiteRatingsService,
+//     getSiteRatingStatsService,
+//     getUserPropertyRatingService,
+//     getUserSiteRatingService,
+//     getUserHostRatingsService,
+//     updateRatingService,
+//     deleteRatingService,
+//     // new for admin
+//     getAllRatingsForAdminService,
+//     getAdminRatingStatsService,
+
+//     // check rated properties
+//     checkUserPropertiesRatingService,
+// };
+
 import httpStatus from "http-status";
 import mongoose from "mongoose";
-import { IRating, RatingType } from "./rating.interface";
+import { IRating, RatingType, RatingStatus } from "./rating.interface";
 import ApiError from "../../../errors/ApiError";
 import { RatingModel } from "./rating.model";
 
@@ -8,7 +576,7 @@ interface CreateRatingData {
     type: RatingType;
     userId: mongoose.Types.ObjectId;
     propertyId?: mongoose.Types.ObjectId;
-    hostId?: mongoose.Types.ObjectId; // Added hostId
+    hostId?: mongoose.Types.ObjectId;
     communication?: number;
     accuracy?: number;
     cleanliness?: number;
@@ -48,15 +616,11 @@ interface SiteRatingStats {
     };
 }
 
-// User population fields
 const userPopulationFields = "name email phone profileImg role";
-
-// Property population fields
 const propertyPopulationFields = "title description location propertyType maxGuests bedrooms bathrooms price coverPhoto photos status";
 
 // Create a new rating
 const createRatingService = async (ratingData: CreateRatingData): Promise<IRating> => {
-    // Validate propertyId and hostId are provided for property ratings
     if (ratingData.type === RatingType.PROPERTY) {
         if (!ratingData.propertyId) {
             throw new ApiError(httpStatus.BAD_REQUEST, "Property ID is required for property ratings");
@@ -65,7 +629,6 @@ const createRatingService = async (ratingData: CreateRatingData): Promise<IRatin
             throw new ApiError(httpStatus.BAD_REQUEST, "Host ID is required for property ratings");
         }
 
-        // Validate property-specific fields
         const requiredFields = ["communication", "accuracy", "cleanliness", "checkInExperience"];
         for (const field of requiredFields) {
             if (!(field in ratingData)) {
@@ -73,7 +636,6 @@ const createRatingService = async (ratingData: CreateRatingData): Promise<IRatin
             }
         }
 
-        // Check if user already rated this property
         const existingRating = await RatingModel.findOne({
             userId: ratingData.userId,
             propertyId: ratingData.propertyId,
@@ -85,12 +647,10 @@ const createRatingService = async (ratingData: CreateRatingData): Promise<IRatin
         }
     }
 
-    // Validate country is provided for site ratings
     if (ratingData.type === RatingType.SITE && !ratingData.country) {
         throw new ApiError(httpStatus.BAD_REQUEST, "Country is required for site ratings");
     }
 
-    // Check if user already rated the site (for site ratings)
     if (ratingData.type === RatingType.SITE) {
         const existingRating = await RatingModel.findOne({
             userId: ratingData.userId,
@@ -103,14 +663,12 @@ const createRatingService = async (ratingData: CreateRatingData): Promise<IRatin
     }
 
     const rating = await RatingModel.create(ratingData);
-
-    // Populate the created rating
-    const populatedRating = await RatingModel.findById(rating._id).populate("userId", userPopulationFields).populate("propertyId", propertyPopulationFields).populate("hostId", userPopulationFields); // Populate host info
+    const populatedRating = await RatingModel.findById(rating._id).populate("userId", userPopulationFields).populate("propertyId", propertyPopulationFields).populate("hostId", userPopulationFields);
 
     return populatedRating as IRating;
 };
 
-// Get all ratings for a specific property
+// Get all ratings for a specific property (only approved)
 const getPropertyRatingsService = async (propertyId: string, page: number = 1, limit: number = 10): Promise<{ ratings: IRating[]; total: number }> => {
     const skip = (page - 1) * limit;
 
@@ -118,6 +676,8 @@ const getPropertyRatingsService = async (propertyId: string, page: number = 1, l
         RatingModel.find({
             propertyId: new mongoose.Types.ObjectId(propertyId),
             type: RatingType.PROPERTY,
+            status: RatingStatus.APPROVED,
+            isDeleted: false,
         })
             .populate("userId", userPopulationFields)
             .populate("propertyId", propertyPopulationFields)
@@ -128,17 +688,21 @@ const getPropertyRatingsService = async (propertyId: string, page: number = 1, l
         RatingModel.countDocuments({
             propertyId: new mongoose.Types.ObjectId(propertyId),
             type: RatingType.PROPERTY,
+            status: RatingStatus.APPROVED,
+            isDeleted: false,
         }),
     ]);
 
     return { ratings, total };
 };
 
-// Get all ratings for a specific host
+// Get all ratings for a specific host (only approved)
 const getHostRatingsService = async (hostId: string): Promise<IRating[]> => {
     const ratings = await RatingModel.find({
         hostId: new mongoose.Types.ObjectId(hostId),
         type: RatingType.PROPERTY,
+        status: RatingStatus.APPROVED,
+        isDeleted: false,
     })
         .populate("userId", userPopulationFields)
         .populate("propertyId", propertyPopulationFields)
@@ -148,13 +712,15 @@ const getHostRatingsService = async (hostId: string): Promise<IRating[]> => {
     return ratings;
 };
 
-// Get property rating statistics
+// Get property rating statistics (only approved)
 const getPropertyRatingStatsService = async (propertyId: string): Promise<PropertyRatingStats> => {
     const stats = await RatingModel.aggregate([
         {
             $match: {
                 propertyId: new mongoose.Types.ObjectId(propertyId),
                 type: RatingType.PROPERTY,
+                status: RatingStatus.APPROVED,
+                isDeleted: false,
             },
         },
         {
@@ -208,13 +774,15 @@ const getPropertyRatingStatsService = async (propertyId: string): Promise<Proper
     };
 };
 
-// Get host rating statistics
+// Get host rating statistics (only approved)
 const getHostRatingStatsService = async (hostId: string): Promise<PropertyRatingStats> => {
     const stats = await RatingModel.aggregate([
         {
             $match: {
                 hostId: new mongoose.Types.ObjectId(hostId),
                 type: RatingType.PROPERTY,
+                status: RatingStatus.APPROVED,
+                isDeleted: false,
             },
         },
         {
@@ -268,7 +836,7 @@ const getHostRatingStatsService = async (hostId: string): Promise<PropertyRating
     };
 };
 
-// Get all site ratings
+// Get all site ratings (only approved)
 const getSiteRatingsService = async (
     page: number = 1,
     limit: number = 10
@@ -281,29 +849,31 @@ const getSiteRatingsService = async (
     const [ratings, total] = await Promise.all([
         RatingModel.find({
             type: RatingType.SITE,
+            status: RatingStatus.APPROVED,
+            isDeleted: false,
         })
             .populate("userId", userPopulationFields)
             .sort({ createdAt: -1 })
             .skip(skip)
             .limit(limit),
-
         RatingModel.countDocuments({
             type: RatingType.SITE,
+            status: RatingStatus.APPROVED,
+            isDeleted: false,
         }),
     ]);
 
-    return {
-        ratings,
-        total,
-    };
+    return { ratings, total };
 };
 
-// Get site rating statistics
+// Get site rating statistics (only approved)
 const getSiteRatingStatsService = async (): Promise<SiteRatingStats> => {
     const stats = await RatingModel.aggregate([
         {
             $match: {
                 type: RatingType.SITE,
+                status: RatingStatus.APPROVED,
+                isDeleted: false,
             },
         },
         {
@@ -324,6 +894,8 @@ const getSiteRatingStatsService = async (): Promise<SiteRatingStats> => {
         {
             $match: {
                 type: RatingType.SITE,
+                status: RatingStatus.APPROVED,
+                isDeleted: false,
             },
         },
         {
@@ -375,6 +947,7 @@ const getUserPropertyRatingService = async (userId: string, propertyId: string):
         userId: new mongoose.Types.ObjectId(userId),
         propertyId: new mongoose.Types.ObjectId(propertyId),
         type: RatingType.PROPERTY,
+        isDeleted: false,
     })
         .populate("userId", userPopulationFields)
         .populate("propertyId", propertyPopulationFields)
@@ -388,6 +961,7 @@ const getUserSiteRatingService = async (userId: string): Promise<IRating | null>
     const rating = await RatingModel.findOne({
         userId: new mongoose.Types.ObjectId(userId),
         type: RatingType.SITE,
+        isDeleted: false,
     }).populate("userId", userPopulationFields);
 
     return rating;
@@ -399,6 +973,7 @@ const getUserHostRatingsService = async (userId: string, hostId: string): Promis
         userId: new mongoose.Types.ObjectId(userId),
         hostId: new mongoose.Types.ObjectId(hostId),
         type: RatingType.PROPERTY,
+        isDeleted: false,
     })
         .populate("userId", userPopulationFields)
         .populate("propertyId", propertyPopulationFields)
@@ -421,16 +996,17 @@ const updateRatingService = async (ratingId: string, updateData: Partial<IRating
     return rating;
 };
 
-// Delete a rating
+// Delete a rating (soft delete)
 const deleteRatingService = async (ratingId: string): Promise<IRating | null> => {
-    const rating = await RatingModel.findByIdAndDelete(ratingId).populate("userId", userPopulationFields).populate("propertyId", propertyPopulationFields).populate("hostId", userPopulationFields);
+    const rating = await RatingModel.findByIdAndUpdate(ratingId, { isDeleted: true }, { new: true }).populate("userId", userPopulationFields).populate("propertyId", propertyPopulationFields).populate("hostId", userPopulationFields);
 
     return rating;
 };
 
-// Get all ratings for admin with filters
+// Get all ratings for admin with filters (includes all statuses)
 interface GetAllRatingsFilter {
     type?: RatingType;
+    status?: RatingStatus;
     page?: number;
     limit?: number;
     sortBy?: string;
@@ -446,16 +1022,15 @@ const getAllRatingsForAdminService = async (
     page: number;
     limit: number;
 }> => {
-    const { type, page = 1, limit = 10, sortBy = "createdAt", sortOrder = "desc", search } = filters;
+    const { type, status, page = 1, limit = 10, sortBy = "createdAt", sortOrder = "desc", search } = filters;
 
     const skip = (page - 1) * limit;
 
-    // Build filter query
-    const filterQuery: any = {};
+    const filterQuery: any = { isDeleted: false };
 
     if (type) filterQuery.type = type;
+    if (status) filterQuery.status = status;
 
-    // Search functionality
     if (search) {
         const userSearchQuery = await RatingModel.find({
             $or: [{ "userId.name": { $regex: search, $options: "i" } }, { "userId.email": { $regex: search, $options: "i" } }],
@@ -468,18 +1043,12 @@ const getAllRatingsForAdminService = async (
         filterQuery.$or = [{ _id: { $in: userSearchQuery } }, { _id: { $in: propertySearchQuery } }, { country: { $regex: search, $options: "i" } }, { description: { $regex: search, $options: "i" } }];
     }
 
-    // Sort configuration
     const sortConfig: any = {};
     sortConfig[sortBy] = sortOrder === "desc" ? -1 : 1;
 
     const [ratings, total] = await Promise.all([RatingModel.find(filterQuery).populate("userId", userPopulationFields).populate("propertyId", propertyPopulationFields).populate("hostId", userPopulationFields).sort(sortConfig).skip(skip).limit(limit), RatingModel.countDocuments(filterQuery)]);
 
-    return {
-        ratings,
-        total,
-        page,
-        limit,
-    };
+    return { ratings, total, page, limit };
 };
 
 // Get rating statistics for admin dashboard
@@ -487,37 +1056,37 @@ const getAdminRatingStatsService = async (): Promise<{
     totalRatings: number;
     siteRatings: number;
     propertyRatings: number;
+    pendingSiteRatings: number;
+    pendingPropertyRatings: number;
     averageSiteRating: number;
     averagePropertyRating: number;
     recentRatings: IRating[];
 }> => {
-    const [totalRatings, siteRatings, propertyRatings, siteStats, propertyStats, recentRatings] = await Promise.all([
-        RatingModel.countDocuments(),
-        RatingModel.countDocuments({ type: RatingType.SITE }),
-        RatingModel.countDocuments({ type: RatingType.PROPERTY }),
-
-        // Average site rating
-        RatingModel.aggregate([{ $match: { type: RatingType.SITE } }, { $group: { _id: null, average: { $avg: "$overallExperience" } } }]),
-
-        // Average property rating
-        RatingModel.aggregate([{ $match: { type: RatingType.PROPERTY } }, { $group: { _id: null, average: { $avg: "$overallExperience" } } }]),
-
-        // Recent ratings (last 10)
-        RatingModel.find().populate("userId", userPopulationFields).populate("propertyId", propertyPopulationFields).populate("hostId", userPopulationFields).sort({ createdAt: -1 }).limit(10),
+    const [totalRatings, siteRatings, propertyRatings, pendingSiteRatings, pendingPropertyRatings, siteStats, propertyStats, recentRatings] = await Promise.all([
+        RatingModel.countDocuments({ isDeleted: false }),
+        RatingModel.countDocuments({ type: RatingType.SITE, isDeleted: false }),
+        RatingModel.countDocuments({ type: RatingType.PROPERTY, isDeleted: false }),
+        RatingModel.countDocuments({ type: RatingType.SITE, status: RatingStatus.PENDING, isDeleted: false }),
+        RatingModel.countDocuments({ type: RatingType.PROPERTY, status: RatingStatus.PENDING, isDeleted: false }),
+        RatingModel.aggregate([{ $match: { type: RatingType.SITE, isDeleted: false } }, { $group: { _id: null, average: { $avg: "$overallExperience" } } }]),
+        RatingModel.aggregate([{ $match: { type: RatingType.PROPERTY, isDeleted: false } }, { $group: { _id: null, average: { $avg: "$overallExperience" } } }]),
+        RatingModel.find({ isDeleted: false }).populate("userId", userPopulationFields).populate("propertyId", propertyPopulationFields).populate("hostId", userPopulationFields).sort({ createdAt: -1 }).limit(10),
     ]);
 
     return {
         totalRatings,
         siteRatings,
         propertyRatings,
+        pendingSiteRatings,
+        pendingPropertyRatings,
         averageSiteRating: siteStats.length > 0 ? Math.round(siteStats[0].average * 10) / 10 : 0,
         averagePropertyRating: propertyStats.length > 0 ? Math.round(propertyStats[0].average * 10) / 10 : 0,
         recentRatings,
     };
 };
 
+// Check user properties rating service
 const checkUserPropertiesRatingService = async (userId: string, propertyIds: string[]): Promise<{ propertyId: string; hasRated: boolean }[]> => {
-    // Filter out undefined/null propertyIds
     const validPropertyIds = propertyIds.filter((id) => id && mongoose.Types.ObjectId.isValid(id));
 
     if (validPropertyIds.length === 0) {
@@ -528,9 +1097,9 @@ const checkUserPropertiesRatingService = async (userId: string, propertyIds: str
         type: RatingType.PROPERTY,
         userId: new mongoose.Types.ObjectId(userId),
         propertyId: { $in: validPropertyIds.map((id) => new mongoose.Types.ObjectId(id)) },
+        isDeleted: false,
     });
 
-    // Create a map for quick lookup
     const ratingMap = new Map();
     ratings.forEach((rating) => {
         if (rating.propertyId) {
@@ -538,11 +1107,17 @@ const checkUserPropertiesRatingService = async (userId: string, propertyIds: str
         }
     });
 
-    // Return array with hasRated status for each property
     return validPropertyIds.map((propertyId) => ({
         propertyId,
         hasRated: ratingMap.has(propertyId),
     }));
+};
+
+// Update rating status (for admin)
+const updateRatingStatusService = async (ratingId: string, status: RatingStatus): Promise<IRating | null> => {
+    const rating = await RatingModel.findByIdAndUpdate(ratingId, { status }, { new: true, runValidators: true }).populate("userId", userPopulationFields).populate("propertyId", propertyPopulationFields).populate("hostId", userPopulationFields);
+
+    return rating;
 };
 
 export const ratingServices = {
@@ -558,10 +1133,8 @@ export const ratingServices = {
     getUserHostRatingsService,
     updateRatingService,
     deleteRatingService,
-    // new for admin
     getAllRatingsForAdminService,
     getAdminRatingStatsService,
-
-    // check rated properties
     checkUserPropertiesRatingService,
+    updateRatingStatusService,
 };

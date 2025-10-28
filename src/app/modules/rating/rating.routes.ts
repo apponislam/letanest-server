@@ -14,7 +14,7 @@ router.get("/properties/:propertyId/ratings", ratingControllers.getPropertyRatin
 router.get("/properties/:propertyId/rating-stats", ratingControllers.getPropertyRatingStatsController);
 router.get("/properties/:propertyId/user-rating", auth, ratingControllers.getUserPropertyRatingController);
 
-// Host rating routes (NEW)
+// Host rating routes
 router.get("/hosts/:hostId/ratings", ratingControllers.getHostRatingsController);
 router.get("/hosts/:hostId/rating-stats", ratingControllers.getHostRatingStatsController);
 router.get("/hosts/:hostId/user-ratings", auth, ratingControllers.getUserHostRatingsController);
@@ -24,14 +24,16 @@ router.get("/site-ratings", ratingControllers.getSiteRatingsController);
 router.get("/site-rating-stats", ratingControllers.getSiteRatingStatsController);
 router.get("/site-ratings/user-rating", auth, ratingControllers.getUserSiteRatingController);
 
-// Update and delete routes (only by rating owner or admin)
+// Update and delete routes
 router.patch("/:ratingId", auth, validateRequest(ratingValidations.updateRatingValidation), ratingControllers.updateRatingController);
 router.delete("/:ratingId", auth, ratingControllers.deleteRatingController);
 
 // ADMIN ONLY ROUTES
 router.get("/admin/all-ratings", auth, ratingControllers.getAllRatingsForAdminController);
 router.get("/admin/rating-stats", auth, ratingControllers.getAdminRatingStatsController);
+router.patch("/admin/:ratingId/status", auth, ratingControllers.updateRatingStatusController);
 
+// Check user ratings
 router.post("/check-user-ratings", auth, ratingControllers.checkUserPropertiesRatingController);
 
 export const ratingRoutes = router;
