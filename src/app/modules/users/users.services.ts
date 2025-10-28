@@ -283,16 +283,21 @@ const getMyProfileService = async (userId: Types.ObjectId): Promise<any> => {
         .populate({
             path: "subscriptions.subscription",
             model: "UserSubscription",
+            // Remove the nested populate since UserSubscription should have the badge directly
+        })
+        .populate({
+            path: "currentSubscription",
+            model: "UserSubscription",
             populate: {
                 path: "subscription",
                 model: "Subscription",
-                select: "badge",
+                select: "name badge level type price",
             },
         })
         .populate({
             path: "freeTireSub",
             model: "Subscription",
-            select: "billingPeriod bookingFee level paymentLink type freeBookings listingLimit commission",
+            select: "name badge billingPeriod bookingFee level paymentLink type freeBookings listingLimit commission",
         })
         .lean();
 
@@ -315,9 +320,11 @@ const getMyProfileService = async (userId: Types.ObjectId): Promise<any> => {
             createdAt: user.createdAt,
             updatedAt: user.updatedAt,
             verificationStatus: user.verificationStatus,
+            isVerifiedByAdmin: user.isVerifiedByAdmin,
         },
         subscriptions: {
             activeSubscriptions: user.subscriptions,
+            currentSubscription: user.currentSubscription,
             freeTier: {
                 used: user.freeTireUsed,
                 expiry: user.freeTireExpiry,
@@ -332,6 +339,7 @@ const getMyProfileService = async (userId: Types.ObjectId): Promise<any> => {
                   verifiedAt: user.hostStripeAccount.verifiedAt,
               }
             : null,
+        stripeCustomerId: user.stripeCustomerId, // Add stripe customer ID
     };
 };
 

@@ -72,6 +72,12 @@ const userSchema = new Schema<IUser>(
             default: [],
         },
 
+        currentSubscription: {
+            type: Schema.Types.ObjectId,
+            ref: "UserSubscription",
+            default: null,
+        },
+
         freeTireUsed: { type: Boolean, default: false },
         freeTireExpiry: { type: Date, default: null },
         freeTireSub: { type: Schema.Types.ObjectId, ref: "Subscription", default: null },

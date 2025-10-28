@@ -39,6 +39,7 @@ const messageSchema = new Schema<IMessage>(
         manager: String,
         phone: String,
         reason: String,
+        guestNo: String,
         isRead: {
             type: Boolean,
             default: false,
@@ -65,12 +66,7 @@ const conversationSchema = new Schema<IConversation>(
             type: Schema.Types.ObjectId,
             ref: "Message",
         },
-        // unreadCount: {
-        //     type: Number,
-        //     default: 0,
-        // },
         unreadCounts: {
-            // NEW: Per-user unread counts
             type: Map,
             of: Number,
             default: {},

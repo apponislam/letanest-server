@@ -213,9 +213,64 @@ const getRevenueChartData = async (year?: number) => {
 /**
  * Get property status statistics for pie chart
  */
-const getPropertyStatusStats = async () => {
-    // Get counts for each status
+// const getPropertyStatusStats = async () => {
+//     // Get counts for each status
+//     const statusCounts = await PropertyModel.aggregate([
+//         {
+//             $group: {
+//                 _id: "$status",
+//                 count: { $sum: 1 },
+//             },
+//         },
+//     ]);
+
+//     // Calculate total properties
+//     const totalProperties = await PropertyModel.countDocuments();
+
+//     // Create data array with all statuses, even if count is 0
+//     const allStatuses = ["published", "pending", "rejected", "hidden"];
+
+//     const statusData = allStatuses.map((status) => {
+//         const statusCount = statusCounts.find((item) => item._id === status);
+//         const count = statusCount?.count || 0;
+//         const percentage = totalProperties > 0 ? (count / totalProperties) * 100 : 0;
+
+//         return {
+//             status,
+//             count,
+//             percentage: Math.round(percentage),
+//         };
+//     });
+
+//     return {
+//         total: totalProperties,
+//         data: statusData,
+//     };
+// };
+
+const getPropertyStatusStats = async (filters: { propertyType?: string; startDate?: Date; endDate?: Date } = {}) => {
+    // Build match stage for filters
+    const matchStage: any = {};
+
+    if (filters.propertyType) {
+        matchStage.propertyType = filters.propertyType;
+    }
+
+    if (filters.startDate || filters.endDate) {
+        matchStage.createdAt = {};
+        if (filters.startDate) {
+            matchStage.createdAt.$gte = filters.startDate;
+        }
+        if (filters.endDate) {
+            matchStage.createdAt.$lte = filters.endDate;
+        }
+    }
+
+    // Get counts for each status with filters
     const statusCounts = await PropertyModel.aggregate([
+        {
+            $match: matchStage,
+        },
         {
             $group: {
                 _id: "$status",
@@ -224,8 +279,8 @@ const getPropertyStatusStats = async () => {
         },
     ]);
 
-    // Calculate total properties
-    const totalProperties = await PropertyModel.countDocuments();
+    // Calculate total properties with filters
+    const totalProperties = await PropertyModel.countDocuments(matchStage);
 
     // Create data array with all statuses, even if count is 0
     const allStatuses = ["published", "pending", "rejected", "hidden"];
@@ -245,6 +300,11 @@ const getPropertyStatusStats = async () => {
     return {
         total: totalProperties,
         data: statusData,
+        filters: {
+            propertyType: filters.propertyType,
+            startDate: filters.startDate,
+            endDate: filters.endDate,
+        },
     };
 };
 

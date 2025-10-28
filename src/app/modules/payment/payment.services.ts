@@ -8,7 +8,6 @@ import { stripeService } from "../subscription/stripe.services";
 import { PaymentModel } from "./payment.model";
 import { messageServices } from "../messages/message.services";
 import { Message } from "../messages/messages.model";
-import PDFDocument from "pdfkit";
 
 /**
  * Create a new payment

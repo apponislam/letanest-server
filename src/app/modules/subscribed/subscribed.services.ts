@@ -55,30 +55,27 @@ const createUserSubscription = async (data: CreateUserSubscriptionData): Promise
             await userSubscription.save({ session });
             console.log("🔄 User subscription updated:", userSubscription._id);
         } else {
-            // Create new subscription
             userSubscription = new UserSubscription(userSubscriptionData);
             await userSubscription.save({ session });
-
-            // Update the user document with the new subscription _id
             await UserModel.findByIdAndUpdate(
                 data.userId,
                 {
                     $push: { subscriptions: { subscription: userSubscription._id } },
+                    $set: { currentSubscription: userSubscription._id },
                 },
                 { session, new: true }
             );
-
             console.log("✅ User subscription created and linked to user:", userSubscription._id);
         }
 
+        await UserModel.findByIdAndUpdate(data.userId, { $set: { currentSubscription: userSubscription._id } }, { session });
+
         await session.commitTransaction();
         session.endSession();
-
         return userSubscription;
     } catch (error: any) {
         await session.abortTransaction();
         session.endSession();
-
         console.error("❌ User subscription creation/updating failed:", error);
         throw new ApiError(httpStatus.INTERNAL_SERVER_ERROR, error instanceof Error ? error.message : "Failed to create/update user subscription");
     }

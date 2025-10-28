@@ -28,8 +28,35 @@ const getRevenueChartData = catchAsync(async (req: Request, res: Response) => {
     });
 });
 
+// const getPropertyStatusStats = catchAsync(async (req: Request, res: Response) => {
+//     const stats = await dashboardServices.getPropertyStatusStats();
+
+//     sendResponse(res, {
+//         statusCode: httpStatus.OK,
+//         success: true,
+//         message: "Property status statistics retrieved successfully",
+//         data: stats,
+//     });
+// });
+
 const getPropertyStatusStats = catchAsync(async (req: Request, res: Response) => {
-    const stats = await dashboardServices.getPropertyStatusStats();
+    const { propertyType, startDate, endDate } = req.query;
+
+    const filters: any = {};
+
+    if (propertyType) {
+        filters.propertyType = propertyType as string;
+    }
+
+    if (startDate) {
+        filters.startDate = new Date(startDate as string);
+    }
+
+    if (endDate) {
+        filters.endDate = new Date(endDate as string);
+    }
+
+    const stats = await dashboardServices.getPropertyStatusStats(filters);
 
     sendResponse(res, {
         statusCode: httpStatus.OK,
