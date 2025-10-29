@@ -197,6 +197,50 @@ const getRandomAdminController = catchAsync(async (req: Request, res: Response) 
     });
 });
 
+const changeUserRoleController = catchAsync(async (req: Request, res: Response) => {
+    const { userId, newRole } = req.body;
+    const adminId = req.user?._id;
+
+    if (!adminId) {
+        throw new ApiError(httpStatus.UNAUTHORIZED, "Unauthorized");
+    }
+
+    if (!userId || !newRole) {
+        throw new ApiError(httpStatus.BAD_REQUEST, "User ID and new role are required");
+    }
+
+    const result = await userServices.changeUserRoleService(userId, newRole, adminId.toString());
+
+    sendResponse(res, {
+        statusCode: httpStatus.OK,
+        success: true,
+        message: `User role changed to ${newRole} successfully`,
+        data: result,
+    });
+});
+
+const deleteUserController = catchAsync(async (req: Request, res: Response) => {
+    const { userId } = req.body;
+    const adminId = req.user?._id;
+
+    if (!adminId) {
+        throw new ApiError(httpStatus.UNAUTHORIZED, "Unauthorized");
+    }
+
+    if (!userId) {
+        throw new ApiError(httpStatus.BAD_REQUEST, "User ID is required");
+    }
+
+    const result = await userServices.deleteUserService(userId, adminId.toString());
+
+    sendResponse(res, {
+        statusCode: httpStatus.OK,
+        success: true,
+        message: "User deleted successfully",
+        data: result,
+    });
+});
+
 export const userControllers = {
     getAllUsersController,
     getSingleUserController,
@@ -212,4 +256,10 @@ export const userControllers = {
     getMyProfileController,
     // randorm admin
     getRandomAdminController,
+
+    //change user role
+    changeUserRoleController,
+
+    //delete user
+    deleteUserController,
 };

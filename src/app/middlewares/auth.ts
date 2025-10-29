@@ -30,8 +30,9 @@ const auth = catchAsync(async (req: Request, res: Response, next: NextFunction) 
         throw new ApiError(404, "Authentication failed: User not found");
     }
 
-    // console.log(user);
-    // console.log(decoded);
+    if (!user.isActive) {
+        throw new ApiError(401, "Authentication failed: Your account has been deactivated. Please contact support.");
+    }
 
     req.user = user;
     next();
