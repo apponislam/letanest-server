@@ -151,6 +151,25 @@ const getHostPayments = catchAsync(async (req: Request, res: Response) => {
     });
 });
 
+const getPaymentsByProperty = catchAsync(async (req: Request, res: Response) => {
+    const { propertyId } = req.params;
+    const { page = 1, limit = 10, search } = req.query;
+
+    const result = await paymentServices.getPaymentsByProperty(propertyId, {
+        page: Number(page),
+        limit: Number(limit),
+        search: search as string,
+    });
+
+    sendResponse(res, {
+        statusCode: httpStatus.OK,
+        success: true,
+        message: "Payments by property retrieved successfully",
+        data: result.payments,
+        meta: result.meta,
+    });
+});
+
 export const paymentControllers = {
     createPayment,
     confirmPayment,
@@ -163,4 +182,7 @@ export const paymentControllers = {
     // downloadPaymentsPDF,
     // For Host
     getHostPayments,
+
+    // get payments by property
+    getPaymentsByProperty,
 };

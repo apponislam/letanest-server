@@ -14,7 +14,7 @@ const auth = catchAsync(async (req: Request, res: Response, next: NextFunction) 
         throw new ApiError(401, "Authentication failed: No token provided");
     }
 
-    let decoded;
+    let decoded: jwt.JwtPayload;
     try {
         decoded = jwt.verify(token, config.jwt_access_secret as string) as { email: string };
     } catch (err: any) {
@@ -32,6 +32,10 @@ const auth = catchAsync(async (req: Request, res: Response, next: NextFunction) 
 
     if (!user.isActive) {
         throw new ApiError(401, "Authentication failed: Your account has been deactivated. Please contact support.");
+    }
+
+    if (user.role !== decoded?.role) {
+        throw new ApiError(403, "Authentication failed: Role mismatch. Please login again.");
     }
 
     req.user = user;
