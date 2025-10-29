@@ -30,4 +30,7 @@ router.get("/me/profile", auth, userControllers.getMyProfileController);
 
 router.get("/random/admin", auth, userControllers.getRandomAdminController);
 
+router.patch("/change-role", auth, authorize([roles.ADMIN]), userControllers.changeUserRoleController);
+router.patch("/delete", auth, authorize([roles.ADMIN]), userControllers.deleteUserController);
+
 export const userRoutes = router;

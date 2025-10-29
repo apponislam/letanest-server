@@ -1,5 +1,5 @@
 import { Types } from "mongoose";
-import { IUser } from "../auth/auth.interface";
+import { IUser, Role, roles } from "../auth/auth.interface";
 import { UserModel } from "../auth/auth.model";
 import { IUpdateUserProfile } from "./user.interface";
 import ApiError from "../../../errors/ApiError";
@@ -19,14 +19,15 @@ interface IUserQuery {
 const getAllUsersService = async (query: IUserQuery) => {
     const { page = 1, limit = 10, search, role, isActive } = query;
 
-    const filter: Record<string, any> = {};
+    const filter: Record<string, any> = {
+        isActive: true,
+    };
 
     if (search) {
         filter.$or = [{ name: { $regex: search, $options: "i" } }, { email: { $regex: search, $options: "i" } }, { phone: { $regex: search, $options: "i" } }];
     }
 
     if (role) filter.role = role;
-    if (isActive) filter.isActive = isActive === "true";
 
     const skip = (Number(page) - 1) * Number(limit);
 
@@ -38,7 +39,6 @@ const getAllUsersService = async (query: IUserQuery) => {
             total,
             page: Number(page),
             limit: Number(limit),
-            totalPages: Math.ceil(total / Number(limit)),
         },
     };
 };
@@ -349,6 +349,52 @@ const getRandomAdminService = async (): Promise<any> => {
     return admin.length > 0 ? admin[0] : null;
 };
 
+const changeUserRoleService = async (userId: string, newRole: Role, adminId: string) => {
+    // Check if user exists
+    const user = await UserModel.findById(userId);
+    if (!user) {
+        throw new ApiError(httpStatus.NOT_FOUND, "User not found");
+    }
+
+    if (!Object.values(roles).includes(newRole)) {
+        throw new ApiError(httpStatus.BAD_REQUEST, "Invalid role");
+    }
+
+    if (user.role === newRole) {
+        throw new ApiError(httpStatus.BAD_REQUEST, `User is already a ${newRole}`);
+    }
+    user.role = newRole;
+    await user.save();
+
+    const { password, ...userWithoutPassword } = user.toObject();
+    return userWithoutPassword;
+};
+
+const deleteUserService = async (userId: string, adminId: string) => {
+    // Check if user exists
+    const user = await UserModel.findById(userId);
+    if (!user) {
+        throw new ApiError(httpStatus.NOT_FOUND, "User not found");
+    }
+
+    // Check if user is already inactive
+    if (!user.isActive) {
+        throw new ApiError(httpStatus.BAD_REQUEST, "User is already deleted");
+    }
+
+    // Prevent admin from deleting themselves
+    if (userId === adminId) {
+        throw new ApiError(httpStatus.BAD_REQUEST, "Cannot delete your own account");
+    }
+
+    // Soft delete by setting isActive to false
+    user.isActive = false;
+    await user.save();
+
+    const { password, ...userWithoutPassword } = user.toObject();
+    return userWithoutPassword;
+};
+
 export const userServices = {
     getAllUsersService,
     getSingleUserService,
@@ -366,4 +412,10 @@ export const userServices = {
 
     // random admin
     getRandomAdminService,
+
+    //change user role
+    changeUserRoleService,
+
+    //delete user
+    deleteUserService,
 };
