@@ -22,4 +22,6 @@ router.get("/host/my-payments", auth, paymentControllers.getHostPayments);
 router.get("/host/my-payments/invoice/:id", auth, paymentTemplate.generateHostSingleInvoicePDF);
 router.post("/host/my-payments/payments-report", auth, paymentTemplate.generateHostPaymentsPDF);
 
+router.get("/property/:propertyId", auth, paymentControllers.getPaymentsByProperty);
+
 export const paymentRoutes = router;

@@ -6,6 +6,8 @@ import { getIO } from "../../../socket/socket";
 import { emitToConversation, emitToUser } from "../../../socket/socketHandlers";
 import { UserModel } from "../auth/auth.model";
 import { sanitizeMessageText } from "../../../utils/contentFilter";
+import { IUser } from "../auth/auth.interface";
+import { ISubscription } from "../subscription/subscription.interface";
 
 const createConversation = async (conversationData: ICreateConversationDto) => {
     const existingConversation = await Conversation.findOne({
@@ -38,7 +40,7 @@ const getUserConversations = async (userId: string) => {
         participants: userId,
         isActive: true,
     })
-        .populate("participants", "name profileImg email phone role")
+        .populate("participants", "name profileImg email phone role isVerifiedByAdmin")
         .populate({
             path: "lastMessage",
             populate: {
@@ -73,7 +75,7 @@ const getConversationById = async (conversationId: string, userId: string) => {
         participants: userId,
         isActive: true,
     })
-        .populate("participants", "name profileImg email phone role")
+        .populate("participants", "name profileImg email phone role isVerifiedByAdmin")
         .populate({
             path: "lastMessage",
             populate: {
@@ -101,20 +103,40 @@ const createMessage = async (messageData: ICreateMessageDto) => {
     }
 
     const receiver = conversation.participants.find((p) => p.toString() !== messageData.sender.toString());
+
     let bookingFee = 30;
+
     if (receiver) {
         const receiverData = await UserModel.findById(receiver)
-            .select("_id name email role phone profileImg subscriptions freeTireSub freeTireData")
+            .select("_id name email role phone profileImg subscriptions freeTireSub freeTireData currentSubscription")
             .populate({
                 path: "freeTireSub",
                 select: "_id name price duration",
             })
             .populate({
-                path: "subscriptions.subscription",
+                path: "currentSubscription",
                 select: "_id bookingFee commission listingLimit freeBookings bookingLimit",
-            });
+            })
+            .lean<IUser & { currentSubscription?: ISubscription }>();
+
         console.log("🎯 Receiver with subscriptions and free trial populated:", receiverData);
+
+        const agreedFeeNum = Number(messageData?.agreedFee || 0);
+
+        if (receiverData?.currentSubscription) {
+            const sub = receiverData.currentSubscription;
+            if (sub.bookingLimit && sub.bookingLimit > 0) {
+                bookingFee = 0;
+            } else {
+                bookingFee = sub.bookingFee !== undefined && sub.bookingFee !== null ? (agreedFeeNum * sub.bookingFee) / 100 : agreedFeeNum * 0.1;
+            }
+        } else {
+            bookingFee = agreedFeeNum * 0.1;
+        }
+        bookingFee = Number(bookingFee.toFixed(2));
     }
+
+    console.log(bookingFee);
 
     console.log(messageData);
 
@@ -144,8 +166,8 @@ const createMessage = async (messageData: ICreateMessageDto) => {
         throw new ApiError(httpStatus.INTERNAL_SERVER_ERROR, "Failed to create message");
     }
 
-    // NEW: Calculate unread count for receiver
     let unreadCountForReceiver = 0;
+
     if (receiver) {
         unreadCountForReceiver = await Message.countDocuments({
             conversationId: conversation._id,
@@ -254,8 +276,8 @@ const rejectOffer = async (messageId: string, conversationId: string, userId: st
         throw new ApiError(httpStatus.NOT_FOUND, "Message not found");
     }
 
-    if (message.type !== "offer") {
-        throw new ApiError(httpStatus.BAD_REQUEST, "Can only reject offer messages");
+    if (message.type !== "offer" && message.type !== "request") {
+        throw new ApiError(httpStatus.BAD_REQUEST, "Can only reject offer or request messages");
     }
 
     const conversation = await Conversation.findOne({

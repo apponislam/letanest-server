@@ -678,6 +678,140 @@ const getPaymentsByHost = async (hostId: string, query: { page?: number; limit?:
     };
 };
 
+const getPaymentsByProperty = async (propertyId: string, query: { page?: number; limit?: number; search?: string }) => {
+    if (!Types.ObjectId.isValid(propertyId)) {
+        throw new ApiError(httpStatus.BAD_REQUEST, "Invalid property ID");
+    }
+
+    const page = Number(query.page) || 1;
+    const limit = Number(query.limit) || 10;
+    const skip = (page - 1) * limit;
+
+    // Always filter by completed status
+    const filterQuery: any = {
+        propertyId: new Types.ObjectId(propertyId),
+        status: "completed",
+    };
+
+    // If search term provided, use aggregation to search by guest name
+    if (query.search) {
+        const aggregationPipeline: any[] = [
+            {
+                $match: {
+                    propertyId: new Types.ObjectId(propertyId),
+                    status: "completed",
+                },
+            },
+            // Lookup user (guest)
+            {
+                $lookup: {
+                    from: "users",
+                    localField: "userId",
+                    foreignField: "_id",
+                    as: "userId",
+                },
+            },
+            { $unwind: { path: "$userId", preserveNullAndEmptyArrays: true } },
+            // Search by guest name
+            {
+                $match: {
+                    "userId.name": { $regex: query.search, $options: "i" },
+                },
+            },
+            // Lookup other fields
+            {
+                $lookup: {
+                    from: "properties",
+                    localField: "propertyId",
+                    foreignField: "_id",
+                    as: "propertyId",
+                },
+            },
+            { $unwind: { path: "$propertyId", preserveNullAndEmptyArrays: true } },
+            {
+                $lookup: {
+                    from: "messages",
+                    localField: "messageId",
+                    foreignField: "_id",
+                    as: "messageId",
+                },
+            },
+            { $unwind: { path: "$messageId", preserveNullAndEmptyArrays: true } },
+            // Sort and paginate
+            { $sort: { createdAt: -1 } },
+            { $skip: skip },
+            { $limit: limit },
+            // Project final structure
+            {
+                $project: {
+                    _id: 1,
+                    stripePaymentIntentId: 1,
+                    agreedFee: 1,
+                    bookingFee: 1,
+                    extraFee: 1,
+                    totalAmount: 1,
+                    commissionRate: 1,
+                    commissionAmount: 1,
+                    hostAmount: 1,
+                    platformTotal: 1,
+                    checkInDate: 1,
+                    checkOutDate: 1,
+                    status: 1,
+                    stripePaymentStatus: 1,
+                    createdAt: 1,
+                    paidAt: 1,
+                    userId: {
+                        _id: "$userId._id",
+                        name: "$userId.name",
+                        email: "$userId.email",
+                        profileImg: "$userId.profileImg",
+                        phone: "$userId.phone",
+                    },
+                    propertyId: {
+                        _id: "$propertyId._id",
+                        title: "$propertyId.title",
+                        propertyNumber: "$propertyId.propertyNumber",
+                        coverPhoto: "$propertyId.coverPhoto",
+                        address: "$propertyId.address",
+                        location: "$propertyId.location",
+                    },
+                    messageId: {
+                        _id: "$messageId._id",
+                        checkInDate: "$messageId.checkInDate",
+                        checkOutDate: "$messageId.checkOutDate",
+                        guestNo: "$messageId.guestNo",
+                    },
+                },
+            },
+        ];
+
+        const [payments, totalResult] = await Promise.all([PaymentModel.aggregate(aggregationPipeline), PaymentModel.aggregate([...aggregationPipeline.slice(0, -4), { $count: "total" }])]);
+
+        const total = totalResult.length > 0 ? totalResult[0].total : 0;
+
+        return {
+            payments,
+            meta: {
+                page,
+                limit,
+                total,
+            },
+        };
+    }
+
+    // Simple query without search
+    const [payments, total] = await Promise.all([PaymentModel.find(filterQuery).populate("userId", "name email profileImg phone").populate("propertyId", "title propertyNumber coverPhoto address location").populate("messageId", "checkInDate checkOutDate guestNo").sort({ createdAt: -1 }).skip(skip).limit(limit), PaymentModel.countDocuments(filterQuery)]);
+
+    return {
+        payments,
+        meta: {
+            page,
+            limit,
+            total,
+        },
+    };
+};
+
 export const paymentServices = {
     createPayment,
     confirmPayment,
@@ -689,4 +823,7 @@ export const paymentServices = {
     getPaymentStatistics,
     // For Host
     getPaymentsByHost,
+
+    // Get payment by property
+    getPaymentsByProperty,
 };
