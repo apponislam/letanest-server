@@ -759,6 +759,7 @@ export const messageServices = {
     rejectOffer,
     convertRequestToOffer,
     acceptOffer,
+
     // Mark all messages read in conversion
     markConversationAsRead,
     getTotalUnreadCount,

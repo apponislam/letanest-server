@@ -2,10 +2,10 @@ import { Types } from "mongoose";
 
 export interface IUserSubscription {
     _id?: string;
-    user: Types.ObjectId; // Should be ObjectId, not string
-    subscription: Types.ObjectId; // Should be ObjectId, not string
+    user: Types.ObjectId;
+    subscription: Types.ObjectId;
     stripeSubscriptionId?: string;
-    stripeCustomerId: string; // Should be string, not object
+    stripeCustomerId: string;
     stripePriceId: string;
     status: "active" | "canceled" | "past_due" | "unpaid" | "incomplete";
     currentPeriodStart: Date;
@@ -14,8 +14,6 @@ export interface IUserSubscription {
     isFreeTier: boolean;
     cost?: number;
     currency?: string;
-    // bookingCount?: number;
-    // freeBookingCount?: number;
     bookingFee?: number;
     bookingLimit?: number;
     commission?: number;
@@ -26,10 +24,10 @@ export interface IUserSubscription {
 }
 
 export interface CreateUserSubscriptionData {
-    userId: string; // String that can be converted to ObjectId
-    subscriptionId: string; // String that can be converted to ObjectId
+    userId: string;
+    subscriptionId: string;
     stripeSubscriptionId?: string;
-    stripeCustomerId: string; // String ID like "cus_xxx"
+    stripeCustomerId: string;
     stripePriceId: string;
     status: IUserSubscription["status"];
     currentPeriodStart: Date;

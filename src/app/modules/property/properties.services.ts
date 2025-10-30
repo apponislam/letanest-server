@@ -2,8 +2,6 @@ import { PropertyModel } from "./properties.model";
 import { IProperty, IPropertyListResponse, IPropertyQuery } from "./properties.interface";
 import { Types } from "mongoose";
 import { geocodeAddress } from "./geocodingService";
-import ApiError from "../../../errors/ApiError";
-import httpStatus from "http-status";
 
 const createPropertyService = async (data: IProperty): Promise<IProperty> => {
     try {
@@ -53,134 +51,6 @@ const getSinglePropertyService = async (id: string): Promise<IProperty | null> =
         .populate("createdBy") // Populate the user object
         .populate("termsAndConditions"); // Populate terms and conditions
 };
-
-// const getAllPropertiesService = async (query: IPropertyQuery): Promise<IPropertyListResponse> => {
-//     const { page = 1, limit = 10, search, status = "published", minPrice, maxPrice, propertyType, propertyTypes, guests, bedrooms, availableFrom, availableTo, location, amenities, rating } = query;
-
-//     const filter: Record<string, any> = {
-//         isDeleted: false,
-//         status: status,
-//     };
-
-//     // Search filter
-//     if (search) {
-//         filter.$or = [{ title: { $regex: search, $options: "i" } }, { description: { $regex: search, $options: "i" } }, { location: { $regex: search, $options: "i" } }];
-//     }
-
-//     // Price filter
-//     if (minPrice !== undefined || maxPrice !== undefined) {
-//         filter.price = {};
-//         if (minPrice !== undefined) filter.price.$gte = Number(minPrice);
-//         if (maxPrice !== undefined) filter.price.$lte = Number(maxPrice);
-//     }
-
-//     // Property type filter - SUPPORT BOTH SINGLE AND MULTIPLE
-//     if (propertyTypes) {
-//         // Handle comma-separated property types (from multiple selection)
-//         let propertyTypesArray: string[];
-
-//         if (typeof propertyTypes === "string") {
-//             propertyTypesArray = propertyTypes.split(",").map((type) => type.trim());
-//         } else if (Array.isArray(propertyTypes)) {
-//             propertyTypesArray = propertyTypes;
-//         } else {
-//             propertyTypesArray = [];
-//         }
-
-//         // Filter out empty strings and create case-insensitive regex patterns
-//         const propertyTypesRegex = propertyTypesArray.filter((type) => type.trim() !== "").map((type) => new RegExp(type.trim(), "i"));
-
-//         if (propertyTypesRegex.length > 0) {
-//             filter.propertyType = { $in: propertyTypesRegex };
-//         }
-//     } else if (propertyType) {
-//         // Fallback to single property type for backward compatibility
-//         filter.propertyType = { $regex: propertyType, $options: "i" };
-//     }
-
-//     // Guests filter - use maxGuests field
-//     if (guests) {
-//         filter.maxGuests = { $gte: Number(guests) };
-//     }
-
-//     // Bedrooms filter
-//     if (bedrooms) {
-//         filter.bedrooms = { $gte: Number(bedrooms) };
-//     }
-
-//     // Location filter
-//     if (location) {
-//         filter.location = { $regex: location, $options: "i" };
-//     }
-
-//     // Availability date filter
-//     if (availableFrom || availableTo) {
-//         // If both dates are provided
-//         if (availableFrom && availableTo) {
-//             const checkInDate = new Date(availableFrom);
-//             const checkOutDate = new Date(availableTo);
-
-//             filter.$and = [
-//                 {
-//                     $or: [{ availableFrom: { $lte: checkInDate } }, { availableFrom: null }],
-//                 },
-//                 {
-//                     $or: [{ availableTo: { $gte: checkOutDate } }, { availableTo: null }],
-//                 },
-//             ];
-//         }
-//         // If only check-in date is provided
-//         else if (availableFrom) {
-//             const checkInDate = new Date(availableFrom);
-//             filter.$or = [{ availableFrom: { $lte: checkInDate } }, { availableFrom: null }];
-//         }
-//         // If only check-out date is provided
-//         else if (availableTo) {
-//             const checkOutDate = new Date(availableTo);
-//             filter.$or = [{ availableTo: { $gte: checkOutDate } }, { availableTo: null }];
-//         }
-//     }
-
-//     // Amenities filter - FIXED
-//     if (amenities) {
-//         let amenitiesArray: string[];
-
-//         if (typeof amenities === "string") {
-//             amenitiesArray = amenities.split(",").map((a) => a.trim());
-//         } else if (Array.isArray(amenities)) {
-//             amenitiesArray = amenities;
-//         } else {
-//             amenitiesArray = [];
-//         }
-
-//         // Filter out empty strings and create case-insensitive regex patterns
-//         const amenitiesRegex = amenitiesArray.filter((amenity) => amenity.trim() !== "").map((amenity) => new RegExp(amenity.trim(), "i"));
-
-//         if (amenitiesRegex.length > 0) {
-//             filter.amenities = { $all: amenitiesRegex };
-//         }
-//     }
-
-//     // console.log("Final Filter:", JSON.stringify(filter, null, 2));
-//     console.log(filter);
-//     // console.log(rating);
-
-//     const skip = (Number(page) - 1) * Number(limit);
-
-//     const [properties, total] = await Promise.all([PropertyModel.find(filter).skip(skip).limit(Number(limit)).sort({ createdAt: -1 }).populate("createdBy", "name email"), PropertyModel.countDocuments(filter)]);
-
-//     return {
-//         properties,
-//         meta: {
-//             total,
-//             page: Number(page),
-//             limit: Number(limit),
-//             totalPages: Math.ceil(total / Number(limit)),
-//         },
-//     };
-// };
-
-// Update getAllPublishedPropertiesService to exclude deleted properties
 
 const getAllPropertiesService = async (query: IPropertyQuery): Promise<IPropertyListResponse> => {
     const { page = 1, limit = 10, search, status = "published", minPrice, maxPrice, propertyType, propertyTypes, guests, bedrooms, availableFrom, availableTo, location, amenities, rating } = query;
@@ -307,19 +177,6 @@ const getAllPropertiesService = async (query: IPropertyQuery): Promise<IProperty
 
         // Add rating filter
         let ratingFilter: any = {};
-        // switch (rating) {
-        //     case "Good":
-        //         ratingFilter.averageRating = { $gte: 3, $lt: 4 };
-        //         break;
-        //     case "Above Good":
-        //         ratingFilter.averageRating = { $gte: 4, $lt: 5 };
-        //         break;
-        //     case "Excellent":
-        //         ratingFilter.averageRating = { $gte: 5 };
-        //         break;
-        //     default:
-        //         break;
-        // }
         switch (rating) {
             case "Good":
                 ratingFilter.averageRating = { $gte: 3 };
@@ -584,11 +441,6 @@ const deleteHostPropertyService = async (hostId: string, propertyId: string) => 
     if (property.isDeleted) {
         throw new Error("Property is already deleted");
     }
-
-    // Check if property is published
-    // if (property.status === "published") {
-    //     throw new Error("Cannot delete published properties");
-    // }
 
     // Soft delete - set isDeleted to true instead of removing from database
     const result = await PropertyModel.findByIdAndUpdate(

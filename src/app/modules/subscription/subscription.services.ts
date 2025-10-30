@@ -69,7 +69,9 @@ const getAllSubscriptionsAdmin = async (query: ISubscriptionQuery) => {
     const limit = Number(query.limit) || 10;
     const skip = (page - 1) * limit;
 
-    const filter: Record<string, any> = {};
+    const filter: Record<string, any> = {
+        isDeleted: false,
+    };
 
     if (query.type) filter.type = query.type;
     if (query.level) filter.level = query.level;
