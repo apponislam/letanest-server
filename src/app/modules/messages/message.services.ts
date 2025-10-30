@@ -45,7 +45,7 @@ const getUserConversations = async (userId: string) => {
             path: "lastMessage",
             populate: {
                 path: "propertyId",
-                select: "title images location price propertyNumber _id",
+                select: "title images location price propertyNumber _id createdBy",
             },
         })
         .sort({ updatedAt: -1 });
@@ -170,7 +170,17 @@ const createMessage = async (messageData: ICreateMessageDto) => {
         updatedAt: new Date(),
     });
 
-    const populatedMessage = await Message.findById(message._id).populate("sender", "name profileImg email phone role").populate("propertyId", "propertyNumber price title location createdBy");
+    // const populatedMessage = await Message.findById(message._id).populate("sender", "name profileImg email phone role").populate("propertyId", "propertyNumber price title location createdBy");
+    const populatedMessage = await Message.findById(message._id)
+        .populate("sender", "name profileImg email phone role")
+        .populate({
+            path: "propertyId",
+            select: "propertyNumber price title location createdBy",
+            populate: {
+                path: "createdBy",
+                select: "name email phone role profileImg",
+            },
+        });
 
     if (!populatedMessage) {
         throw new ApiError(httpStatus.INTERNAL_SERVER_ERROR, "Failed to create message");
@@ -211,13 +221,36 @@ const getConversationMessages = async (conversationId: string, userId: string, p
 
     const skip = (page - 1) * limit;
 
-    const messages = await Message.find({ conversationId }).populate("sender", "name profileImg email phone role").populate("propertyId", "propertyNumber price title location createdBy").sort({ createdAt: -1 }).skip(skip).limit(limit);
+    // const messages = await Message.find({ conversationId }).populate("sender", "name profileImg email phone role").populate("propertyId", "propertyNumber price title location createdBy").sort({ createdAt: -1 }).skip(skip).limit(limit);
+    const messages = await Message.find({ conversationId })
+        .populate("sender", "name profileImg email phone role")
+        .populate({
+            path: "propertyId",
+            select: "propertyNumber price title location createdBy",
+            populate: {
+                path: "createdBy",
+                select: "name email phone role profileImg",
+            },
+        })
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(limit);
 
     return messages.reverse();
 };
 
 const getMessageById = async (messageId: string, userId: string) => {
-    const message = await Message.findById(messageId).populate("sender", "name profileImg email phone role").populate("propertyId", "propertyNumber price title location createdBy");
+    // const message = await Message.findById(messageId).populate("sender", "name profileImg email phone role").populate("propertyId", "propertyNumber price title location createdBy");
+    const message = await Message.findById(messageId)
+        .populate("sender", "name profileImg email phone role")
+        .populate({
+            path: "propertyId",
+            select: "propertyNumber price title location createdBy",
+            populate: {
+                path: "createdBy",
+                select: "name email phone role profileImg",
+            },
+        });
 
     if (!message) {
         throw new ApiError(httpStatus.NOT_FOUND, "Message not found");
@@ -300,6 +333,15 @@ const rejectOffer = async (messageId: string, conversationId: string, userId: st
         throw new ApiError(httpStatus.FORBIDDEN, "Access denied to this conversation");
     }
 
+    // const updatedMessage = await Message.findByIdAndUpdate(
+    //     messageId,
+    //     {
+    //         type: "rejected",
+    //     },
+    //     { new: true }
+    // )
+    //     .populate("sender", "name profileImg email phone role")
+    //     .populate("propertyId", "propertyNumber price title images location createdBy");
     const updatedMessage = await Message.findByIdAndUpdate(
         messageId,
         {
@@ -308,7 +350,14 @@ const rejectOffer = async (messageId: string, conversationId: string, userId: st
         { new: true }
     )
         .populate("sender", "name profileImg email phone role")
-        .populate("propertyId", "propertyNumber price title images location createdBy");
+        .populate({
+            path: "propertyId",
+            select: "propertyNumber price title images location createdBy",
+            populate: {
+                path: "createdBy",
+                select: "name email phone role profileImg",
+            },
+        });
 
     if (!updatedMessage) {
         throw new ApiError(httpStatus.INTERNAL_SERVER_ERROR, "Failed to reject offer");
@@ -350,6 +399,15 @@ const convertRequestToOffer = async (messageId: string, conversationId: string, 
         throw new ApiError(httpStatus.FORBIDDEN, "Access denied to this conversation");
     }
 
+    // const updatedMessage = await Message.findByIdAndUpdate(
+    //     messageId,
+    //     {
+    //         type: "offer",
+    //     },
+    //     { new: true }
+    // )
+    //     .populate("sender", "name profileImg email phone role")
+    //     .populate("propertyId", "propertyNumber price title images location createdBy");
     const updatedMessage = await Message.findByIdAndUpdate(
         messageId,
         {
@@ -358,7 +416,14 @@ const convertRequestToOffer = async (messageId: string, conversationId: string, 
         { new: true }
     )
         .populate("sender", "name profileImg email phone role")
-        .populate("propertyId", "propertyNumber price title images location createdBy");
+        .populate({
+            path: "propertyId",
+            select: "propertyNumber price title images location createdBy",
+            populate: {
+                path: "createdBy",
+                select: "name email phone role profileImg",
+            },
+        });
 
     if (!updatedMessage) {
         throw new ApiError(httpStatus.INTERNAL_SERVER_ERROR, "Failed to convert request to offer");
@@ -400,6 +465,15 @@ const acceptOffer = async (messageId: string, conversationId: string, userId: st
         throw new ApiError(httpStatus.FORBIDDEN, "Access denied to this conversation");
     }
 
+    // const updatedMessage = await Message.findByIdAndUpdate(
+    //     messageId,
+    //     {
+    //         type: "accepted",
+    //     },
+    //     { new: true }
+    // )
+    //     .populate("sender", "name profileImg email phone role")
+    //     .populate("propertyId", "propertyNumber price title images location createdBy");
     const updatedMessage = await Message.findByIdAndUpdate(
         messageId,
         {
@@ -408,7 +482,14 @@ const acceptOffer = async (messageId: string, conversationId: string, userId: st
         { new: true }
     )
         .populate("sender", "name profileImg email phone role")
-        .populate("propertyId", "propertyNumber price title images location createdBy");
+        .populate({
+            path: "propertyId",
+            select: "propertyNumber price title images location createdBy",
+            populate: {
+                path: "createdBy",
+                select: "name email phone role profileImg",
+            },
+        });
 
     if (!updatedMessage) {
         throw new ApiError(httpStatus.INTERNAL_SERVER_ERROR, "Failed to accept offer");
@@ -578,7 +659,20 @@ const getAllConversationMessages = async (conversationId: string, page: number =
 
     const skip = (page - 1) * limit;
 
-    const messages = await Message.find({ conversationId }).populate("sender", "name profileImg email phone role").populate("propertyId", "propertyNumber price title location createdBy images").sort({ createdAt: -1 }).skip(skip).limit(limit);
+    // const messages = await Message.find({ conversationId }).populate("sender", "name profileImg email phone role").populate("propertyId", "propertyNumber price title location createdBy images").sort({ createdAt: -1 }).skip(skip).limit(limit);
+    const messages = await Message.find({ conversationId })
+        .populate("sender", "name profileImg email phone role")
+        .populate({
+            path: "propertyId",
+            select: "propertyNumber price title location createdBy images",
+            populate: {
+                path: "createdBy",
+                select: "name email phone role profileImg",
+            },
+        })
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(limit);
 
     const totalMessages = await Message.countDocuments({ conversationId });
 
