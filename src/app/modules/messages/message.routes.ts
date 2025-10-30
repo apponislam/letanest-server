@@ -22,4 +22,8 @@ router.patch("/messages/:messageId/read", auth, messageControllers.markAsRead);
 router.patch("/:messageId/reject", auth, messageControllers.rejectOffer);
 router.patch("/:messageId/convert-to-offer", auth, messageControllers.convertRequestToOfferController);
 
+router.get("/admin/conversations/user/:userId", auth, messageControllers.getConversationsByUserId);
+router.get("/admin/conversations/:conversationId/messages", auth, messageControllers.getAllConversationMessages);
+router.get("/admin/conversations/search/users", auth, messageControllers.searchUserConversations);
+
 export const messageRoutes = router;
