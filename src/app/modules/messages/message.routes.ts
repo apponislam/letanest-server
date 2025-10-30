@@ -20,5 +20,6 @@ router.get("/messages/:messageId", auth, messageControllers.getMessageById);
 router.patch("/messages/:messageId/read", auth, messageControllers.markAsRead);
 
 router.patch("/:messageId/reject", auth, messageControllers.rejectOffer);
+router.patch("/:messageId/convert-to-offer", auth, messageControllers.convertRequestToOfferController);
 
 export const messageRoutes = router;
