@@ -207,6 +207,56 @@ const getTotalUnreadCount = catchAsync(async (req, res) => {
     });
 });
 
+//Admin Routes
+
+const getConversationsByUserId = catchAsync(async (req, res) => {
+    const { userId } = req.params;
+    const { page = 1, limit = 20 } = req.query;
+
+    const result = await messageServices.getConversationsByUserId(userId, Number(page), Number(limit));
+
+    sendResponse(res, {
+        success: true,
+        statusCode: httpStatus.OK,
+        message: "User conversations fetched successfully",
+        data: result.conversations,
+        meta: result.meta,
+    });
+});
+
+const getAllConversationMessages = catchAsync(async (req, res) => {
+    const { conversationId } = req.params;
+    const { page = 1, limit = 100 } = req.query;
+
+    const result = await messageServices.getAllConversationMessages(conversationId, Number(page), Number(limit));
+
+    sendResponse(res, {
+        success: true,
+        statusCode: httpStatus.OK,
+        message: "All conversation messages fetched successfully",
+        data: {
+            messages: result.messages,
+            conversation: result.conversation,
+        },
+        meta: result.meta,
+    });
+});
+
+const searchUserConversations = catchAsync(async (req, res) => {
+    const { searchTerm } = req.query;
+    const { page = 1, limit = 20 } = req.query;
+
+    const result = await messageServices.searchUserConversations(searchTerm as string, Number(page), Number(limit));
+
+    sendResponse(res, {
+        success: true,
+        statusCode: httpStatus.OK,
+        message: "User conversations searched successfully",
+        data: result.results,
+        meta: result.meta,
+    });
+});
+
 export const messageControllers = {
     createConversation,
     getUserConversations,
@@ -219,7 +269,11 @@ export const messageControllers = {
     rejectOffer,
     convertRequestToOfferController,
     acceptOffer,
-    //mark all read
     markConversationAsRead,
     getTotalUnreadCount,
+
+    // Admin routes
+    getConversationsByUserId,
+    getAllConversationMessages,
+    searchUserConversations,
 };

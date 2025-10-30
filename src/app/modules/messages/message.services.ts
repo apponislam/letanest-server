@@ -510,6 +510,150 @@ const getTotalUnreadCount = async (userId: string) => {
     };
 };
 
+// This is for admin
+
+const getConversationsByUserId = async (userId: string, page: number = 1, limit: number = 20) => {
+    // Validate if user exists
+    const user = await UserModel.findById(userId);
+    if (!user) {
+        throw new ApiError(httpStatus.NOT_FOUND, "User not found");
+    }
+
+    const skip = (page - 1) * limit;
+
+    const conversations = await Conversation.find({
+        participants: userId,
+        isActive: true,
+    })
+        .populate("participants", "name profileImg email phone role isVerifiedByAdmin")
+        .populate({
+            path: "lastMessage",
+            populate: {
+                path: "propertyId",
+                select: "title images location price propertyNumber _id createdBy",
+            },
+        })
+        .sort({ updatedAt: -1 })
+        .skip(skip)
+        .limit(limit);
+
+    // Get total count for pagination
+    const totalConversations = await Conversation.countDocuments({
+        participants: userId,
+        isActive: true,
+    });
+
+    // Calculate unread counts for each conversation
+    const conversationsWithUnread = await Promise.all(
+        conversations.map(async (conversation) => {
+            const unreadCount = await Message.countDocuments({
+                conversationId: conversation._id,
+                sender: { $ne: userId },
+                isRead: false,
+            });
+
+            return {
+                ...conversation.toObject(),
+                unreadCount,
+            };
+        })
+    );
+
+    return {
+        conversations: conversationsWithUnread,
+        meta: {
+            page,
+            limit,
+            total: totalConversations,
+        },
+    };
+};
+
+const getAllConversationMessages = async (conversationId: string, page: number = 1, limit: number = 100) => {
+    // Verify conversation exists (admin can access any conversation)
+    const conversation = await Conversation.findById(conversationId);
+    if (!conversation) {
+        throw new ApiError(httpStatus.NOT_FOUND, "Conversation not found");
+    }
+
+    const skip = (page - 1) * limit;
+
+    const messages = await Message.find({ conversationId }).populate("sender", "name profileImg email phone role").populate("propertyId", "propertyNumber price title location createdBy images").sort({ createdAt: -1 }).skip(skip).limit(limit);
+
+    const totalMessages = await Message.countDocuments({ conversationId });
+
+    return {
+        messages: messages.reverse(),
+        meta: {
+            page,
+            limit,
+            total: totalMessages,
+        },
+        conversation: await Conversation.findById(conversationId).populate("participants", "name profileImg email phone role isVerifiedByAdmin"),
+    };
+};
+
+const searchUserConversations = async (searchTerm: string, page: number = 1, limit: number = 20) => {
+    if (!searchTerm || searchTerm.trim().length < 2) {
+        throw new ApiError(httpStatus.BAD_REQUEST, "Search term must be at least 2 characters long");
+    }
+
+    const skip = (page - 1) * limit;
+    const searchRegex = new RegExp(searchTerm, "i");
+
+    // Search users by name, email, phone
+    const users = await UserModel.find({
+        $or: [{ name: searchRegex }, { email: searchRegex }, { phone: searchRegex }],
+    })
+        .select("_id name email phone profileImg role")
+        .skip(skip)
+        .limit(limit);
+
+    const totalUsers = await UserModel.countDocuments({
+        $or: [{ name: searchRegex }, { email: searchRegex }, { phone: searchRegex }],
+    });
+
+    // Get conversations for each user
+    const usersWithConversations = await Promise.all(
+        users.map(async (user) => {
+            const conversations = await Conversation.find({
+                participants: user._id,
+                isActive: true,
+            })
+                .populate("participants", "name profileImg email phone role isVerifiedByAdmin")
+                .populate({
+                    path: "lastMessage",
+                    populate: {
+                        path: "propertyId",
+                        select: "title images location price propertyNumber _id createdBy",
+                    },
+                })
+                .sort({ updatedAt: -1 });
+
+            return {
+                user: {
+                    _id: user._id,
+                    name: user.name,
+                    email: user.email,
+                    phone: user.phone,
+                    profileImg: user.profileImg,
+                    role: user.role,
+                },
+                conversations: conversations,
+            };
+        })
+    );
+
+    return {
+        results: usersWithConversations,
+        meta: {
+            page,
+            limit,
+            total: totalUsers,
+        },
+    };
+};
+
 export const messageServices = {
     createConversation,
     getUserConversations,
@@ -524,4 +668,9 @@ export const messageServices = {
     // Mark all messages read in conversion
     markConversationAsRead,
     getTotalUnreadCount,
+
+    // admin routes
+    getConversationsByUserId,
+    getAllConversationMessages,
+    searchUserConversations,
 };
