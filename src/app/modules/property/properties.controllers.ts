@@ -15,20 +15,15 @@ const createPropertyController = catchAsync(async (req: Request, res: Response) 
     const files = req.files as MulterFiles;
     const coverPhotoFile = files?.coverPhoto?.[0];
     const photosFiles = files?.photos || [];
-
     const mediaData: Partial<IProperty> = {};
-
     if (coverPhotoFile) mediaData.coverPhoto = `/uploads/photos/${coverPhotoFile.filename}`;
     if (photosFiles.length > 0) mediaData.photos = photosFiles.map((file) => `/uploads/photos/${file.filename}`);
-
     const propertyData: Partial<IProperty> = {
         ...req.body,
         ...mediaData,
         createdBy: (req.user as any)?._id,
         agreeTerms: req.body.agreeTerms === "true" || req.body.agreeTerms === true,
     };
-
-    // Parse amenities if it's a string
     if (typeof req.body.amenities === "string") {
         try {
             propertyData.amenities = JSON.parse(req.body.amenities);
@@ -36,9 +31,7 @@ const createPropertyController = catchAsync(async (req: Request, res: Response) 
             propertyData.amenities = [];
         }
     }
-
     const property = await propertyServices.createPropertyService(propertyData as IProperty);
-
     sendResponse(res, {
         statusCode: httpStatus.CREATED,
         success: true,

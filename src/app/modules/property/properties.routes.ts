@@ -3,10 +3,11 @@ import { propertyControllers } from "./properties.controllers";
 import auth from "../../middlewares/auth";
 import authorize from "../../middlewares/authorize";
 import { uploadPropertyFiles } from "../../middlewares/propertyPhotos";
+import { checkPropertyListingLimit } from "./checkPropertyListingLimit";
 
 const router = express.Router();
 
-router.post("/", auth, authorize(["ADMIN", "HOST"]), uploadPropertyFiles, propertyControllers.createPropertyController);
+router.post("/", auth, authorize(["ADMIN", "HOST"]), checkPropertyListingLimit, uploadPropertyFiles, propertyControllers.createPropertyController);
 
 router.put("/:id", auth, authorize(["ADMIN", "HOST"]), uploadPropertyFiles, propertyControllers.updatePropertyController);
 
