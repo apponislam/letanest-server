@@ -135,6 +135,29 @@ const rejectOffer = catchAsync(async (req, res) => {
     });
 });
 
+const convertRequestToOfferController = catchAsync(async (req, res) => {
+    const { messageId } = req.params;
+    const { conversationId } = req.body;
+    const userId = req.user?._id;
+
+    if (!userId) {
+        throw new ApiError(httpStatus.UNAUTHORIZED, "User not authenticated");
+    }
+
+    if (!conversationId) {
+        throw new ApiError(httpStatus.BAD_REQUEST, "Conversation ID is required");
+    }
+
+    const result = await messageServices.convertRequestToOffer(messageId, conversationId, userId);
+
+    sendResponse(res, {
+        success: true,
+        statusCode: httpStatus.OK,
+        message: "Request converted to offer successfully",
+        data: result,
+    });
+});
+
 const acceptOffer = catchAsync(async (req, res) => {
     const { messageId } = req.params;
     const { conversationId } = req.body;
@@ -194,6 +217,7 @@ export const messageControllers = {
     getMessageById,
     markAsRead,
     rejectOffer,
+    convertRequestToOfferController,
     acceptOffer,
     //mark all read
     markConversationAsRead,

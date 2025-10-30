@@ -80,7 +80,7 @@ const getConversationById = async (conversationId: string, userId: string) => {
             path: "lastMessage",
             populate: {
                 path: "propertyId",
-                select: "title images location price propertyNumber _id",
+                select: "title images location price propertyNumber _id createdBy",
             },
         });
 
@@ -102,7 +102,15 @@ const createMessage = async (messageData: ICreateMessageDto) => {
         throw new ApiError(httpStatus.FORBIDDEN, "Cannot send message to this conversation");
     }
 
-    const receiver = conversation.participants.find((p) => p.toString() !== messageData.sender.toString());
+    let receiver;
+
+    console.log(messageData);
+
+    if (messageData.type === "offer") {
+        receiver = conversation.participants.find((p) => p.toString() !== messageData.sender.toString());
+    } else if (messageData.type === "request") {
+        receiver = conversation.participants.find((p) => p.toString() === messageData.sender.toString());
+    }
 
     let bookingFee = 30;
 
@@ -121,6 +129,7 @@ const createMessage = async (messageData: ICreateMessageDto) => {
 
         console.log("🎯 Receiver with subscriptions and free trial populated:", receiverData);
 
+        console.log(messageData.agreedFee);
         const agreedFeeNum = Number(messageData?.agreedFee || 0);
 
         if (receiverData?.currentSubscription) {
@@ -132,6 +141,7 @@ const createMessage = async (messageData: ICreateMessageDto) => {
             }
         } else {
             bookingFee = agreedFeeNum * 0.1;
+            console.log("in condition", bookingFee);
         }
         bookingFee = Number(bookingFee.toFixed(2));
     }
@@ -160,7 +170,7 @@ const createMessage = async (messageData: ICreateMessageDto) => {
         updatedAt: new Date(),
     });
 
-    const populatedMessage = await Message.findById(message._id).populate("sender", "name profileImg email phone role").populate("propertyId", "propertyNumber price title location");
+    const populatedMessage = await Message.findById(message._id).populate("sender", "name profileImg email phone role").populate("propertyId", "propertyNumber price title location createdBy");
 
     if (!populatedMessage) {
         throw new ApiError(httpStatus.INTERNAL_SERVER_ERROR, "Failed to create message");
@@ -201,13 +211,13 @@ const getConversationMessages = async (conversationId: string, userId: string, p
 
     const skip = (page - 1) * limit;
 
-    const messages = await Message.find({ conversationId }).populate("sender", "name profileImg email phone role").populate("propertyId", "propertyNumber price title location").sort({ createdAt: -1 }).skip(skip).limit(limit);
+    const messages = await Message.find({ conversationId }).populate("sender", "name profileImg email phone role").populate("propertyId", "propertyNumber price title location createdBy").sort({ createdAt: -1 }).skip(skip).limit(limit);
 
     return messages.reverse();
 };
 
 const getMessageById = async (messageId: string, userId: string) => {
-    const message = await Message.findById(messageId).populate("sender", "name profileImg email phone role").populate("propertyId", "propertyNumber price title location");
+    const message = await Message.findById(messageId).populate("sender", "name profileImg email phone role").populate("propertyId", "propertyNumber price title location createdBy");
 
     if (!message) {
         throw new ApiError(httpStatus.NOT_FOUND, "Message not found");
@@ -298,7 +308,7 @@ const rejectOffer = async (messageId: string, conversationId: string, userId: st
         { new: true }
     )
         .populate("sender", "name profileImg email phone role")
-        .populate("propertyId", "propertyNumber price title images location");
+        .populate("propertyId", "propertyNumber price title images location createdBy");
 
     if (!updatedMessage) {
         throw new ApiError(httpStatus.INTERNAL_SERVER_ERROR, "Failed to reject offer");
@@ -316,6 +326,56 @@ const rejectOffer = async (messageId: string, conversationId: string, userId: st
     });
 
     console.log(`✅ Offer rejected by user ${userId}`);
+
+    return updatedMessage;
+};
+
+const convertRequestToOffer = async (messageId: string, conversationId: string, userId: string) => {
+    const message = await Message.findById(messageId);
+    if (!message) {
+        throw new ApiError(httpStatus.NOT_FOUND, "Message not found");
+    }
+
+    if (message.type !== "request") {
+        throw new ApiError(httpStatus.BAD_REQUEST, "Can only convert request messages");
+    }
+
+    const conversation = await Conversation.findOne({
+        _id: conversationId,
+        participants: userId,
+        isActive: true,
+    });
+
+    if (!conversation) {
+        throw new ApiError(httpStatus.FORBIDDEN, "Access denied to this conversation");
+    }
+
+    const updatedMessage = await Message.findByIdAndUpdate(
+        messageId,
+        {
+            type: "offer",
+        },
+        { new: true }
+    )
+        .populate("sender", "name profileImg email phone role")
+        .populate("propertyId", "propertyNumber price title images location createdBy");
+
+    if (!updatedMessage) {
+        throw new ApiError(httpStatus.INTERNAL_SERVER_ERROR, "Failed to convert request to offer");
+    }
+
+    await Conversation.findByIdAndUpdate(conversationId, {
+        lastMessage: updatedMessage._id,
+        updatedAt: new Date(),
+    });
+
+    emitToConversation(conversationId, "message:new", updatedMessage);
+    emitToConversation(conversationId, "offer:rejected", {
+        messageId: updatedMessage._id,
+        conversationId,
+    });
+
+    console.log(`✅ Request converted to offer by user ${userId}`);
 
     return updatedMessage;
 };
@@ -348,7 +408,7 @@ const acceptOffer = async (messageId: string, conversationId: string, userId: st
         { new: true }
     )
         .populate("sender", "name profileImg email phone role")
-        .populate("propertyId", "propertyNumber price title images location");
+        .populate("propertyId", "propertyNumber price title images location createdBy");
 
     if (!updatedMessage) {
         throw new ApiError(httpStatus.INTERNAL_SERVER_ERROR, "Failed to accept offer");
@@ -400,7 +460,7 @@ const markConversationAsRead = async (conversationId: string, userId: string) =>
             path: "lastMessage",
             populate: {
                 path: "propertyId",
-                select: "title images location price propertyNumber _id",
+                select: "title images location price propertyNumber _id createdBy",
             },
         });
 
@@ -459,6 +519,7 @@ export const messageServices = {
     getMessageById,
     markMessageAsRead,
     rejectOffer,
+    convertRequestToOffer,
     acceptOffer,
     // Mark all messages read in conversion
     markConversationAsRead,
