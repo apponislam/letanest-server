@@ -4,10 +4,13 @@ import auth from "../../middlewares/auth";
 import authorize from "../../middlewares/authorize";
 import { roles } from "../auth/auth.interface";
 import { uploadProfileImage } from "./updatePhoto";
+import { userDownloader } from "./userDataDownload";
 
 const router = express.Router();
 
 router.get("/", auth, authorize([roles.ADMIN]), userControllers.getAllUsersController);
+
+router.get("/download-excel", auth, userDownloader.downloadUsersExcel);
 
 // Get single user
 router.get("/:id", auth, userControllers.getSingleUserController);
