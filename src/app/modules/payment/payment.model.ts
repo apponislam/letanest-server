@@ -77,7 +77,15 @@ const paymentSchema = new Schema<IPayment>(
             enum: ["pending", "completed", "failed"],
             default: "pending",
         },
-
+        paymentType: {
+            type: String,
+            enum: ["Stripe", "Bank"],
+            default: undefined,
+        },
+        isBookingFeePaidOnly: Boolean,
+        bookingFeePaidDone: Number,
+        comissionPaidDone: Number,
+        commissionPaid: Boolean,
         paidAt: {
             type: Date,
         },

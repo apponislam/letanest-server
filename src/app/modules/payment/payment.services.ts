@@ -8,6 +8,7 @@ import { stripeService } from "../subscription/stripe.services";
 import { PaymentModel } from "./payment.model";
 import { messageServices } from "../messages/message.services";
 import { Message } from "../messages/messages.model";
+import { calculateCommission } from "./calculateCommission";
 
 /**
  * Create a new payment
@@ -50,7 +51,6 @@ const createPayment = async (data: CreatePaymentData) => {
     // Create Stripe customer if doesn't exist
     if (!stripeCustomerId) {
         try {
-            // Create Stripe customer
             const stripeCustomer = await stripeService.createCustomer2({
                 email: guest.email,
                 name: guest.name,
@@ -60,8 +60,6 @@ const createPayment = async (data: CreatePaymentData) => {
             });
 
             stripeCustomerId = stripeCustomer.id;
-
-            // Update user with Stripe customer ID
             await UserModel.findByIdAndUpdate(data.userId, {
                 stripeCustomerId: stripeCustomerId,
             });
@@ -73,23 +71,13 @@ const createPayment = async (data: CreatePaymentData) => {
         }
     }
 
-    // Calculate commission (10% of agreedFee)
-    const commissionRate = 10;
-    const commissionAmount = data.agreedFee * (commissionRate / 100);
-    const hostAmount = data.agreedFee - commissionAmount;
+    // Calculate commission
+    const commissionResult = await calculateCommission(host._id.toString(), data.agreedFee);
 
-    const platformTotal = commissionAmount + data.bookingFee + (data.extraFee || 0);
+    const platformTotal = commissionResult.commissionAmount + data.bookingFee + (data.extraFee || 0);
 
-    // Calculate platform fees (commission + booking fee)
-    const platformFees = platformTotal;
-
-    // Create Stripe Connect payment - use agreedFee as base amount
-    const paymentIntent = await stripeService.createConnectPayment(
-        data.agreedFee, // Base amount for host + commission
-        host.hostStripeAccount.stripeAccountId,
-        stripeCustomerId,
-        platformFees // Total platform fees
-    );
+    // Create Stripe Connect payment
+    const paymentIntent = await stripeService.createConnectPayment(data.agreedFee, host.hostStripeAccount.stripeAccountId, stripeCustomerId, platformTotal);
 
     // Create payment record
     const payment = await PaymentModel.create({
@@ -98,9 +86,9 @@ const createPayment = async (data: CreatePaymentData) => {
         bookingFee: data.bookingFee,
         extraFee: data.extraFee || 0,
         totalAmount: data.totalAmount,
-        commissionRate: commissionRate,
-        commissionAmount: commissionAmount,
-        hostAmount: hostAmount,
+        commissionRate: commissionResult.commissionRate,
+        commissionAmount: commissionResult.commissionAmount,
+        hostAmount: commissionResult.hostAmount,
         platformTotal,
         userId: new Types.ObjectId(data.userId),
         propertyId: new Types.ObjectId(data.propertyId),
@@ -108,8 +96,10 @@ const createPayment = async (data: CreatePaymentData) => {
         messageId: new Types.ObjectId(data.messageId),
         hostId: new Types.ObjectId(host._id),
         status: "pending",
+        paymentType: "Stripe",
         checkInDate: data.checkInDate || null,
         checkOutDate: data.checkOutDate || null,
+        usedFreeBooking: commissionResult.usedFreeBooking,
     });
 
     return {
