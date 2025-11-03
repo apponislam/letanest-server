@@ -1,40 +1,3 @@
-import axios from "axios";
-import config from "../../config";
-
-export interface GeocodingResult {
-    lat: number;
-    lng: number;
-    formattedAddress: string;
-}
-
-export const geocodeAddress = async (location: string, postCode: string): Promise<GeocodingResult | null> => {
-    try {
-        const API_KEY = config.map_api_key;
-
-        const response = await axios.get(`http://api.positionstack.com/v1/forward?access_key=${API_KEY}&query=${encodeURIComponent(location + " " + postCode)}&limit=1`);
-
-        console.log("PositionStack response:", response.data);
-
-        if (response.data.data && response.data.data.length > 0) {
-            const result = response.data.data[0];
-
-            if (result.latitude && result.longitude) {
-                return {
-                    lat: result.latitude,
-                    lng: result.longitude,
-                    formattedAddress: result.label || `${location}, ${postCode}`,
-                };
-            }
-        }
-
-        console.log("No coordinates found for:", location, postCode);
-        return null;
-    } catch (error) {
-        console.error("Geocoding error:", error);
-        return null;
-    }
-};
-
 // import axios from "axios";
 // import config from "../../config";
 
@@ -48,32 +11,70 @@ export const geocodeAddress = async (location: string, postCode: string): Promis
 //     try {
 //         const API_KEY = config.map_api_key;
 
-//         // Global search - no country restriction
-//         const response = await axios.get(`https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(location + " " + postCode)}&key=${API_KEY}`);
+//         const response = await axios.get(`http://api.positionstack.com/v1/forward?access_key=${API_KEY}&query=${encodeURIComponent(location + " " + postCode)}&limit=1`);
 
-//         console.log("Google Geocoding response:", response.data);
+//         console.log("PositionStack response:", response.data);
 
-//         if (response.data.status === "OK" && response.data.results.length > 0) {
-//             const result = response.data.results[0];
-//             const { lat, lng } = result.geometry.location;
+//         if (response.data.data && response.data.data.length > 0) {
+//             const result = response.data.data[0];
 
-//             return {
-//                 lat: lat,
-//                 lng: lng,
-//                 formattedAddress: result.formatted_address,
-//             };
-//         } else if (response.data.status === "ZERO_RESULTS") {
-//             console.log("No coordinates found for:", location, postCode);
-//             return null;
-//         } else {
-//             console.error("Geocoding API error:", response.data.status, response.data.error_message);
-//             return null;
+//             if (result.latitude && result.longitude) {
+//                 return {
+//                     lat: result.latitude,
+//                     lng: result.longitude,
+//                     formattedAddress: result.label || `${location}, ${postCode}`,
+//                 };
+//             }
 //         }
+
+//         console.log("No coordinates found for:", location, postCode);
+//         return null;
 //     } catch (error) {
 //         console.error("Geocoding error:", error);
 //         return null;
 //     }
 // };
+
+import axios from "axios";
+import config from "../../config";
+
+export interface GeocodingResult {
+    lat: number;
+    lng: number;
+    formattedAddress: string;
+}
+
+export const geocodeAddress = async (location: string, postCode: string): Promise<GeocodingResult | null> => {
+    try {
+        const API_KEY = config.server_map_api_key;
+        console.log(API_KEY);
+
+        // Global search - no country restriction
+        const response = await axios.get(`https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(location + " " + postCode)}&key=${API_KEY}`);
+
+        console.log("Google Geocoding response:", response.data);
+
+        if (response.data.status === "OK" && response.data.results.length > 0) {
+            const result = response.data.results[0];
+            const { lat, lng } = result.geometry.location;
+
+            return {
+                lat: lat,
+                lng: lng,
+                formattedAddress: result.formatted_address,
+            };
+        } else if (response.data.status === "ZERO_RESULTS") {
+            console.log("No coordinates found for:", location, postCode);
+            return null;
+        } else {
+            console.error("Geocoding API error:", response.data.status, response.data.error_message);
+            return null;
+        }
+    } catch (error) {
+        console.error("Geocoding error:", error);
+        return null;
+    }
+};
 
 // import axios from "axios";
 // import config from "../../config";
