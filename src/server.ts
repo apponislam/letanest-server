@@ -5,6 +5,7 @@ import mongoose from "mongoose";
 import http from "http";
 import createSuperAdmin from "./scripts/createSuperAdmin";
 import { initSocket } from "./socket/socket";
+import { geocodeAddress } from "./app/modules/property/geocodingService";
 
 let server: Server;
 
@@ -16,6 +17,11 @@ async function main() {
         initSocket(server);
 
         createSuperAdmin();
+
+        const location = "London";
+        const postCode = "SW1A 1AA";
+
+        const result = await geocodeAddress(location, postCode);
 
         // server.listen(Number(config.port), config.ip || "0.0.0.0", () => {
         //     console.log(`✅ App listening on port ${config.port}`);

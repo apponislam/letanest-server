@@ -37,11 +37,39 @@ const createPropertyService = async (data: IProperty): Promise<IProperty> => {
     }
 };
 
+// const updatePropertyService = async (id: string, data: Partial<IProperty>): Promise<IProperty | null> => {
+//     const updateData = {
+//         ...data,
+//         status: "pending" as const,
+//     };
+
+//     return PropertyModel.findByIdAndUpdate(id, updateData, { new: true });
+// };
+
 const updatePropertyService = async (id: string, data: Partial<IProperty>): Promise<IProperty | null> => {
-    const updateData = {
+    const updateData: Partial<IProperty> = {
         ...data,
         status: "pending" as const,
     };
+
+    // Only add geocoding if location data is being updated
+    if (data.location || data.postCode) {
+        const existingProperty = await PropertyModel.findById(id);
+        if (existingProperty) {
+            const location = data.location || existingProperty.location;
+            const postCode = data.postCode || existingProperty.postCode;
+
+            if (location && postCode) {
+                const geocodedData = await geocodeAddress(location, postCode);
+                if (geocodedData) {
+                    updateData.coordinates = {
+                        lat: geocodedData.lat,
+                        lng: geocodedData.lng,
+                    };
+                }
+            }
+        }
+    }
 
     return PropertyModel.findByIdAndUpdate(id, updateData, { new: true });
 };
