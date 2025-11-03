@@ -26,5 +26,5 @@ export default {
     stripe_publishable_key: process.env.STRIPE_PUBLISHABLE_KEY,
     stripe_secret_key: process.env.STRIPE_SECRET_KEY,
     stripe_webhook_secret: process.env.STRIPE_WEBHOOK_SECRET,
-    map_api_key: process.env.MAP_API_KEY,
+    server_map_api_key: process.env.SERVER_MAP_API_KEY,
 };

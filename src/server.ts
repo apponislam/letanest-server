@@ -6,6 +6,7 @@ import http from "http";
 import createSuperAdmin from "./scripts/createSuperAdmin";
 import { initSocket } from "./socket/socket";
 import { geocodeAddress } from "./app/modules/property/geocodingService";
+import axios from "axios";
 
 let server: Server;
 
@@ -17,6 +18,9 @@ async function main() {
         initSocket(server);
 
         createSuperAdmin();
+
+        const ipResponse = await axios.get("https://api.ipify.org?format=json");
+        console.log("🌐 Backend public IP:", ipResponse.data.ip);
 
         const location = "London";
         const postCode = "SW1A 1AA";
