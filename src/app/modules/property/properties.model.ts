@@ -20,6 +20,21 @@ const PropertySchema = new Schema<IProperty>(
             lng: { type: Number },
         },
 
+        // Nearby places array (optional)
+        nearbyPlaces: {
+            type: [
+                {
+                    name: { type: String },
+                    type: { type: String },
+                    distance: { type: Number },
+                    lat: { type: Number },
+                    lng: { type: Number },
+                    address: { type: String },
+                },
+            ],
+            default: [],
+        },
+
         // Step 2: Property details
         maxGuests: { type: Number, required: [true, "Max guests is required"] },
         bedrooms: { type: Number, required: [true, "Bedrooms count is required"] },
