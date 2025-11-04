@@ -65,6 +65,17 @@ const updatePropertyController = catchAsync(async (req: Request, res: Response) 
     });
 });
 
+const refreshNearbyPlacesController = catchAsync(async (req: Request, res: Response) => {
+    const property = await propertyServices.refreshNearbyPlacesService(req.params.id);
+
+    sendResponse(res, {
+        statusCode: property ? httpStatus.OK : httpStatus.NOT_FOUND,
+        success: !!property,
+        message: property ? "Nearby places refreshed successfully" : "Property not found or no coordinates available",
+        data: property || null,
+    });
+});
+
 const getSinglePropertyController = catchAsync(async (req: Request, res: Response) => {
     const property = await propertyServices.getSinglePropertyService(req.params.id);
 
@@ -242,6 +253,7 @@ const toggleTrendingStatusController = catchAsync(async (req: Request, res: Resp
 export const propertyControllers = {
     createPropertyController,
     updatePropertyController,
+    refreshNearbyPlacesController,
     getSinglePropertyController,
     getAllPropertiesController,
     getAllPublishedPropertiesController,

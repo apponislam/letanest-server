@@ -1,7 +1,7 @@
 import { PropertyModel } from "./properties.model";
 import { IProperty, IPropertyListResponse, IPropertyQuery } from "./properties.interface";
 import { Types } from "mongoose";
-import { geocodeAddress } from "./geocodingService";
+import { findNearbyPlaces, geocodeAddress } from "./geocodingService";
 
 const createPropertyService = async (data: IProperty): Promise<IProperty> => {
     try {
@@ -17,7 +17,7 @@ const createPropertyService = async (data: IProperty): Promise<IProperty> => {
             amenities: Array.isArray(data.amenities) ? data.amenities : [],
         };
 
-        // Get coordinates from geocoding
+        // Get coordinates and nearby places from geocoding
         if (parsedData.location && parsedData.postCode) {
             const geocodedData = await geocodeAddress(parsedData.location, parsedData.postCode);
 
@@ -27,6 +27,11 @@ const createPropertyService = async (data: IProperty): Promise<IProperty> => {
                     lng: geocodedData.lng,
                 };
                 console.log(`Coordinates found: ${geocodedData.lat}, ${geocodedData.lng}`);
+
+                // Find nearby places
+                const nearbyPlaces = await findNearbyPlaces(geocodedData.lat, geocodedData.lng);
+                parsedData.nearbyPlaces = nearbyPlaces;
+                console.log(`Found ${nearbyPlaces.length} nearby places`);
             }
         }
 
@@ -37,22 +42,13 @@ const createPropertyService = async (data: IProperty): Promise<IProperty> => {
     }
 };
 
-// const updatePropertyService = async (id: string, data: Partial<IProperty>): Promise<IProperty | null> => {
-//     const updateData = {
-//         ...data,
-//         status: "pending" as const,
-//     };
-
-//     return PropertyModel.findByIdAndUpdate(id, updateData, { new: true });
-// };
-
 const updatePropertyService = async (id: string, data: Partial<IProperty>): Promise<IProperty | null> => {
     const updateData: Partial<IProperty> = {
         ...data,
         status: "pending" as const,
     };
 
-    // Only add geocoding if location data is being updated
+    // Only add geocoding and nearby places if location data is being updated
     if (data.location || data.postCode) {
         const existingProperty = await PropertyModel.findById(id);
         if (existingProperty) {
@@ -66,6 +62,11 @@ const updatePropertyService = async (id: string, data: Partial<IProperty>): Prom
                         lat: geocodedData.lat,
                         lng: geocodedData.lng,
                     };
+
+                    // Update nearby places when location changes
+                    const nearbyPlaces = await findNearbyPlaces(geocodedData.lat, geocodedData.lng);
+                    updateData.nearbyPlaces = nearbyPlaces;
+                    console.log(`Updated ${nearbyPlaces.length} nearby places for property ${id}`);
                 }
             }
         }
@@ -73,6 +74,28 @@ const updatePropertyService = async (id: string, data: Partial<IProperty>): Prom
 
     return PropertyModel.findByIdAndUpdate(id, updateData, { new: true });
 };
+
+// Optional: Separate service to refresh nearby places for existing properties
+const refreshNearbyPlacesService = async (id: string): Promise<IProperty | null> => {
+    const existingProperty = await PropertyModel.findById(id);
+
+    if (!existingProperty || !existingProperty.coordinates) {
+        return null;
+    }
+
+    const nearbyPlaces = await findNearbyPlaces(existingProperty.coordinates.lat, existingProperty.coordinates.lng);
+
+    return PropertyModel.findByIdAndUpdate(id, { nearbyPlaces }, { new: true });
+};
+
+// const updatePropertyService = async (id: string, data: Partial<IProperty>): Promise<IProperty | null> => {
+//     const updateData = {
+//         ...data,
+//         status: "pending" as const,
+//     };
+
+//     return PropertyModel.findByIdAndUpdate(id, updateData, { new: true });
+// };
 
 const getSinglePropertyService = async (id: string): Promise<IProperty | null> => {
     return PropertyModel.findById(id)
@@ -596,6 +619,7 @@ const toggleTrendingStatusService = async (id: string) => {
 export const propertyServices = {
     createPropertyService,
     updatePropertyService,
+    refreshNearbyPlacesService,
     getSinglePropertyService,
     getAllPropertiesService,
     getAllPublishedPropertiesService,
