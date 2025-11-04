@@ -11,6 +11,8 @@ router.post("/", auth, authorize(["ADMIN", "HOST"]), checkPropertyListingLimit, 
 
 router.put("/:id", auth, authorize(["ADMIN", "HOST"]), uploadPropertyFiles, propertyControllers.updatePropertyController);
 
+router.patch("/:id/refresh-nearby-places", propertyControllers.refreshNearbyPlacesController);
+
 // Anyone authenticated can view single property
 router.get("/:id", propertyControllers.getSinglePropertyController);
 

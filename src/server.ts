@@ -19,13 +19,14 @@ async function main() {
 
         createSuperAdmin();
 
-        const ipResponse = await axios.get("https://api.ipify.org?format=json");
-        console.log("🌐 Backend public IP:", ipResponse.data.ip);
+        // const ipResponse = await axios.get("https://api.ipify.org?format=json");
+        // console.log("🌐 Backend public IP:", ipResponse.data.ip);
 
-        const location = "London";
-        const postCode = "SW1A 1AA";
+        // const location = "London";
+        // const postCode = "SW1A 1AA";
 
-        const result = await geocodeAddress(location, postCode);
+        // const result = await geocodeAddress(location, postCode);
+        // console.log(result);
 
         // server.listen(Number(config.port), config.ip || "0.0.0.0", () => {
         //     console.log(`✅ App listening on port ${config.port}`);
