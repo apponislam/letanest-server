@@ -447,6 +447,9 @@ export class StripeService {
     // Handle webhook events
     async handleWebhookEvent(payload: Buffer, signature: string) {
         try {
+            console.log(payload);
+            console.log(signature);
+            console.log(config.stripe_webhook_secret);
             const event = stripe.webhooks.constructEvent(payload, signature, config.stripe_webhook_secret!);
             return event;
         } catch (error) {
