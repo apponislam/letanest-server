@@ -9,6 +9,8 @@ import { webhookController } from "./app/modules/subscription/webhook.controller
 
 const app: Application = express();
 
+app.post("/api/v1/subscription/webhook", express.raw({ type: "application/json" }), webhookController.handleWebhook);
+
 const corsOptions = {
     origin: ["http://localhost:3000", "http://10.10.7.50:3000", "http://206.162.244.155:3050"],
     methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
@@ -17,8 +19,6 @@ const corsOptions = {
 };
 
 app.use(cors(corsOptions));
-
-app.post("/api/v1/subscription/webhook", express.raw({ type: "application/json" }), webhookController.handleWebhook);
 
 app.use("/uploads", express.static(path.join(process.cwd(), "uploads")));
 app.use(express.json());
