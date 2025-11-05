@@ -48,9 +48,22 @@ const updateContactStatus = catchAsync(async (req, res) => {
     });
 });
 
+const replyToContact = catchAsync(async (req, res) => {
+    const { replyMessage } = req.body;
+    const contact = await contactServices.replyToContact(req.params.id, replyMessage);
+
+    sendResponse(res, {
+        success: true,
+        statusCode: httpStatus.OK,
+        message: "Reply sent successfully",
+        data: contact,
+    });
+});
+
 export const contactControllers = {
     createContact,
     getContacts,
     getContactById,
     updateContactStatus,
+    replyToContact,
 };

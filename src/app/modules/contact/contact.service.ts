@@ -2,6 +2,7 @@ import ApiError from "../../../errors/ApiError";
 import { IContactForm } from "./contact.interface";
 import { Contact } from "./contact.model";
 import httpStatus from "http-status";
+import { sendContactReply } from "./contactEmail";
 
 const createContact = async (contactData: IContactForm) => {
     const contact = await Contact.create(contactData);
@@ -54,9 +55,36 @@ const updateContactStatus = async (contactId: string, status: "pending" | "read"
     return contact;
 };
 
+const replyToContact = async (contactId: string, replyMessage: string) => {
+    const contact = await Contact.findById(contactId);
+    if (!contact) {
+        throw new ApiError(httpStatus.NOT_FOUND, "Contact not found");
+    }
+
+    await sendContactReply({
+        to: contact.email,
+        name: `${contact.firstName} ${contact.lastName}`,
+        originalMessage: contact.message,
+        reply: replyMessage,
+    });
+
+    const updatedContact = await Contact.findByIdAndUpdate(
+        contactId,
+        {
+            status: "replied",
+            replyMessage: replyMessage,
+            repliedAt: new Date(),
+        },
+        { new: true }
+    );
+
+    return updatedContact;
+};
+
 export const contactServices = {
     createContact,
     getContacts,
     getContactById,
     updateContactStatus,
+    replyToContact,
 };

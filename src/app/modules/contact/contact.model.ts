@@ -29,6 +29,13 @@ const contactSchema = new Schema<IContact>(
             enum: ["pending", "read", "replied"],
             default: "pending",
         },
+        replyMessage: {
+            type: String,
+            trim: true,
+        },
+        repliedAt: {
+            type: Date,
+        },
     },
     {
         timestamps: true,
