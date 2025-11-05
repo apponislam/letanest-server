@@ -4,7 +4,6 @@ import { stripeService } from "./stripe.services";
 import { subscriptionService } from "../subscription/subscription.services";
 import { userSubscriptionService } from "../subscribed/subscribed.services";
 
-// Define custom types for Stripe objects
 interface StripeSubscription {
     id: string;
     customer: string;
@@ -142,6 +141,8 @@ const attemptToCreateMissingSubscription = async (subscription: StripeSubscripti
 const handleWebhook = async (req: Request, res: Response) => {
     const signature = req.headers["stripe-signature"] as string;
 
+    const rawBody = Buffer.isBuffer(req.body) ? req.body : typeof req.body === "string" ? Buffer.from(req.body) : Buffer.from(JSON.stringify(req.body));
+
     if (!signature) {
         return res.status(httpStatus.BAD_REQUEST).send({
             error: "Missing stripe signature",
@@ -149,59 +150,59 @@ const handleWebhook = async (req: Request, res: Response) => {
     }
 
     try {
-        const event = await stripeService.handleWebhookEvent(req.body, signature);
+        const event = await stripeService.handleWebhookEvent(rawBody, signature);
         console.log(`🔔 Processing event: ${event.type}`);
 
         // Handle different webhook events
         switch (event.type) {
             case "checkout.session.completed":
                 const session = event.data.object as unknown as StripeCheckoutSession;
-                console.log("🛒 Checkout session completed:", session.id);
-                console.log("📋 Session metadata:", session.metadata);
+                // console.log("🛒 Checkout session completed:", session.id);
+                // console.log("📋 Session metadata:", session.metadata);
 
                 if (session.mode === "subscription" && session.subscription) {
-                    console.log("✅ Subscription checkout completed");
+                    // console.log("✅ Subscription checkout completed");
                 }
                 break;
 
             case "customer.subscription.created":
                 const subscription = event.data.object as unknown as StripeSubscription;
-                console.log("📝 Subscription created:", subscription.id);
-                console.log("🔍 Subscription metadata:", subscription.metadata);
+                // console.log("📝 Subscription created:", subscription.id);
+                // console.log("🔍 Subscription metadata:", subscription.metadata);
 
                 try {
                     // Extract and validate metadata
                     const metadata = subscription.metadata || {};
-                    console.log("📋 Subscription metadata:", metadata);
+                    // console.log("📋 Subscription metadata:", metadata);
 
                     // Use realUserId if available, otherwise use userId
                     const realUserId = metadata.realUserId || metadata.userId;
 
                     if (!realUserId) {
-                        console.error("❌ No valid user ID found in metadata");
+                        // console.error("❌ No valid user ID found in metadata");
                         break;
                     }
 
                     // Get price ID from subscription
                     const priceId = subscription.items.data[0]?.price.id;
                     if (!priceId) {
-                        console.error("❌ No price ID found in subscription");
+                        // console.error("❌ No price ID found in subscription");
                         break;
                     }
 
                     // Find the subscription plan in our database
                     const subscriptionPlan = await findSubscriptionByStripePriceId(priceId);
                     if (!subscriptionPlan || !subscriptionPlan._id) {
-                        console.error("❌ No subscription plan found for price ID:", priceId);
+                        // console.error("❌ No subscription plan found for price ID:", priceId);
                         break;
                     }
 
-                    console.log("✅ Found subscription plan:", subscriptionPlan._id);
+                    // console.log("✅ Found subscription plan:", subscriptionPlan._id);
 
                     // Check if user subscription already exists
                     const existingUserSubscription = await userSubscriptionService.getUserSubscriptionByStripeId(subscription.id);
                     if (existingUserSubscription) {
-                        console.log("ℹ️ User subscription already exists, updating...");
+                        // console.log("ℹ️ User subscription already exists, updating...");
                         break;
                     }
 
