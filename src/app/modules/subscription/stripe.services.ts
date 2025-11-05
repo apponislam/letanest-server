@@ -2,7 +2,8 @@ import Stripe from "stripe";
 import config from "../../config";
 
 const stripe = new Stripe(config.stripe_secret_key!, {
-    apiVersion: "2025-09-30.clover",
+    // apiVersion: "2025-09-30.clover",
+    apiVersion: "2025-07-30.basil" as any,
 });
 
 export interface CreateProductData {
@@ -601,7 +602,7 @@ export class StripeService {
     private get stripe() {
         // You might want to make this a private property in your class
         const stripe = new Stripe(config.stripe_secret_key!, {
-            apiVersion: "2025-09-30.clover",
+            apiVersion: "2025-07-30.basil" as any,
         });
         return stripe;
     }
