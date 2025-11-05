@@ -365,3 +365,85 @@ export const otpEmailTemplate = ({ name, otp }: { name: string; otp: string }) =
 </body>
 </html>
 `;
+
+// Email Template Contact
+
+export const contactReplyTemplate = ({ name, message, reply }: { name: string; message: string; reply: string }) => {
+    return `
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <style>
+        body { 
+            font-family: Arial, sans-serif; 
+            line-height: 1.6; 
+            color: #333; 
+            max-width: 600px; 
+            margin: 0 auto; 
+            padding: 20px; 
+        }
+        .header { 
+            background: #14213D; 
+            color: white; 
+            padding: 20px; 
+            text-align: center; 
+            border-radius: 10px 10px 0 0; 
+        }
+        .content { 
+            background: #f9f9f9; 
+            padding: 20px; 
+            border-radius: 0 0 10px 10px; 
+            border: 1px solid #ddd; 
+        }
+        .original-message { 
+            background: white; 
+            padding: 15px; 
+            border-left: 4px solid #C9A94D; 
+            margin: 15px 0; 
+            border-radius: 5px; 
+        }
+        .reply-message { 
+            background: #e8f4fd; 
+            padding: 15px; 
+            border-left: 4px solid #135E9A; 
+            margin: 15px 0; 
+            border-radius: 5px; 
+        }
+        .footer { 
+            text-align: center; 
+            margin-top: 20px; 
+            color: #666; 
+            font-size: 12px; 
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>Letanest Support</h1>
+    </div>
+    <div class="content">
+        <h2>Hello ${name},</h2>
+        <p>Thank you for contacting Letanest. Here is our response to your message:</p>
+        
+        <div class="original-message">
+            <strong>Your Original Message:</strong>
+            <p>${message}</p>
+        </div>
+        
+        <div class="reply-message">
+            <strong>Our Response:</strong>
+            <p>${reply}</p>
+        </div>
+        
+        <p>If you have any further questions, please don't hesitate to contact us again.</p>
+        
+        <p>Best regards,<br>The Letanest Team</p>
+    </div>
+    <div class="footer">
+        <p>&copy; ${new Date().getFullYear()} Letanest. All rights reserved.</p>
+    </div>
+</body>
+</html>
+    `;
+};

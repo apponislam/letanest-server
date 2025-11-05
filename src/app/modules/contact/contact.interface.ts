@@ -11,6 +11,8 @@ export interface IContact extends Document {
     email: string;
     message: string;
     status: "pending" | "read" | "replied";
+    replyMessage?: string;
+    repliedAt?: Date;
     createdAt: Date;
     updatedAt: Date;
 }
