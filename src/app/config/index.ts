@@ -7,6 +7,8 @@ export default {
     node_env: process.env.NODE_ENV,
     port: process.env.PORT,
     mongodb_url: process.env.MONGODB_URL,
+    botEmail: process.env.BOTEMAIL,
+    botPassword: process.env.BOTPASSWORD,
     bcrypt_salt_rounds: process.env.BCRYPT_SALT_ROUNDS,
     jwt_access_secret: process.env.JWT_ACCESS_SECRET,
     jwt_access_expire: process.env.JWT_ACCESS_EXPIRE,
