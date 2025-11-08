@@ -7,6 +7,7 @@ import createSuperAdmin from "./scripts/createSuperAdmin";
 import { initSocket } from "./socket/socket";
 import { geocodeAddress } from "./app/modules/property/geocodingService";
 import axios from "axios";
+import createBotAdmin from "./scripts/createBotAdmin";
 
 let server: Server;
 
@@ -18,6 +19,7 @@ async function main() {
         initSocket(server);
 
         createSuperAdmin();
+        createBotAdmin();
 
         // const ipResponse = await axios.get("https://api.ipify.org?format=json");
         // console.log("🌐 Backend public IP:", ipResponse.data.ip);

@@ -33,6 +33,8 @@ export interface IMessage {
     isRead?: boolean;
     createdAt?: Date;
     updatedAt?: Date;
+    bot?: boolean;
+    expiresAt?: Date;
 }
 
 // Conversation Interface
@@ -48,6 +50,8 @@ export interface IConversation {
     isActive?: boolean;
     createdAt?: Date;
     updatedAt?: Date;
+    bot?: boolean;
+    expiresAt?: Date;
 }
 
 // Simple DTO for creating messages
@@ -69,12 +73,13 @@ export interface ICreateMessageDto {
     phone?: string;
     reason?: string;
     isRead?: boolean;
+    bot?: boolean;
 }
 
-// DTO for creating conversation
 export interface ICreateConversationDto {
     participants: string[];
     propertyId?: string;
+    bot?: boolean;
 }
 
 export interface IMarkAsReadDto {

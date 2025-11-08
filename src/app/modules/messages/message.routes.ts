@@ -1,8 +1,12 @@
 import express from "express";
 import auth from "../../middlewares/auth";
 import { messageControllers } from "./message.controllers";
+import { botController } from "./bot.controller";
 
 const router = express.Router();
+
+// welcome message
+router.post("/welcome", auth, botController.sendWelcomeMessage);
 
 router.get("/unread-count", auth, messageControllers.getTotalUnreadCount);
 

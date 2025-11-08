@@ -78,6 +78,9 @@ export interface IUser {
     stripeCustomerId?: string;
     hostStripeAccount?: IHostStripeAccount;
 
+    // Bot identification
+    isBot?: boolean;
+
     // Audit
     createdAt?: Date;
     updatedAt?: Date;
