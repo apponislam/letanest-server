@@ -6,8 +6,8 @@ import catchAsync from "../../../utils/catchAsync";
 import sendResponse from "../../../utils/sendResponse.";
 
 const sendWelcomeMessage = catchAsync(async (req: Request, res: Response) => {
-    const { message } = req.body as SendWelcomeMessageDto;
-    const userId = (req as any).user._id; // From authenticated user
+    const { message } = req.body as { message?: string };
+    const userId = (req as any).user._id;
 
     if (!userId) {
         throw new ApiError(httpStatus.UNAUTHORIZED, "User not authenticated");

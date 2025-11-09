@@ -333,15 +333,6 @@ const rejectOffer = async (messageId: string, conversationId: string, userId: st
         throw new ApiError(httpStatus.FORBIDDEN, "Access denied to this conversation");
     }
 
-    // const updatedMessage = await Message.findByIdAndUpdate(
-    //     messageId,
-    //     {
-    //         type: "rejected",
-    //     },
-    //     { new: true }
-    // )
-    //     .populate("sender", "name profileImg email phone role")
-    //     .populate("propertyId", "propertyNumber price title images location createdBy");
     const updatedMessage = await Message.findByIdAndUpdate(
         messageId,
         {
@@ -399,15 +390,6 @@ const convertRequestToOffer = async (messageId: string, conversationId: string, 
         throw new ApiError(httpStatus.FORBIDDEN, "Access denied to this conversation");
     }
 
-    // const updatedMessage = await Message.findByIdAndUpdate(
-    //     messageId,
-    //     {
-    //         type: "offer",
-    //     },
-    //     { new: true }
-    // )
-    //     .populate("sender", "name profileImg email phone role")
-    //     .populate("propertyId", "propertyNumber price title images location createdBy");
     const updatedMessage = await Message.findByIdAndUpdate(
         messageId,
         {
@@ -465,15 +447,6 @@ const acceptOffer = async (messageId: string, conversationId: string, userId: st
         throw new ApiError(httpStatus.FORBIDDEN, "Access denied to this conversation");
     }
 
-    // const updatedMessage = await Message.findByIdAndUpdate(
-    //     messageId,
-    //     {
-    //         type: "accepted",
-    //     },
-    //     { new: true }
-    // )
-    //     .populate("sender", "name profileImg email phone role")
-    //     .populate("propertyId", "propertyNumber price title images location createdBy");
     const updatedMessage = await Message.findByIdAndUpdate(
         messageId,
         {

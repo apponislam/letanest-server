@@ -20,6 +20,8 @@ async function createSuperAdmin() {
             phone: undefined,
             profileImg: undefined,
             isEmailVerified: true,
+
+            isVerifiedByAdmin: true,
         };
         const superAdmin = await UserModel.create(userData);
         console.log("✅ Super admin created:", superAdmin.email, "with ID:", superAdmin._id);
