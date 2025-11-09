@@ -32,30 +32,50 @@ const sendWelcomeMessage = async (userId: string, data: SendWelcomeMessageDto) =
 
         // Get welcome message template or use default
         let messageContent = data.message;
-
         if (!messageContent) {
             const welcomeTemplate = await MessageType.findOne({
                 type: "WELCOME",
                 isActive: true,
             });
-
             messageContent = welcomeTemplate?.content || "🏡 Welcome to Letanest! We're excited to have you join our community.";
         }
 
-        // Check if conversation already exists between bot and user
+        // SIMPLE SOLUTION: Just find or create without complex operations
         let conversation = await Conversation.findOne({
             participants: { $all: [botUser._id, userObjectId] },
             bot: true,
+            isActive: true,
         });
 
-        // Create conversation if it doesn't exist
         if (!conversation) {
-            conversation = await Conversation.create({
-                participants: [botUser._id, userObjectId],
-                bot: true,
-                expiresAt: new Date(Date.now() + 60 * 1000),
-            });
+            try {
+                conversation = await Conversation.create({
+                    participants: [botUser._id, userObjectId],
+                    bot: true,
+                    isActive: true,
+                    expiresAt: new Date(Date.now() + 60 * 1000),
+                });
+            } catch (error: any) {
+                // If creation fails due to duplicate (race condition), find the existing one
+                if (error.code === 11000) {
+                    conversation = await Conversation.findOne({
+                        participants: { $all: [botUser._id, userObjectId] },
+                        bot: true,
+                        isActive: true,
+                    });
+                    if (!conversation) {
+                        throw error; // Re-throw if still not found
+                    }
+                } else {
+                    throw error;
+                }
+            }
         }
+
+        // Update conversation timestamp
+        await Conversation.findByIdAndUpdate(conversation._id, {
+            updatedAt: new Date(),
+        });
 
         // Create welcome message that expires in 1 minute
         const welcomeMessage = await Message.create({
@@ -87,10 +107,11 @@ const sendWelcomeMessage = async (userId: string, data: SendWelcomeMessageDto) =
             receiverId: userObjectId.toString(),
         });
 
-        console.log(`✅ Welcome message sent to user ${userId}`);
+        console.log(`✅ Welcome message sent to user ${userId} in conversation ${conversation._id}`);
 
         return populatedMessage;
     } catch (error: any) {
+        console.error("❌ Error in sendWelcomeMessage:", error);
         throw new ApiError(httpStatus.INTERNAL_SERVER_ERROR, `Failed to send welcome message: ${error.message}`);
     }
 };

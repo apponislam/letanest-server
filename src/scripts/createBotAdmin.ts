@@ -27,6 +27,7 @@ async function createBotAdmin() {
             profileImg: undefined,
             isEmailVerified: true,
             isBot: true,
+            isVerifiedByAdmin: true,
         };
 
         const botAdmin = await UserModel.create(botData);
