@@ -25,6 +25,8 @@ router.patch("/messages/:messageId/read", auth, messageControllers.markAsRead);
 
 router.patch("/:messageId/reject", auth, messageControllers.rejectOffer);
 router.patch("/:messageId/convert-to-offer", auth, messageControllers.convertRequestToOfferController);
+//edit offer
+router.patch("/:messageId/edit-offer", auth, messageControllers.editOffer);
 
 router.get("/admin/conversations/user/:userId", auth, messageControllers.getConversationsByUserId);
 router.get("/admin/conversations/:conversationId/messages", auth, messageControllers.getAllConversationMessages);

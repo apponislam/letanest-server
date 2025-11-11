@@ -120,6 +120,10 @@ const messageSchema = new Schema<IMessage>(
         checkOutDate: String,
         agreedFee: Number,
         bookingFee: Number,
+        bookingFeePaid: {
+            type: Boolean,
+            default: false,
+        },
         total: Number,
         propertyName: String,
         address: String,

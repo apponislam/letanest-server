@@ -23,6 +23,7 @@ export interface IMessage {
     checkOutDate?: string;
     agreedFee?: number;
     bookingFee?: number;
+    bookingFeePaid?: boolean;
     total?: number;
     propertyName?: string;
     address?: string;
@@ -66,7 +67,9 @@ export interface ICreateMessageDto {
     checkOutDate?: string;
     agreedFee?: number;
     bookingFee?: number;
+    bookingFeePaid?: boolean;
     total?: number;
+    guestNo?: string;
     propertyName?: string;
     address?: string;
     manager?: string;

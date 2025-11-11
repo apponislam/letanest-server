@@ -257,6 +257,29 @@ const searchUserConversations = catchAsync(async (req, res) => {
     });
 });
 
+const editOffer = catchAsync(async (req, res) => {
+    const { messageId } = req.params;
+    const { conversationId, agreedFee, checkInDate, checkOutDate, guestNo } = req.body;
+    const userId = req.user?._id;
+
+    if (!userId) {
+        throw new ApiError(httpStatus.UNAUTHORIZED, "User not authenticated");
+    }
+
+    if (!conversationId) {
+        throw new ApiError(httpStatus.BAD_REQUEST, "Conversation ID is required");
+    }
+
+    const updatedMessage = await messageServices.editOffer(messageId, conversationId, userId, { agreedFee, checkInDate, checkOutDate, guestNo });
+
+    sendResponse(res, {
+        success: true,
+        statusCode: httpStatus.OK,
+        message: "Offer updated successfully",
+        data: updatedMessage,
+    });
+});
+
 export const messageControllers = {
     createConversation,
     getUserConversations,
@@ -276,4 +299,7 @@ export const messageControllers = {
     getConversationsByUserId,
     getAllConversationMessages,
     searchUserConversations,
+
+    //edit offer
+    editOffer,
 };
