@@ -721,6 +721,115 @@ const searchUserConversations = async (searchTerm: string, page: number = 1, lim
     };
 };
 
+const editOffer = async (messageId: string, conversationId: string, userId: string, updateData: { agreedFee?: number; checkInDate?: string; checkOutDate?: string; guestNo?: number }) => {
+    const message = await Message.findById(messageId);
+    if (!message) {
+        throw new ApiError(httpStatus.NOT_FOUND, "Message not found");
+    }
+
+    // Only allow editing offer or request messages
+    if (message.type !== "offer" && message.type !== "request") {
+        throw new ApiError(httpStatus.BAD_REQUEST, "Can only edit offer or request messages");
+    }
+
+    const conversation = await Conversation.findOne({
+        _id: conversationId,
+        participants: userId,
+        isActive: true,
+    });
+
+    if (!conversation) {
+        throw new ApiError(httpStatus.FORBIDDEN, "Access denied to this conversation");
+    }
+
+    // Only the sender can edit their own message
+    if (message.sender.toString() !== userId.toString()) {
+        throw new ApiError(httpStatus.FORBIDDEN, "You can only edit your own messages");
+    }
+
+    // Prepare update data
+    const updateFields: any = {};
+
+    if (updateData.agreedFee !== undefined) {
+        updateFields.agreedFee = updateData.agreedFee;
+
+        // Recalculate booking fee if agreedFee is updated
+        let guest;
+        if (message.type === "offer") {
+            // Offer sent by host, guest is the other participant
+            guest = conversation.participants.find((p) => p.toString() !== message.sender.toString());
+        } else if (message.type === "request") {
+            // Request sent by guest, guest is the sender
+            guest = message.sender;
+        }
+
+        if (guest) {
+            const guestData = await UserModel.findById(guest).populate("currentSubscription", "bookingFee bookingLimit").lean<IUser & { currentSubscription?: ISubscription }>();
+
+            const agreedFeeNum = Number(updateData.agreedFee);
+            let bookingFee = 0;
+
+            if (guestData?.currentSubscription) {
+                const sub = guestData.currentSubscription;
+                if (sub.bookingLimit && sub.bookingLimit > 0) {
+                    bookingFee = 0;
+                } else {
+                    const feePercentage = sub.bookingFee !== undefined && sub.bookingFee !== null ? sub.bookingFee : 10;
+                    bookingFee = (agreedFeeNum * feePercentage) / 100;
+                }
+            } else {
+                bookingFee = agreedFeeNum * 0.1;
+            }
+
+            updateFields.bookingFee = Number(bookingFee.toFixed(2));
+        }
+    }
+
+    if (updateData.checkInDate !== undefined) {
+        updateFields.checkInDate = updateData.checkInDate;
+    }
+
+    if (updateData.checkOutDate !== undefined) {
+        updateFields.checkOutDate = updateData.checkOutDate;
+    }
+
+    if (updateData.guestNo !== undefined) {
+        updateFields.guestNo = updateData.guestNo;
+    }
+
+    // Update the message
+    const updatedMessage = await Message.findByIdAndUpdate(messageId, updateFields, { new: true })
+        .populate("sender", "name profileImg email phone role")
+        .populate({
+            path: "propertyId",
+            select: "propertyNumber price title images location createdBy",
+            populate: {
+                path: "createdBy",
+                select: "name email phone role profileImg",
+            },
+        });
+
+    if (!updatedMessage) {
+        throw new ApiError(httpStatus.INTERNAL_SERVER_ERROR, "Failed to update offer");
+    }
+
+    // Update conversation's last message timestamp
+    await Conversation.findByIdAndUpdate(conversationId, {
+        updatedAt: new Date(),
+    });
+
+    // Emit the updated message to the conversation
+    emitToConversation(conversationId, "message:new", updatedMessage);
+    emitToConversation(conversationId, "offer:rejected", {
+        messageId: updatedMessage._id,
+        conversationId,
+    });
+
+    console.log(`✅ Offer updated by user ${userId}`);
+
+    return updatedMessage;
+};
+
 export const messageServices = {
     createConversation,
     getUserConversations,
@@ -741,4 +850,7 @@ export const messageServices = {
     getConversationsByUserId,
     getAllConversationMessages,
     searchUserConversations,
+
+    //Edit Offer
+    editOffer,
 };

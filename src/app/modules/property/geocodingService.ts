@@ -35,47 +35,6 @@
 //     }
 // };
 
-// import axios from "axios";
-// import config from "../../config";
-
-// export interface GeocodingResult {
-//     lat: number;
-//     lng: number;
-//     formattedAddress: string;
-// }
-
-// export const geocodeAddress = async (location: string, postCode: string): Promise<GeocodingResult | null> => {
-//     try {
-//         const API_KEY = config.server_map_api_key;
-//         console.log(API_KEY);
-
-//         // Global search - no country restriction
-//         const response = await axios.get(`https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(location + " " + postCode)}&key=${API_KEY}`);
-
-//         console.log("Google Geocoding response:", response.data);
-
-//         if (response.data.status === "OK" && response.data.results.length > 0) {
-//             const result = response.data.results[0];
-//             const { lat, lng } = result.geometry.location;
-
-//             return {
-//                 lat: lat,
-//                 lng: lng,
-//                 formattedAddress: result.formatted_address,
-//             };
-//         } else if (response.data.status === "ZERO_RESULTS") {
-//             console.log("No coordinates found for:", location, postCode);
-//             return null;
-//         } else {
-//             console.error("Geocoding API error:", response.data.status, response.data.error_message);
-//             return null;
-//         }
-//     } catch (error) {
-//         console.error("Geocoding error:", error);
-//         return null;
-//     }
-// };
-
 import axios from "axios";
 import config from "../../config";
 
@@ -130,9 +89,7 @@ export const findNearbyPlaces = async (lat: number, lng: number): Promise<Nearby
 
         for (const placeType of placeTypes) {
             try {
-                const response = await axios.get(
-                    `https://maps.googleapis.com/maps/api/place/nearbysearch/json?location=${lat},${lng}&radius=3218&type=${placeType}&key=${API_KEY}` // 2 miles radius
-                );
+                const response = await axios.get(`https://maps.googleapis.com/maps/api/place/nearbysearch/json?location=${lat},${lng}&radius=160934&type=${placeType}&key=${API_KEY}`);
 
                 if (response.data.status === "OK" && response.data.results.length > 0) {
                     // Find the closest result for this type
