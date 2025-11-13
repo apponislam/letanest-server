@@ -146,10 +146,6 @@ const createMessage = async (messageData: ICreateMessageDto) => {
         bookingFee = Number(bookingFee.toFixed(2));
     }
 
-    console.log(bookingFee);
-
-    console.log(messageData);
-
     let finalMessageData = messageData;
 
     // Only sanitize if skip is not true
