@@ -24,16 +24,22 @@ export const containsPersonalDetails = (text: string): boolean => {
 };
 
 export const maskPersonalDetails = (text: string): string => {
+    let maskedText = text;
+
+    // Mask full URLs first
+    maskedText = maskedText.replace(/https?:\/\/[^\s]+/gi, "[Link Removed]");
+    maskedText = maskedText.replace(/www\.[^\s]+/gi, "[Link Removed]");
+
     // Mask phone numbers: 01722779803 → 01********3
-    text = text.replace(/\b(\d{2})\d+(\d{1})\b/gi, "$1********$2");
+    maskedText = maskedText.replace(/\b(\d{2})\d+(\d{1})\b/gi, "$1********$2");
 
     // Mask emails: 11appon11@gmail.com → 1********@gmail.com
-    text = text.replace(/\b([a-zA-Z0-9]{1})[a-zA-Z0-9._%+-]*@([a-zA-Z0-9.-]+\.[a-zA-Z]{2,})\b/gi, "$1********@$2");
+    maskedText = maskedText.replace(/\b([a-zA-Z0-9]{1})[a-zA-Z0-9._%+-]*@([a-zA-Z0-9.-]+\.[a-zA-Z]{2,})\b/gi, "$1********@$2");
 
     // Mask domains: booking.com → b*******.com
-    text = text.replace(/\b([a-zA-Z]{1})[a-zA-Z0-9-]*\.([a-zA-Z]{2,})\b/gi, "$1*******.$2");
+    maskedText = maskedText.replace(/\b([a-zA-Z]{1})[a-zA-Z0-9-]*\.([a-zA-Z]{2,})\b/gi, "$1*******.$2");
 
-    return text;
+    return maskedText;
 };
 
 export const sanitizeMessageText = (text: string): string => {
