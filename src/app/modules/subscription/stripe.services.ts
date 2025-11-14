@@ -783,6 +783,45 @@ export class StripeService {
             throw new Error(`Failed to confirm PaymentIntent: ${error instanceof Error ? error.message : "Unknown error"}`);
         }
     }
+
+    // only booking fee payment
+
+    async createBookingFeePayment(bookingFee: number, customerId: string) {
+        try {
+            const paymentIntent = await this.stripe.paymentIntents.create({
+                amount: Math.round(bookingFee * 100),
+                currency: "gbp",
+                customer: customerId,
+                automatic_payment_methods: {
+                    enabled: true,
+                },
+                metadata: {
+                    paymentType: "booking_fee",
+                },
+            });
+
+            console.log("✅ Booking fee payment intent created:", paymentIntent.id);
+            return paymentIntent;
+        } catch (error) {
+            console.error("Error creating booking fee payment:", error);
+            throw new Error(`Failed to create booking fee payment: ${error instanceof Error ? error.message : "Unknown error"}`);
+        }
+    }
+
+    async confirmBookingFeePayment(paymentIntentId: string, paymentMethodId: string) {
+        try {
+            const paymentIntent = await this.stripe.paymentIntents.confirm(paymentIntentId, {
+                payment_method: paymentMethodId,
+                return_url: `${config.client_url}/payment/success`,
+            });
+
+            console.log(`✅ Booking fee PaymentIntent ${paymentIntentId} confirmed with status: ${paymentIntent.status}`);
+            return paymentIntent;
+        } catch (error) {
+            console.error("Error confirming booking fee PaymentIntent:", error);
+            throw new Error(`Failed to confirm booking fee PaymentIntent: ${error instanceof Error ? error.message : "Unknown error"}`);
+        }
+    }
 }
 
 export const stripeService = new StripeService();

@@ -38,6 +38,39 @@ const confirmPayment = catchAsync(async (req: Request, res: Response) => {
     });
 });
 
+const createBookingFeePayment = catchAsync(async (req: Request, res: Response) => {
+    const paymentData = {
+        ...req.body,
+        userId: req.user?._id,
+    };
+
+    const result = await paymentServices.createBookingFeePayment(paymentData);
+
+    sendResponse(res, {
+        statusCode: httpStatus.CREATED,
+        success: true,
+        message: "Booking fee payment created successfully",
+        data: result,
+    });
+});
+
+const confirmBookingFeePayment = catchAsync(async (req: Request, res: Response) => {
+    const { paymentIntentId, paymentMethodId } = req.body;
+
+    if (!paymentIntentId || !paymentMethodId) {
+        throw new ApiError(httpStatus.BAD_REQUEST, "Payment intent ID and payment method ID are required");
+    }
+
+    const payment = await paymentServices.confirmBookingFeePayment(paymentIntentId, paymentMethodId);
+
+    sendResponse(res, {
+        statusCode: httpStatus.OK,
+        success: true,
+        message: "Booking fee payment confirmed successfully",
+        data: payment,
+    });
+});
+
 const getPayment = catchAsync(async (req: Request, res: Response) => {
     const { id } = req.params;
 
@@ -173,6 +206,10 @@ const getPaymentsByProperty = catchAsync(async (req: Request, res: Response) => 
 export const paymentControllers = {
     createPayment,
     confirmPayment,
+
+    // Booking Fee Paid
+    createBookingFeePayment,
+    confirmBookingFeePayment,
     getPayment,
     getUserPayments,
     // For admin
