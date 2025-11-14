@@ -14,6 +14,11 @@ router.post("/admin/download-pdf", auth, paymentTemplate.generatePaymentsPDF);
 // other routes
 router.post("/create", auth, paymentControllers.createPayment);
 router.post("/confirm", auth, paymentControllers.confirmPayment);
+
+//BOOKING FEE ROUTES
+router.post("/create-booking-fee", auth, paymentControllers.createBookingFeePayment);
+router.post("/confirm-booking-fee", auth, paymentControllers.confirmBookingFeePayment);
+
 router.get("/my-payments", auth, paymentControllers.getUserPayments);
 router.get("/:id", auth, paymentControllers.getPayment);
 

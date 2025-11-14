@@ -102,11 +102,9 @@ ratingSchema.index(
     }
 );
 
-// FIXED: Remove unique constraint from hostId+userId - allow multiple properties from same host
 ratingSchema.index(
     { hostId: 1, userId: 1 },
     {
-        // REMOVED: unique: true - this was causing the duplicate key error
         partialFilterExpression: {
             type: RatingType.PROPERTY,
             isDeleted: false,
@@ -114,7 +112,6 @@ ratingSchema.index(
     }
 );
 
-// Site rating unique index - one site rating per user
 ratingSchema.index(
     { userId: 1 },
     {
@@ -122,12 +119,11 @@ ratingSchema.index(
         partialFilterExpression: {
             type: RatingType.SITE,
             isDeleted: false,
-            status: { $in: [RatingStatus.APPROVED, RatingStatus.PENDING] }, // Include pending ratings
+            status: { $in: [RatingStatus.APPROVED, RatingStatus.PENDING] },
         },
     }
 );
 
-// Index for efficient queries
 ratingSchema.index({ hostId: 1, type: 1 });
 ratingSchema.index({ propertyId: 1, type: 1 });
 ratingSchema.index({ userId: 1, type: 1 });

@@ -13,6 +13,102 @@ import { calculateCommission } from "./calculateCommission";
 /**
  * Create a new payment
  */
+// const createPayment = async (data: CreatePaymentData) => {
+//     // Validate required fields
+//     if (!data.propertyId || !data.userId || !data.conversationId || !data.messageId) {
+//         throw new ApiError(httpStatus.BAD_REQUEST, "Missing required fields");
+//     }
+
+//     const message = await Message.findById(data.messageId);
+
+//     if (message?.type !== "offer") {
+//         throw new ApiError(httpStatus.BAD_REQUEST, "Already payment done or cancelled");
+//     }
+
+//     if (data.totalAmount <= 0 || data.agreedFee <= 0) {
+//         throw new ApiError(httpStatus.BAD_REQUEST, "Invalid amount");
+//     }
+
+//     // Get host's Stripe account
+//     const property = await PropertyModel.findById(data.propertyId).populate("createdBy");
+//     if (!property) {
+//         throw new ApiError(httpStatus.NOT_FOUND, "Property not found");
+//     }
+
+//     const host = await UserModel.findById(property.createdBy);
+//     if (!host?.hostStripeAccount?.stripeAccountId) {
+//         throw new ApiError(httpStatus.BAD_REQUEST, "Host Stripe account not found");
+//     }
+
+//     // Get guest's Stripe customer
+//     const guest = await UserModel.findById(data.userId);
+//     if (!guest) {
+//         throw new ApiError(httpStatus.NOT_FOUND, "Guest user not found");
+//     }
+
+//     let stripeCustomerId = guest.stripeCustomerId;
+
+//     // Create Stripe customer if doesn't exist
+//     if (!stripeCustomerId) {
+//         try {
+//             const stripeCustomer = await stripeService.createCustomer2({
+//                 email: guest.email,
+//                 name: guest.name,
+//                 metadata: {
+//                     userId: guest._id.toString(),
+//                 },
+//             });
+
+//             stripeCustomerId = stripeCustomer.id;
+//             await UserModel.findByIdAndUpdate(data.userId, {
+//                 stripeCustomerId: stripeCustomerId,
+//             });
+
+//             console.log("✅ Created new Stripe customer:", stripeCustomerId);
+//         } catch (error) {
+//             console.error("Error creating Stripe customer:", error);
+//             throw new ApiError(httpStatus.INTERNAL_SERVER_ERROR, "Failed to create payment customer");
+//         }
+//     }
+
+//     // Calculate commission
+//     const commissionResult = await calculateCommission(host._id.toString(), data.agreedFee);
+
+//     const platformTotal = commissionResult.commissionAmount + data.bookingFee + (data.extraFee || 0);
+
+//     // Create Stripe Connect payment
+//     const paymentIntent = await stripeService.createConnectPayment(data.agreedFee, host.hostStripeAccount.stripeAccountId, stripeCustomerId, platformTotal);
+
+//     // Create payment record
+//     const payment = await PaymentModel.create({
+//         stripePaymentIntentId: paymentIntent.id,
+//         agreedFee: data.agreedFee,
+//         bookingFee: data.bookingFee,
+//         extraFee: data.extraFee || 0,
+//         totalAmount: data.totalAmount,
+//         commissionRate: commissionResult.commissionRate,
+//         commissionAmount: commissionResult.commissionAmount,
+//         hostAmount: commissionResult.hostAmount,
+//         platformTotal,
+//         userId: new Types.ObjectId(data.userId),
+//         propertyId: new Types.ObjectId(data.propertyId),
+//         conversationId: new Types.ObjectId(data.conversationId),
+//         messageId: new Types.ObjectId(data.messageId),
+//         hostId: new Types.ObjectId(host._id),
+//         status: "pending",
+//         paymentType: "Stripe",
+//         checkInDate: data.checkInDate || null,
+//         checkOutDate: data.checkOutDate || null,
+//         usedFreeBooking: commissionResult.usedFreeBooking,
+//     });
+
+//     return {
+//         payment,
+//         clientSecret: paymentIntent.client_secret,
+//         paymentIntentId: paymentIntent.id,
+//     };
+// };
+
 const createPayment = async (data: CreatePaymentData) => {
     // Validate required fields
     if (!data.propertyId || !data.userId || !data.conversationId || !data.messageId) {
@@ -74,33 +170,72 @@ const createPayment = async (data: CreatePaymentData) => {
     // Calculate commission
     const commissionResult = await calculateCommission(host._id.toString(), data.agreedFee);
 
-    const platformTotal = commissionResult.commissionAmount + data.bookingFee + (data.extraFee || 0);
+    // Check if booking fee was already paid
+    const isBookingFeeAlreadyPaid = message.bookingFeePaid === true;
+    const platformTotal = commissionResult.commissionAmount + (isBookingFeeAlreadyPaid ? 0 : data.bookingFee) + (data.extraFee || 0);
 
     // Create Stripe Connect payment
     const paymentIntent = await stripeService.createConnectPayment(data.agreedFee, host.hostStripeAccount.stripeAccountId, stripeCustomerId, platformTotal);
 
-    // Create payment record
-    const payment = await PaymentModel.create({
-        stripePaymentIntentId: paymentIntent.id,
-        agreedFee: data.agreedFee,
-        bookingFee: data.bookingFee,
-        extraFee: data.extraFee || 0,
-        totalAmount: data.totalAmount,
-        commissionRate: commissionResult.commissionRate,
-        commissionAmount: commissionResult.commissionAmount,
-        hostAmount: commissionResult.hostAmount,
-        platformTotal,
-        userId: new Types.ObjectId(data.userId),
-        propertyId: new Types.ObjectId(data.propertyId),
-        conversationId: new Types.ObjectId(data.conversationId),
-        messageId: new Types.ObjectId(data.messageId),
-        hostId: new Types.ObjectId(host._id),
-        status: "pending",
-        paymentType: "Stripe",
-        checkInDate: data.checkInDate || null,
-        checkOutDate: data.checkOutDate || null,
-        usedFreeBooking: commissionResult.usedFreeBooking,
-    });
+    // Check if there's an existing booking fee payment to update
+    let payment;
+    if (isBookingFeeAlreadyPaid) {
+        // Find and update the existing booking fee payment
+        payment = await PaymentModel.findOneAndUpdate(
+            {
+                messageId: data.messageId,
+                isBookingFeePaidOnly: true,
+            },
+            {
+                stripePaymentIntentId: paymentIntent.id,
+                agreedFee: data.agreedFee,
+                bookingFee: data.bookingFee,
+                extraFee: data.extraFee || 0,
+                totalAmount: data.totalAmount,
+                commissionRate: commissionResult.commissionRate,
+                commissionAmount: commissionResult.commissionAmount,
+                hostAmount: commissionResult.hostAmount,
+                platformTotal,
+                status: "pending",
+                paymentType: "Stripe",
+                checkInDate: data.checkInDate || null,
+                checkOutDate: data.checkOutDate || null,
+                usedFreeBooking: commissionResult.usedFreeBooking,
+                isBookingFeePaidOnly: false, // Convert to full payment
+                bookingFeePaidDone: data.bookingFee, // Mark booking fee as paid
+            },
+            { new: true }
+        );
+    } else {
+        // Create new payment record
+        payment = await PaymentModel.create({
+            stripePaymentIntentId: paymentIntent.id,
+            agreedFee: data.agreedFee,
+            bookingFee: data.bookingFee,
+            extraFee: data.extraFee || 0,
+            totalAmount: data.totalAmount,
+            commissionRate: commissionResult.commissionRate,
+            commissionAmount: commissionResult.commissionAmount,
+            hostAmount: commissionResult.hostAmount,
+            platformTotal,
+            userId: new Types.ObjectId(data.userId),
+            propertyId: new Types.ObjectId(data.propertyId),
+            conversationId: new Types.ObjectId(data.conversationId),
+            messageId: new Types.ObjectId(data.messageId),
+            hostId: new Types.ObjectId(host._id),
+            status: "pending",
+            paymentType: "Stripe",
+            checkInDate: data.checkInDate || null,
+            checkOutDate: data.checkOutDate || null,
+            usedFreeBooking: commissionResult.usedFreeBooking,
+            isBookingFeePaidOnly: false,
+            bookingFeePaidDone: 0,
+        });
+    }
+
+    if (!payment) {
+        throw new ApiError(httpStatus.INTERNAL_SERVER_ERROR, "Failed to create or update payment");
+    }
 
     return {
         payment,
@@ -108,7 +243,6 @@ const createPayment = async (data: CreatePaymentData) => {
         paymentIntentId: paymentIntent.id,
     };
 };
-
 /**
  * Confirm payment
  */
@@ -156,8 +290,224 @@ const confirmPayment = async (paymentIntentId: string, paymentMethodId: string) 
         throw new ApiError(httpStatus.NOT_FOUND, "Payment record not found");
     }
 
-    const updateAccept = await messageServices.acceptOffer(payment.messageId.toString(), payment.conversationId.toString(), payment.userId.toString());
-    console.log(updateAccept);
+    await messageServices.acceptOffer(payment.messageId.toString(), payment.conversationId.toString(), payment.userId.toString());
+
+    return payment;
+};
+
+/**
+ * Create a new booking fee payment
+ */
+const createBookingFeePayment = async (data: CreatePaymentData) => {
+    // Validate required fields
+    if (!data.propertyId || !data.userId || !data.conversationId || !data.messageId) {
+        throw new ApiError(httpStatus.BAD_REQUEST, "Missing required fields");
+    }
+
+    const message = await Message.findById(data.messageId);
+
+    if (message?.type !== "offer") {
+        throw new ApiError(httpStatus.BAD_REQUEST, "Already payment done or cancelled");
+    }
+
+    if (data.bookingFee < 0) {
+        throw new ApiError(httpStatus.BAD_REQUEST, "Invalid booking fee amount");
+    }
+
+    // Get property details
+    const property = await PropertyModel.findById(data.propertyId).populate("createdBy");
+    if (!property) {
+        throw new ApiError(httpStatus.NOT_FOUND, "Property not found");
+    }
+
+    // If booking fee is 0, mark as paid immediately without Stripe
+    if (data.bookingFee === 0) {
+        console.log("✅ Booking fee is 0 - marking as paid without payment");
+
+        // Create payment record with completed status
+        const payment = await PaymentModel.create({
+            stripePaymentIntentId: "free_booking_fee_" + Date.now(),
+            agreedFee: data.agreedFee || 0,
+            bookingFee: 0,
+            extraFee: data.extraFee || 0,
+            totalAmount: data.totalAmount || 0,
+            commissionRate: 0,
+            commissionAmount: 0,
+            hostAmount: 0,
+            platformTotal: 0,
+            userId: new Types.ObjectId(data.userId),
+            propertyId: new Types.ObjectId(data.propertyId),
+            conversationId: new Types.ObjectId(data.conversationId),
+            messageId: new Types.ObjectId(data.messageId),
+            hostId: new Types.ObjectId(property.createdBy._id),
+            status: "completed",
+            paymentType: "Bank", // Use "Bank" instead of "Free"
+            checkInDate: data.checkInDate || null,
+            checkOutDate: data.checkOutDate || null,
+            usedFreeBooking: false,
+            // NEW FIELDS
+            isBookingFeePaidOnly: true,
+            bookingFeePaidDone: 0,
+            paidAt: new Date(),
+        });
+
+        // Update message bookingFeePaid status
+        await messageServices.updateBookingFeePaid(payment.messageId.toString(), payment.conversationId.toString(), payment.userId.toString());
+
+        console.log("✅ Free booking fee payment record created:", payment._id);
+
+        return {
+            payment,
+            clientSecret: null,
+            paymentIntentId: payment.stripePaymentIntentId,
+        };
+    }
+
+    // Get host's Stripe account (only if booking fee > 0)
+    const host = await UserModel.findById(property.createdBy);
+    if (!host?.hostStripeAccount?.stripeAccountId) {
+        throw new ApiError(httpStatus.BAD_REQUEST, "Host Stripe account not found");
+    }
+
+    // Get guest's Stripe customer (only if booking fee > 0)
+    const guest = await UserModel.findById(data.userId);
+    if (!guest) {
+        throw new ApiError(httpStatus.NOT_FOUND, "Guest user not found");
+    }
+
+    let stripeCustomerId = guest.stripeCustomerId;
+
+    // Create Stripe customer if doesn't exist
+    if (!stripeCustomerId) {
+        try {
+            const stripeCustomer = await stripeService.createCustomer2({
+                email: guest.email,
+                name: guest.name,
+                metadata: {
+                    userId: guest._id.toString(),
+                },
+            });
+
+            stripeCustomerId = stripeCustomer.id;
+            await UserModel.findByIdAndUpdate(data.userId, {
+                stripeCustomerId: stripeCustomerId,
+            });
+
+            console.log("✅ Created new Stripe customer:", stripeCustomerId);
+        } catch (error) {
+            console.error("Error creating Stripe customer:", error);
+            throw new ApiError(httpStatus.INTERNAL_SERVER_ERROR, "Failed to create payment customer");
+        }
+    }
+
+    // Calculate commission
+    const commissionResult = await calculateCommission(host._id.toString(), data.agreedFee);
+
+    const platformTotal = commissionResult.commissionAmount + data.bookingFee + (data.extraFee || 0);
+
+    // Create Stripe Connect payment (only if booking fee > 0)
+    const paymentIntent = await stripeService.createConnectPayment(data.totalAmount, host.hostStripeAccount.stripeAccountId, stripeCustomerId, platformTotal);
+
+    // Create payment record
+    const payment = await PaymentModel.create({
+        stripePaymentIntentId: paymentIntent.id,
+        agreedFee: data.agreedFee,
+        bookingFee: data.bookingFee,
+        extraFee: data.extraFee || 0,
+        totalAmount: data.totalAmount,
+        commissionRate: commissionResult.commissionRate,
+        commissionAmount: commissionResult.commissionAmount,
+        hostAmount: commissionResult.hostAmount,
+        platformTotal,
+        userId: new Types.ObjectId(data.userId),
+        propertyId: new Types.ObjectId(data.propertyId),
+        conversationId: new Types.ObjectId(data.conversationId),
+        messageId: new Types.ObjectId(data.messageId),
+        hostId: new Types.ObjectId(host._id),
+        status: "pending",
+        paymentType: "Bank",
+        checkInDate: data.checkInDate || null,
+        checkOutDate: data.checkOutDate || null,
+        usedFreeBooking: commissionResult.usedFreeBooking,
+        // NEW FIELDS
+        isBookingFeePaidOnly: true,
+        bookingFeePaidDone: 0,
+    });
+
+    return {
+        payment,
+        clientSecret: paymentIntent.client_secret,
+        paymentIntentId: paymentIntent.id,
+    };
+};
+
+/**
+ * Confirm booking fee payment
+ */
+const confirmBookingFeePayment = async (paymentIntentId: string, paymentMethodId: string) => {
+    if (!paymentIntentId || !paymentMethodId) {
+        throw new ApiError(httpStatus.BAD_REQUEST, "Payment intent ID and payment method ID are required");
+    }
+
+    // Skip confirmation if it's a free booking fee
+    if (paymentIntentId === "free_booking_fee") {
+        throw new ApiError(httpStatus.BAD_REQUEST, "Free booking fee does not require confirmation");
+    }
+
+    // First, get the payment record to access bookingFee
+    const existingPayment = await PaymentModel.findOne({ stripePaymentIntentId: paymentIntentId });
+    if (!existingPayment) {
+        throw new ApiError(httpStatus.NOT_FOUND, "Payment record not found");
+    }
+
+    // Confirm payment with Stripe
+    const paymentIntent = await stripeService.confirmPaymentIntent(paymentIntentId, paymentMethodId);
+
+    // Update payment status based on Stripe status
+    let status = "pending";
+
+    switch (paymentIntent.status) {
+        case "succeeded":
+            status = "completed";
+            break;
+        case "requires_action":
+        case "requires_confirmation":
+        case "requires_payment_method":
+            status = "requires_action";
+            break;
+        case "canceled":
+            status = "canceled";
+            break;
+        case "processing":
+            status = "processing";
+            break;
+        default:
+            status = "pending";
+    }
+
+    const payment = await PaymentModel.findOneAndUpdate(
+        { stripePaymentIntentId: paymentIntentId },
+        {
+            status: status,
+            paidAt: paymentIntent.status === "succeeded" ? new Date() : undefined,
+            stripePaymentStatus: paymentIntent.status,
+            bookingFeePaidDone: paymentIntent.status === "succeeded" ? existingPayment.bookingFee : 0,
+        },
+        { new: true }
+    );
+
+    if (!payment) {
+        throw new ApiError(httpStatus.NOT_FOUND, "Payment record not found");
+    }
+
+    // Update message bookingFeePaid status when payment succeeds
+    if (paymentIntent.status === "succeeded") {
+        await Message.findByIdAndUpdate(payment.messageId, {
+            bookingFeePaid: true,
+        });
+    }
+
+    await messageServices.updateBookingFeePaid(payment.messageId.toString(), payment.conversationId.toString(), payment.userId.toString());
 
     return payment;
 };
@@ -805,6 +1155,9 @@ const getPaymentsByProperty = async (propertyId: string, query: { page?: number;
 export const paymentServices = {
     createPayment,
     confirmPayment,
+    // Booking Fee Payment
+    createBookingFeePayment,
+    confirmBookingFeePayment,
     getPaymentById,
     getPaymentsByUser,
     // For admin

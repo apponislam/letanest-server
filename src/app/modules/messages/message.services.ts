@@ -480,6 +480,62 @@ const acceptOffer = async (messageId: string, conversationId: string, userId: st
     return updatedMessage;
 };
 
+/**
+ * Update booking fee paid status to true
+ */
+const updateBookingFeePaid = async (messageId: string, conversationId: string, userId: string) => {
+    const message = await Message.findById(messageId);
+    if (!message) {
+        throw new ApiError(httpStatus.NOT_FOUND, "Message not found");
+    }
+
+    const conversation = await Conversation.findOne({
+        _id: conversationId,
+        participants: userId,
+        isActive: true,
+    });
+
+    if (!conversation) {
+        throw new ApiError(httpStatus.FORBIDDEN, "Access denied to this conversation");
+    }
+
+    const updatedMessage = await Message.findByIdAndUpdate(
+        messageId,
+        {
+            bookingFeePaid: true,
+        },
+        { new: true }
+    )
+        .populate("sender", "name profileImg email phone role")
+        .populate({
+            path: "propertyId",
+            select: "propertyNumber price title images location createdBy",
+            populate: {
+                path: "createdBy",
+                select: "name email phone role profileImg",
+            },
+        });
+
+    if (!updatedMessage) {
+        throw new ApiError(httpStatus.INTERNAL_SERVER_ERROR, "Failed to update booking fee status");
+    }
+
+    await Conversation.findByIdAndUpdate(conversationId, {
+        lastMessage: updatedMessage._id,
+        updatedAt: new Date(),
+    });
+
+    emitToConversation(conversationId, "message:new", updatedMessage);
+    emitToConversation(conversationId, "offer:rejected", {
+        messageId: updatedMessage._id,
+        conversationId,
+    });
+
+    console.log(`✅ Booking fee paid status updated to true by user ${userId}`);
+
+    return updatedMessage;
+};
+
 const markConversationAsRead = async (conversationId: string, userId: string) => {
     const conversation = await Conversation.findOne({
         _id: conversationId,
@@ -837,6 +893,7 @@ export const messageServices = {
     rejectOffer,
     convertRequestToOffer,
     acceptOffer,
+    updateBookingFeePaid,
 
     // Mark all messages read in conversion
     markConversationAsRead,
