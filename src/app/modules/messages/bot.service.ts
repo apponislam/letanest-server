@@ -53,7 +53,7 @@ const sendWelcomeMessage = async (userId: string, data: SendWelcomeMessageDto) =
                     participants: [botUser._id, userObjectId],
                     bot: true,
                     isActive: true,
-                    expiresAt: new Date(Date.now() + 60 * 1000),
+                    // expiresAt: new Date(Date.now() + 60 * 1000),
                 });
             } catch (error: any) {
                 // If creation fails due to duplicate (race condition), find the existing one
