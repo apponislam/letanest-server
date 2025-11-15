@@ -241,7 +241,7 @@ const getMessageById = async (messageId: string, userId: string) => {
         .populate("sender", "name profileImg email phone role")
         .populate({
             path: "propertyId",
-            select: "propertyNumber price title location createdBy",
+            select: "propertyNumber price title location createdBy coverPhoto",
             populate: {
                 path: "createdBy",
                 select: "name email phone role profileImg",
@@ -795,9 +795,9 @@ const editOffer = async (messageId: string, conversationId: string, userId: stri
     }
 
     // Only the sender can edit their own message
-    if (message.sender.toString() !== userId.toString()) {
-        throw new ApiError(httpStatus.FORBIDDEN, "You can only edit your own messages");
-    }
+    // if (message.sender.toString() !== userId.toString()) {
+    //     throw new ApiError(httpStatus.FORBIDDEN, "You can only edit your own messages");
+    // }
 
     // Prepare update data
     const updateFields: any = {};
