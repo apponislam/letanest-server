@@ -229,13 +229,13 @@ const getAllPropertiesService = async (query: IPropertyQuery): Promise<IProperty
         // Add rating filter
         let ratingFilter: any = {};
         switch (rating) {
-            case "Good":
+            case "Pleasant":
                 ratingFilter.averageRating = { $gte: 3 };
                 break;
-            case "Above Good":
+            case "Great":
                 ratingFilter.averageRating = { $gte: 4 };
                 break;
-            case "Excellent":
+            case "Outstanding":
                 ratingFilter.averageRating = { $gte: 5 };
                 break;
             default:
