@@ -423,6 +423,100 @@ const convertRequestToOffer = async (messageId: string, conversationId: string, 
     return updatedMessage;
 };
 
+const convertMakeOfferToRequest = async (
+    messageId: string,
+    conversationId: string,
+    userId: string,
+    requestData: {
+        checkInDate: string;
+        checkOutDate: string;
+        agreedFee: number;
+        guestNo: string;
+    }
+) => {
+    const message = await Message.findById(messageId);
+    if (!message) {
+        throw new ApiError(httpStatus.NOT_FOUND, "Message not found");
+    }
+
+    if (message.type !== "makeoffer") {
+        throw new ApiError(httpStatus.BAD_REQUEST, "Can only convert makeoffer messages");
+    }
+
+    const conversation = await Conversation.findOne({
+        _id: conversationId,
+        participants: userId,
+        isActive: true,
+    });
+
+    if (!conversation) {
+        throw new ApiError(httpStatus.FORBIDDEN, "Access denied to this conversation");
+    }
+
+    // Calculate booking fee - For request type, receiver is the SENDER (same as your existing request logic)
+    let bookingFee = 0;
+    const receiver = userId; // For request type, receiver is the sender themselves
+
+    const receiverData = await UserModel.findById(receiver).select("currentSubscription").populate("currentSubscription", "bookingFee bookingLimit").lean<IUser & { currentSubscription?: ISubscription }>();
+
+    const agreedFeeNum = Number(requestData.agreedFee);
+
+    if (receiverData?.currentSubscription) {
+        const sub = receiverData.currentSubscription;
+        if (sub.bookingLimit && sub.bookingLimit > 0) {
+            bookingFee = 0;
+        } else {
+            bookingFee = sub.bookingFee !== undefined && sub.bookingFee !== null ? (agreedFeeNum * sub.bookingFee) / 100 : agreedFeeNum * 0.1;
+        }
+    } else {
+        bookingFee = agreedFeeNum * 0.1;
+    }
+    bookingFee = Number(bookingFee.toFixed(2));
+
+    // Update the message to request type with all data
+    const updatedMessage = await Message.findByIdAndUpdate(
+        messageId,
+        {
+            type: "request",
+            checkInDate: requestData.checkInDate,
+            checkOutDate: requestData.checkOutDate,
+            agreedFee: requestData.agreedFee,
+            guestNo: requestData.guestNo,
+            bookingFee: bookingFee,
+            bookingFeePaid: false,
+        },
+        { new: true }
+    )
+        .populate("sender", "name profileImg email phone role")
+        .populate({
+            path: "propertyId",
+            select: "propertyNumber price title location createdBy",
+            populate: {
+                path: "createdBy",
+                select: "name email phone role profileImg",
+            },
+        });
+
+    if (!updatedMessage) {
+        throw new ApiError(httpStatus.INTERNAL_SERVER_ERROR, "Failed to convert makeoffer to request");
+    }
+
+    await Conversation.findByIdAndUpdate(conversationId, {
+        lastMessage: updatedMessage._id,
+        updatedAt: new Date(),
+    });
+
+    emitToConversation(conversationId, "message:new", updatedMessage);
+    emitToConversation(conversationId, "offer:rejected", {
+        messageId: updatedMessage._id,
+        conversationId,
+    });
+
+    console.log(`✅ Makeoffer converted to request by user ${userId}`);
+
+    return updatedMessage;
+};
+
 const acceptOffer = async (messageId: string, conversationId: string, userId: string) => {
     const message = await Message.findById(messageId);
     if (!message) {
@@ -892,6 +986,7 @@ export const messageServices = {
     markMessageAsRead,
     rejectOffer,
     convertRequestToOffer,
+    convertMakeOfferToRequest,
     acceptOffer,
     updateBookingFeePaid,
 

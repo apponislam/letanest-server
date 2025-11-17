@@ -17,6 +17,7 @@ import { reportRoutes } from "../modules/reports/reports.routes";
 import { bankDetailsRoutes } from "../modules/bankDetails/bankDetails.routes";
 import { privacyPolicyRoutes } from "../modules/privacy-policy/privacyPolicy.routes";
 import { messageTypesRoutes } from "../modules/automessages/messageTypes.routes";
+import { locationRoutes } from "../modules/location/location.routes";
 
 const router = express.Router();
 
@@ -92,6 +93,10 @@ const moduleRoutes = [
     {
         path: "/message-types",
         route: messageTypesRoutes,
+    },
+    {
+        path: "/locations",
+        route: locationRoutes,
     },
 ];
 

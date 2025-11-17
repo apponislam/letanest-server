@@ -25,6 +25,7 @@ router.patch("/messages/:messageId/read", auth, messageControllers.markAsRead);
 
 router.patch("/:messageId/reject", auth, messageControllers.rejectOffer);
 router.patch("/:messageId/convert-to-offer", auth, messageControllers.convertRequestToOfferController);
+router.patch("/:messageId/convert-makeoffer-to-request", auth, messageControllers.convertMakeOfferToRequest);
 //edit offer
 router.patch("/:messageId/edit-offer", auth, messageControllers.editOffer);
 
