@@ -8,7 +8,7 @@ export const MESSAGE_TYPES = {
     REJECTED: "rejected",
     REQUEST: "request",
     REVIEW: "review",
-    GIVEOFFER: "giveoffer",
+    MAKEOFFER: "makeoffer",
 } as const;
 
 export type MessageType = (typeof MESSAGE_TYPES)[keyof typeof MESSAGE_TYPES];
