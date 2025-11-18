@@ -23,6 +23,7 @@ const paymentSchema = new Schema<IPayment>(
             type: Number,
             default: 0,
         },
+        extraFeePaid: Boolean,
         totalAmount: {
             type: Number,
             required: true,

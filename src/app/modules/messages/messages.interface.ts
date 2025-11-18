@@ -26,6 +26,8 @@ export interface IMessage {
     agreedFee?: number;
     bookingFee?: number;
     bookingFeePaid?: boolean;
+    extraFee?: number;
+    extraFeePaid?: boolean;
     total?: number;
     propertyName?: string;
     address?: string;

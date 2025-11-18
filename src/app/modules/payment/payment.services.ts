@@ -170,9 +170,12 @@ const createPayment = async (data: CreatePaymentData) => {
     // Calculate commission
     const commissionResult = await calculateCommission(host._id.toString(), data.agreedFee);
 
-    // Check if booking fee was already paid
+    // Check if booking fee AND extra fee were already paid
     const isBookingFeeAlreadyPaid = message.bookingFeePaid === true;
-    const platformTotal = commissionResult.commissionAmount + (isBookingFeeAlreadyPaid ? 0 : data.bookingFee) + (data.extraFee || 0);
+    const isExtraFeeAlreadyPaid = message.extraFeePaid === true;
+
+    // Calculate platform total - exclude already paid fees
+    const platformTotal = commissionResult.commissionAmount + (isBookingFeeAlreadyPaid ? 0 : data.bookingFee) + (isExtraFeeAlreadyPaid ? 0 : data.extraFee || 0);
 
     // Create Stripe Connect payment
     const paymentIntent = await stripeService.createConnectPayment(data.agreedFee, host.hostStripeAccount.stripeAccountId, stripeCustomerId, platformTotal);
@@ -203,6 +206,7 @@ const createPayment = async (data: CreatePaymentData) => {
                 usedFreeBooking: commissionResult.usedFreeBooking,
                 isBookingFeePaidOnly: false, // Convert to full payment
                 bookingFeePaidDone: data.bookingFee, // Mark booking fee as paid
+                extraFeePaid: isExtraFeeAlreadyPaid, // Track extra fee status
             },
             { new: true }
         );
@@ -230,6 +234,7 @@ const createPayment = async (data: CreatePaymentData) => {
             usedFreeBooking: commissionResult.usedFreeBooking,
             isBookingFeePaidOnly: false,
             bookingFeePaidDone: 0,
+            extraFeePaid: isExtraFeeAlreadyPaid, // Track extra fee status
         });
     }
 
@@ -298,6 +303,9 @@ const confirmPayment = async (paymentIntentId: string, paymentMethodId: string) 
 /**
  * Create a new booking fee payment
  */
+/**
+ * Create a new booking fee payment
+ */
 const createBookingFeePayment = async (data: CreatePaymentData) => {
     // Validate required fields
     if (!data.propertyId || !data.userId || !data.conversationId || !data.messageId) {
@@ -320,36 +328,65 @@ const createBookingFeePayment = async (data: CreatePaymentData) => {
         throw new ApiError(httpStatus.NOT_FOUND, "Property not found");
     }
 
-    // If booking fee is 0, mark as paid immediately without Stripe
-    if (data.bookingFee === 0) {
-        console.log("✅ Booking fee is 0 - marking as paid without payment");
+    const host = await UserModel.findById(property.createdBy);
+    if (!host) {
+        throw new ApiError(httpStatus.NOT_FOUND, "Host not found");
+    }
+
+    // Calculate commission for record keeping
+    const commissionResult = await calculateCommission(host._id.toString(), data.agreedFee);
+
+    // Calculate total amount to charge (booking fee + extra fee)
+    const totalToCharge = data.bookingFee + (data.extraFee || 0);
+
+    // Calculate platform total for tracking (booking fee + extra fee + commission)
+    const platformTotal = data.bookingFee + (data.extraFee || 0) + commissionResult.commissionAmount;
+
+    // If total amount to charge is 0, mark as paid immediately without Stripe
+    if (totalToCharge === 0) {
+        console.log("✅ Total amount is 0 - marking as paid without payment");
 
         // Create payment record with completed status
         const payment = await PaymentModel.create({
             stripePaymentIntentId: "free_booking_fee_" + Date.now(),
             agreedFee: data.agreedFee || 0,
-            bookingFee: 0,
+            bookingFee: data.bookingFee || 0,
             extraFee: data.extraFee || 0,
-            totalAmount: data.totalAmount || 0,
-            commissionRate: 0,
-            commissionAmount: 0,
-            hostAmount: 0,
-            platformTotal: 0,
+            totalAmount: totalToCharge,
+            commissionRate: commissionResult.commissionRate,
+            commissionAmount: commissionResult.commissionAmount,
+            hostAmount: commissionResult.hostAmount,
+            platformTotal: platformTotal, // Track booking fee + extra fee + commission
             userId: new Types.ObjectId(data.userId),
             propertyId: new Types.ObjectId(data.propertyId),
             conversationId: new Types.ObjectId(data.conversationId),
             messageId: new Types.ObjectId(data.messageId),
             hostId: new Types.ObjectId(property.createdBy._id),
             status: "completed",
-            paymentType: "Bank", // Use "Bank" instead of "Free"
+            paymentType: "Bank",
             checkInDate: data.checkInDate || null,
             checkOutDate: data.checkOutDate || null,
-            usedFreeBooking: false,
-            // NEW FIELDS
+            usedFreeBooking: commissionResult.usedFreeBooking,
             isBookingFeePaidOnly: true,
-            bookingFeePaidDone: 0,
+            bookingFeePaidDone: data.bookingFee || 0,
             paidAt: new Date(),
         });
+
+        const updateData: any = {
+            bookingFeePaid: true,
+        };
+
+        // If there's an extra fee, mark it as paid too
+        if (data.extraFee && data.extraFee > 0) {
+            updateData.extraFeePaid = true;
+        }
+
+        await Message.findByIdAndUpdate(data.messageId, updateData);
+
+        console.log("✅ Free booking fee payment record created:", payment._id);
+        if (data.extraFee && data.extraFee > 0) {
+            console.log(`✅ Extra fee also marked as paid (amount: £${data.extraFee})`);
+        }
 
         // Update message bookingFeePaid status
         await messageServices.updateBookingFeePaid(payment.messageId.toString(), payment.conversationId.toString(), payment.userId.toString());
@@ -363,13 +400,7 @@ const createBookingFeePayment = async (data: CreatePaymentData) => {
         };
     }
 
-    // Get host's Stripe account (only if booking fee > 0)
-    const host = await UserModel.findById(property.createdBy);
-    if (!host?.hostStripeAccount?.stripeAccountId) {
-        throw new ApiError(httpStatus.BAD_REQUEST, "Host Stripe account not found");
-    }
-
-    // Get guest's Stripe customer (only if booking fee > 0)
+    // Get guest's Stripe customer
     const guest = await UserModel.findById(data.userId);
     if (!guest) {
         throw new ApiError(httpStatus.NOT_FOUND, "Guest user not found");
@@ -400,13 +431,8 @@ const createBookingFeePayment = async (data: CreatePaymentData) => {
         }
     }
 
-    // Calculate commission
-    const commissionResult = await calculateCommission(host._id.toString(), data.agreedFee);
-
-    const platformTotal = commissionResult.commissionAmount + data.bookingFee + (data.extraFee || 0);
-
-    // Create Stripe Connect payment (only if booking fee > 0)
-    const paymentIntent = await stripeService.createConnectPayment(data.totalAmount, host.hostStripeAccount.stripeAccountId, stripeCustomerId, platformTotal);
+    // Use createBookingFeePayment to charge only booking fee + extra fee (no commission)
+    const paymentIntent = await stripeService.createBookingFeePayment(totalToCharge, stripeCustomerId);
 
     // Create payment record
     const payment = await PaymentModel.create({
@@ -414,11 +440,11 @@ const createBookingFeePayment = async (data: CreatePaymentData) => {
         agreedFee: data.agreedFee,
         bookingFee: data.bookingFee,
         extraFee: data.extraFee || 0,
-        totalAmount: data.totalAmount,
+        totalAmount: totalToCharge,
         commissionRate: commissionResult.commissionRate,
         commissionAmount: commissionResult.commissionAmount,
         hostAmount: commissionResult.hostAmount,
-        platformTotal,
+        platformTotal: platformTotal, // Track booking fee + extra fee + commission
         userId: new Types.ObjectId(data.userId),
         propertyId: new Types.ObjectId(data.propertyId),
         conversationId: new Types.ObjectId(data.conversationId),
@@ -429,7 +455,6 @@ const createBookingFeePayment = async (data: CreatePaymentData) => {
         checkInDate: data.checkInDate || null,
         checkOutDate: data.checkOutDate || null,
         usedFreeBooking: commissionResult.usedFreeBooking,
-        // NEW FIELDS
         isBookingFeePaidOnly: true,
         bookingFeePaidDone: 0,
     });
@@ -450,7 +475,7 @@ const confirmBookingFeePayment = async (paymentIntentId: string, paymentMethodId
     }
 
     // Skip confirmation if it's a free booking fee
-    if (paymentIntentId === "free_booking_fee") {
+    if (paymentIntentId.startsWith("free_booking_fee")) {
         throw new ApiError(httpStatus.BAD_REQUEST, "Free booking fee does not require confirmation");
     }
 
@@ -460,8 +485,8 @@ const confirmBookingFeePayment = async (paymentIntentId: string, paymentMethodId
         throw new ApiError(httpStatus.NOT_FOUND, "Payment record not found");
     }
 
-    // Confirm payment with Stripe
-    const paymentIntent = await stripeService.confirmPaymentIntent(paymentIntentId, paymentMethodId);
+    // ✅ FIXED: Use confirmBookingFeePayment instead of confirmPaymentIntent
+    const paymentIntent = await stripeService.confirmBookingFeePayment(paymentIntentId, paymentMethodId);
 
     // Update payment status based on Stripe status
     let status = "pending";
@@ -502,9 +527,16 @@ const confirmBookingFeePayment = async (paymentIntentId: string, paymentMethodId
 
     // Update message bookingFeePaid status when payment succeeds
     if (paymentIntent.status === "succeeded") {
-        await Message.findByIdAndUpdate(payment.messageId, {
+        const updateData: any = {
             bookingFeePaid: true,
-        });
+        };
+
+        // If there's an extra fee in the payment, mark it as paid too
+        if (existingPayment.extraFee && existingPayment.extraFee > 0) {
+            updateData.extraFeePaid = true;
+        }
+
+        await Message.findByIdAndUpdate(payment.messageId, updateData);
     }
 
     await messageServices.updateBookingFeePaid(payment.messageId.toString(), payment.conversationId.toString(), payment.userId.toString());

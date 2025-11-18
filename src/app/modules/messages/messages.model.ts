@@ -36,6 +36,11 @@ const messageSchema = new Schema<IMessage>(
             type: Boolean,
             default: false,
         },
+        extraFee: Number,
+        extraFeePaid: {
+            type: Boolean,
+            default: false,
+        },
         total: Number,
         propertyName: String,
         address: String,
