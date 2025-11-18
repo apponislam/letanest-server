@@ -6,6 +6,7 @@ export interface IPayment {
     agreedFee: number;
     bookingFee: number;
     extraFee?: number;
+    extraFeePaid?: boolean;
     totalAmount: number;
     commissionRate: number;
     commissionAmount: number;

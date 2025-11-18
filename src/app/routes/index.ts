@@ -18,6 +18,7 @@ import { bankDetailsRoutes } from "../modules/bankDetails/bankDetails.routes";
 import { privacyPolicyRoutes } from "../modules/privacy-policy/privacyPolicy.routes";
 import { messageTypesRoutes } from "../modules/automessages/messageTypes.routes";
 import { locationRoutes } from "../modules/location/location.routes";
+import { peaceOfMindFeeRoutes } from "../modules/peaceOfMindFee/peaceOfMindFee.routes";
 
 const router = express.Router();
 
@@ -97,6 +98,10 @@ const moduleRoutes = [
     {
         path: "/locations",
         route: locationRoutes,
+    },
+    {
+        path: "/peace-of-mind-fee",
+        route: peaceOfMindFeeRoutes,
     },
 ];
 
