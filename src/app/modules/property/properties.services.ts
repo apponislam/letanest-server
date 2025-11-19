@@ -12,8 +12,8 @@ const createPropertyService = async (data: IProperty): Promise<IProperty> => {
             bedrooms: Number(data.bedrooms),
             bathrooms: Number(data.bathrooms),
             price: Number(data.price),
-            availableFrom: new Date(data.availableFrom),
-            availableTo: new Date(data.availableTo),
+            availableFrom: data.calendarEnabled && data.availableFrom ? new Date(data.availableFrom) : undefined,
+            availableTo: data.calendarEnabled && data.availableTo ? new Date(data.availableTo) : undefined,
             amenities: Array.isArray(data.amenities) ? data.amenities : [],
         };
 
@@ -109,6 +109,7 @@ const getAllPropertiesService = async (query: IPropertyQuery): Promise<IProperty
     const filter: Record<string, any> = {
         isDeleted: false,
         status: status,
+        calendarEnabled: true,
     };
 
     // Search filter
@@ -367,7 +368,7 @@ const getAllPublishedPropertiesService = async (query: IPropertyQuery): Promise<
 
     const skip = (Number(page) - 1) * Number(limit);
 
-    const [properties, total] = await Promise.all([PropertyModel.find(filter).populate("createdBy").populate("termsAndConditions").skip(skip).limit(Number(limit)).sort({ createdAt: -1 }), PropertyModel.countDocuments(filter)]);
+    const [properties, total] = await Promise.all([PropertyModel.find(filter).populate("createdBy").populate("termsAndConditions").skip(skip).limit(Number(limit)).sort({ updatedAt: -1, createdAt: -1 }), PropertyModel.countDocuments(filter)]);
 
     // Calculate total amount (sum of all published properties' prices)
     const totalAmountResult = await PropertyModel.aggregate([{ $match: filter }, { $group: { _id: null, totalAmount: { $sum: "$price" } } }]);
@@ -390,7 +391,7 @@ const getAllNonPublishedPropertiesService = async (query: IPropertyQuery): Promi
 
     const filter: Record<string, any> = {
         status: { $ne: "published" },
-        isDeleted: false, // Add soft delete filter
+        isDeleted: false,
     };
 
     if (search) {
@@ -404,9 +405,8 @@ const getAllNonPublishedPropertiesService = async (query: IPropertyQuery): Promi
 
     const skip = (Number(page) - 1) * Number(limit);
 
-    const [properties, total] = await Promise.all([PropertyModel.find(filter).populate("createdBy").populate("termsAndConditions").skip(skip).limit(Number(limit)).sort({ createdAt: -1 }), PropertyModel.countDocuments(filter)]);
+    const [properties, total] = await Promise.all([PropertyModel.find(filter).populate("createdBy").populate("termsAndConditions").skip(skip).limit(Number(limit)).sort({ updatedAt: -1, createdAt: -1 }), PropertyModel.countDocuments(filter)]);
 
-    // Calculate total amount (sum of all non-published properties' prices)
     const totalAmountResult = await PropertyModel.aggregate([{ $match: filter }, { $group: { _id: null, totalAmount: { $sum: "$price" } } }]);
 
     const totalAmount = totalAmountResult.length > 0 ? totalAmountResult[0].totalAmount : 0;
@@ -417,7 +417,6 @@ const getAllNonPublishedPropertiesService = async (query: IPropertyQuery): Promi
             total,
             page: Number(page),
             limit: Number(limit),
-            // totalPages: Math.ceil(total / Number(limit)),
             totalAmount,
         },
     };
@@ -616,6 +615,28 @@ const toggleTrendingStatusService = async (id: string) => {
     return updatedProperty;
 };
 
+const toggleCalendarService = async (id: string, calendarEnabled: boolean, availableFrom?: string, availableTo?: string): Promise<IProperty | null> => {
+    const updateData: any = {
+        calendarEnabled,
+    };
+
+    if (calendarEnabled) {
+        if (availableFrom && availableTo) {
+            updateData.availableFrom = new Date(availableFrom);
+            updateData.availableTo = new Date(availableTo);
+        } else {
+            const now = new Date();
+            updateData.availableFrom = now;
+            updateData.availableTo = new Date(now.getFullYear() + 1, now.getMonth(), now.getDate());
+        }
+    } else {
+        updateData.availableFrom = null;
+        updateData.availableTo = null;
+    }
+
+    return PropertyModel.findByIdAndUpdate(id, updateData, { new: true }).populate("createdBy").populate("termsAndConditions");
+};
+
 export const propertyServices = {
     createPropertyService,
     updatePropertyService,
@@ -636,4 +657,5 @@ export const propertyServices = {
     // Toggle
     toggleFeaturedStatusService,
     toggleTrendingStatusService,
+    toggleCalendarService,
 };
