@@ -26,6 +26,7 @@ router.get("/admin/all", auth, authorize(["ADMIN"]), propertyControllers.getAllN
 router.patch("/:id/toggle-featured", auth, authorize(["ADMIN"]), propertyControllers.toggleFeaturedStatusController);
 router.patch("/:id/toggle-trending", auth, authorize(["ADMIN"]), propertyControllers.toggleTrendingStatusController);
 router.patch("/:id/status", auth, authorize(["ADMIN"]), propertyControllers.changePropertyStatusController);
+router.patch("/:id/calendar", auth, authorize(["ADMIN", "HOST"]), propertyControllers.toggleCalendarController);
 
 // Host
 

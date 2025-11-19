@@ -40,8 +40,9 @@ const PropertySchema = new Schema<IProperty>(
         bedrooms: { type: Number, required: [true, "Bedrooms count is required"] },
         bathrooms: { type: Number, required: [true, "Bathrooms count is required"] },
         price: { type: Number, required: [true, "Price is required"], min: 0 },
-        availableFrom: { type: Date, required: [true, "Available from date is required"] },
-        availableTo: { type: Date, required: [true, "Available to date is required"] },
+        availableFrom: { type: Date },
+        availableTo: { type: Date },
+        calendarEnabled: { type: Boolean, default: true },
         amenities: {
             type: [String],
             enum: amenitiesList,

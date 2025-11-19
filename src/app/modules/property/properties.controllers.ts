@@ -250,6 +250,41 @@ const toggleTrendingStatusController = catchAsync(async (req: Request, res: Resp
     });
 });
 
+const toggleCalendarController = catchAsync(async (req: Request, res: Response) => {
+    const { id } = req.params;
+    const { calendarEnabled, availableFrom, availableTo } = req.body;
+
+    if (typeof calendarEnabled !== "boolean") {
+        throw new ApiError(httpStatus.BAD_REQUEST, "calendarEnabled is required and must be a boolean");
+    }
+
+    if (availableFrom && availableTo) {
+        const fromDate = new Date(availableFrom);
+        const toDate = new Date(availableTo);
+
+        if (isNaN(fromDate.getTime()) || isNaN(toDate.getTime())) {
+            throw new ApiError(httpStatus.BAD_REQUEST, "Invalid date format for availableFrom or availableTo");
+        }
+
+        if (fromDate >= toDate) {
+            throw new ApiError(httpStatus.BAD_REQUEST, "availableFrom must be before availableTo");
+        }
+    }
+
+    const result = await propertyServices.toggleCalendarService(id, calendarEnabled, availableFrom, availableTo);
+
+    if (!result) {
+        throw new ApiError(httpStatus.NOT_FOUND, "Property not found");
+    }
+
+    sendResponse(res, {
+        statusCode: httpStatus.OK,
+        success: true,
+        message: `Calendar ${calendarEnabled ? "opened" : "closed"} successfully`,
+        data: result,
+    });
+});
+
 export const propertyControllers = {
     createPropertyController,
     updatePropertyController,
@@ -270,4 +305,5 @@ export const propertyControllers = {
     // Toggle
     toggleFeaturedStatusController,
     toggleTrendingStatusController,
+    toggleCalendarController,
 };

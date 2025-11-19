@@ -78,8 +78,9 @@ export interface IPropertyStep2 {
     bedrooms: number;
     bathrooms: number;
     price: number;
-    availableFrom: Date;
-    availableTo: Date;
+    availableFrom?: Date;
+    availableTo?: Date;
+    calendarEnabled?: boolean;
     amenities: Amenity[];
 }
 
