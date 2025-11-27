@@ -8,6 +8,7 @@ import { initSocket } from "./socket/socket";
 import { geocodeAddress } from "./app/modules/property/geocodingService";
 import axios from "axios";
 import createBotAdmin from "./scripts/createBotAdmin";
+import { reviewReminderCron } from "./app/modules/rating/ratingReminder.cron";
 
 let server: Server;
 
@@ -20,6 +21,8 @@ async function main() {
 
         createSuperAdmin();
         createBotAdmin();
+
+        reviewReminderCron.start();
 
         // const ipResponse = await axios.get("https://api.ipify.org?format=json");
         // console.log("🌐 Backend public IP:", ipResponse.data.ip);
@@ -48,9 +51,11 @@ process.on("unhandledRejection", (error) => {
 
     if (server) {
         server.close(() => {
+            reviewReminderCron.stop();
             process.exit(1);
         });
     } else {
+        reviewReminderCron.stop();
         process.exit(1);
     }
 });
@@ -60,9 +65,11 @@ process.on("uncaughtException", (error) => {
 
     if (server) {
         server.close(() => {
+            reviewReminderCron.stop();
             process.exit(1);
         });
     } else {
+        reviewReminderCron.stop();
         process.exit(1);
     }
 });

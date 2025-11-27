@@ -2,6 +2,7 @@ import mongoose from "mongoose";
 
 export enum RatingType {
     PROPERTY = "property",
+    GUEST = "guest",
     SITE = "site",
 }
 
@@ -15,12 +16,14 @@ export interface IRating extends Document {
     type: RatingType;
     propertyId?: mongoose.Types.ObjectId;
     userId: mongoose.Types.ObjectId;
-    hostId?: mongoose.Types.ObjectId;
+    reviewedId?: mongoose.Types.ObjectId;
+
     communication?: number;
     accuracy?: number;
     cleanliness?: number;
     checkInExperience?: number;
     overallExperience: number;
+
     country?: string;
     description?: string;
     isDeleted: boolean;

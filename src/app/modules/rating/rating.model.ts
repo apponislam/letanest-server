@@ -15,24 +15,24 @@ const ratingSchema = new Schema<IRating>(
                 return this.type === RatingType.PROPERTY;
             },
         },
-        hostId: {
-            type: Schema.Types.ObjectId,
-            ref: "User",
-            required: function () {
-                return this.type === RatingType.PROPERTY;
-            },
-        },
         userId: {
             type: Schema.Types.ObjectId,
             ref: "User",
             required: true,
+        },
+        reviewedId: {
+            type: Schema.Types.ObjectId,
+            ref: "User",
+            required: function () {
+                return this.type === RatingType.PROPERTY || this.type === RatingType.GUEST;
+            },
         },
         communication: {
             type: Number,
             min: 1,
             max: 5,
             required: function () {
-                return this.type === RatingType.PROPERTY;
+                return this.type === RatingType.PROPERTY || this.type === RatingType.GUEST;
             },
         },
         accuracy: {
@@ -40,7 +40,7 @@ const ratingSchema = new Schema<IRating>(
             min: 1,
             max: 5,
             required: function () {
-                return this.type === RatingType.PROPERTY;
+                return this.type === RatingType.PROPERTY || this.type === RatingType.GUEST;
             },
         },
         cleanliness: {
@@ -48,7 +48,7 @@ const ratingSchema = new Schema<IRating>(
             min: 1,
             max: 5,
             required: function () {
-                return this.type === RatingType.PROPERTY;
+                return this.type === RatingType.PROPERTY || this.type === RatingType.GUEST;
             },
         },
         checkInExperience: {
@@ -56,7 +56,7 @@ const ratingSchema = new Schema<IRating>(
             min: 1,
             max: 5,
             required: function () {
-                return this.type === RatingType.PROPERTY;
+                return this.type === RatingType.PROPERTY || this.type === RatingType.GUEST;
             },
         },
         overallExperience: {
@@ -89,46 +89,10 @@ const ratingSchema = new Schema<IRating>(
     }
 );
 
-// FIXED: Only keep propertyId+userId as unique index
-ratingSchema.index(
-    { propertyId: 1, userId: 1 },
-    {
-        unique: true,
-        partialFilterExpression: {
-            type: RatingType.PROPERTY,
-            isDeleted: false,
-            status: { $in: [RatingStatus.APPROVED, RatingStatus.PENDING] }, // Include pending ratings
-        },
-    }
-);
-
-ratingSchema.index(
-    { hostId: 1, userId: 1 },
-    {
-        partialFilterExpression: {
-            type: RatingType.PROPERTY,
-            isDeleted: false,
-        },
-    }
-);
-
-ratingSchema.index(
-    { userId: 1 },
-    {
-        unique: true,
-        partialFilterExpression: {
-            type: RatingType.SITE,
-            isDeleted: false,
-            status: { $in: [RatingStatus.APPROVED, RatingStatus.PENDING] },
-        },
-    }
-);
-
-ratingSchema.index({ hostId: 1, type: 1 });
-ratingSchema.index({ propertyId: 1, type: 1 });
+ratingSchema.index({ reviewedId: 1, type: 1 });
 ratingSchema.index({ userId: 1, type: 1 });
-ratingSchema.index({ status: 1, type: 1 });
-ratingSchema.index({ createdAt: 1, status: 1 });
-ratingSchema.index({ isDeleted: 1 });
+ratingSchema.index({ status: 1 });
+ratingSchema.index({ propertyId: 1 });
+ratingSchema.index({ createdAt: 1 });
 
 export const RatingModel = mongoose.model<IRating>("Rating", ratingSchema);

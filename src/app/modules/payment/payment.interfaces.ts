@@ -20,6 +20,7 @@ export interface IPayment {
     messageId: Types.ObjectId;
     hostId: Types.ObjectId;
     status: "pending" | "completed" | "failed" | "canceled" | "processing" | "requires_action";
+    reviewedSend?: boolean;
     stripePaymentStatus?: string;
     paymentType?: "Stripe" | "Bank";
     isBookingFeePaidOnly?: boolean;

@@ -10,7 +10,7 @@
 // const createPropertyRatingValidation = z.object({
 //     type: z.literal("property"),
 //     propertyId: z.string(),
-//     hostId: z.string(), // Added hostId
+//     hostId: z.string(),
 //     communication: z.number().min(1).max(5),
 //     accuracy: z.number().min(1).max(5),
 //     cleanliness: z.number().min(1).max(5),
@@ -25,12 +25,12 @@
 //     ...baseRatingValidation,
 // });
 
-// // Generic create validation (less strict)
+// // Generic create validation
 // const createRatingValidation = z
 //     .object({
 //         type: z.enum(["property", "site"]),
 //         propertyId: z.string().optional(),
-//         hostId: z.string().optional(), // Added hostId
+//         hostId: z.string().optional(),
 //         communication: z.number().min(1).max(5).optional(),
 //         accuracy: z.number().min(1).max(5).optional(),
 //         cleanliness: z.number().min(1).max(5).optional(),
@@ -41,7 +41,6 @@
 //     })
 //     .refine(
 //         (data) => {
-//             // Custom validation: if type is property, propertyId and hostId are required
 //             if (data.type === "property") {
 //                 return !!(data.propertyId && data.hostId);
 //             }
@@ -49,7 +48,7 @@
 //         },
 //         {
 //             message: "propertyId and hostId are required when type is 'property'",
-//             path: ["propertyId", "hostId"], // This will show error on both fields
+//             path: ["propertyId", "hostId"],
 //         }
 //     );
 
@@ -63,11 +62,17 @@
 //     description: z.string().max(500).optional(),
 // });
 
+// // Admin status update validation
+// const updateRatingStatusValidation = z.object({
+//     status: z.enum(["pending", "approved", "rejected"]),
+// });
+
 // export const ratingValidations = {
 //     createRatingValidation,
 //     createPropertyRatingValidation,
 //     createSiteRatingValidation,
 //     updateRatingValidation,
+//     updateRatingStatusValidation,
 // };
 
 import { z } from "zod";
@@ -82,7 +87,7 @@ const baseRatingValidation = {
 const createPropertyRatingValidation = z.object({
     type: z.literal("property"),
     propertyId: z.string(),
-    hostId: z.string(),
+    reviewedId: z.string(), // Required for property ratings
     communication: z.number().min(1).max(5),
     accuracy: z.number().min(1).max(5),
     cleanliness: z.number().min(1).max(5),
@@ -90,19 +95,28 @@ const createPropertyRatingValidation = z.object({
     ...baseRatingValidation,
 });
 
+// Guest rating validation
+const createGuestRatingValidation = z.object({
+    type: z.literal("guest"),
+    reviewedId: z.string(), // Required for guest ratings
+    overallExperience: z.number().min(1).max(5),
+    description: z.string().max(500).optional(),
+});
+
 // Site rating validation
 const createSiteRatingValidation = z.object({
     type: z.literal("site"),
     country: z.string().min(1).max(100),
+    reviewedId: z.string().optional(), // Optional for site ratings
     ...baseRatingValidation,
 });
 
 // Generic create validation
 const createRatingValidation = z
     .object({
-        type: z.enum(["property", "site"]),
+        type: z.enum(["property", "guest", "site"]),
         propertyId: z.string().optional(),
-        hostId: z.string().optional(),
+        reviewedId: z.string().optional(), // Make optional here too
         communication: z.number().min(1).max(5).optional(),
         accuracy: z.number().min(1).max(5).optional(),
         cleanliness: z.number().min(1).max(5).optional(),
@@ -114,13 +128,37 @@ const createRatingValidation = z
     .refine(
         (data) => {
             if (data.type === "property") {
-                return !!(data.propertyId && data.hostId);
+                return !!(data.propertyId && data.reviewedId && data.communication && data.accuracy && data.cleanliness && data.checkInExperience);
             }
             return true;
         },
         {
-            message: "propertyId and hostId are required when type is 'property'",
-            path: ["propertyId", "hostId"],
+            message: "propertyId, reviewedId, and all rating criteria are required for property ratings",
+            path: ["propertyId"],
+        }
+    )
+    .refine(
+        (data) => {
+            if (data.type === "guest") {
+                return !!data.reviewedId;
+            }
+            return true;
+        },
+        {
+            message: "reviewedId is required for guest ratings",
+            path: ["reviewedId"],
+        }
+    )
+    .refine(
+        (data) => {
+            if (data.type === "site") {
+                return !!data.country;
+            }
+            return true;
+        },
+        {
+            message: "country is required for site ratings",
+            path: ["country"],
         }
     );
 
@@ -142,6 +180,7 @@ const updateRatingStatusValidation = z.object({
 export const ratingValidations = {
     createRatingValidation,
     createPropertyRatingValidation,
+    createGuestRatingValidation,
     createSiteRatingValidation,
     updateRatingValidation,
     updateRatingStatusValidation,

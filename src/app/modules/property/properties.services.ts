@@ -88,15 +88,6 @@ const refreshNearbyPlacesService = async (id: string): Promise<IProperty | null>
     return PropertyModel.findByIdAndUpdate(id, { nearbyPlaces }, { new: true });
 };
 
-// const updatePropertyService = async (id: string, data: Partial<IProperty>): Promise<IProperty | null> => {
-//     const updateData = {
-//         ...data,
-//         status: "pending" as const,
-//     };
-
-//     return PropertyModel.findByIdAndUpdate(id, updateData, { new: true });
-// };
-
 const getSinglePropertyService = async (id: string): Promise<IProperty | null> => {
     return PropertyModel.findById(id)
         .populate("createdBy") // Populate the user object
@@ -258,7 +249,7 @@ const getAllPropertiesService = async (query: IPropertyQuery): Promise<IProperty
                     localField: "createdBy",
                     foreignField: "_id",
                     as: "createdBy",
-                    pipeline: [{ $project: { name: 1, email: 1 } }],
+                    pipeline: [{ $project: { name: 1, email: 1, isVerifiedByAdmin: 1, profileImg: 1, verificationStatus: 1 } }],
                 },
             },
             { $unwind: { path: "$createdBy", preserveNullAndEmptyArrays: true } }
@@ -334,7 +325,7 @@ const getAllPropertiesService = async (query: IPropertyQuery): Promise<IProperty
     }
 
     // If no rating filter, use normal query
-    const [properties, total] = await Promise.all([PropertyModel.find(filter).skip(skip).limit(Number(limit)).sort({ createdAt: -1 }).populate("createdBy", "name email"), PropertyModel.countDocuments(filter)]);
+    const [properties, total] = await Promise.all([PropertyModel.find(filter).skip(skip).limit(Number(limit)).sort({ createdAt: -1 }).populate("createdBy", "name email isVerifiedByAdmin profileImg verificationStatus"), PropertyModel.countDocuments(filter)]);
 
     return {
         properties,
