@@ -85,20 +85,13 @@ const createPayment = async (data: CreatePaymentData) => {
     const hostAmount = data.agreedFee - commissionResult.commissionAmount;
 
     // ✅ CORRECT: Only exclude from Stripe payment amount
-    const stripePaymentAmount = data.agreedFee + 
-                               (isBookingFeeAlreadyPaid ? 0 : data.bookingFee) + 
-                               (isExtraFeeAlreadyPaid ? 0 : actualExtraFee);
-
-    const stripePlatformTotal = commissionResult.commissionAmount + 
-                               (isBookingFeeAlreadyPaid ? 0 : data.bookingFee) + 
-                               (isExtraFeeAlreadyPaid ? 0 : actualExtraFee);
-
-
+    const stripePaymentAmount = data.agreedFee + (isBookingFeeAlreadyPaid ? 0 : data.bookingFee) + (isExtraFeeAlreadyPaid ? 0 : actualExtraFee);
+    const stripePlatformTotal = commissionResult.commissionAmount + (isBookingFeeAlreadyPaid ? 0 : data.bookingFee) + (isExtraFeeAlreadyPaid ? 0 : actualExtraFee);
 
     // Check if there's an existing booking fee payment
     const existingBookingFeePayment = await PaymentModel.findOne({
         messageId: data.messageId,
-        isBookingFeePaidOnly: true
+        isBookingFeePaidOnly: true,
     });
 
     // Create Stripe Connect payment
@@ -111,7 +104,7 @@ const createPayment = async (data: CreatePaymentData) => {
         payment = await PaymentModel.findOneAndUpdate(
             {
                 messageId: data.messageId,
-                isBookingFeePaidOnly: true
+                isBookingFeePaidOnly: true,
             },
             {
                 $set: {
@@ -133,8 +126,8 @@ const createPayment = async (data: CreatePaymentData) => {
                     bookingFeePaidDone: data.bookingFee,
                     extraFeePaid: isExtraFeeAlreadyPaid,
                     commissionPaid: true,
-                    comissionPaidDone: commissionResult.commissionAmount
-                }
+                    comissionPaidDone: commissionResult.commissionAmount,
+                },
             },
             { new: true }
         );
@@ -299,7 +292,7 @@ const createBookingFeePayment = async (data: CreatePaymentData) => {
             usedFreeBooking: commissionResult.usedFreeBooking,
             isBookingFeePaidOnly: true,
             bookingFeePaidDone: data.bookingFee || 0,
-            extraFeePaid: (data.extraFee && data.extraFee > 0) ? true : false,
+            extraFeePaid: data.extraFee && data.extraFee > 0 ? true : false,
             commissionPaid: false,
             comissionPaidDone: 0,
             paidAt: new Date(),
@@ -382,7 +375,7 @@ const createBookingFeePayment = async (data: CreatePaymentData) => {
         usedFreeBooking: commissionResult.usedFreeBooking,
         isBookingFeePaidOnly: true,
         bookingFeePaidDone: 0,
-        extraFeePaid: (data.extraFee && data.extraFee > 0) ? false : undefined,
+        extraFeePaid: data.extraFee && data.extraFee > 0 ? false : undefined,
         commissionPaid: false,
         comissionPaidDone: 0,
         createdAt: new Date(),

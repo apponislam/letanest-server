@@ -10,7 +10,6 @@ const paymentSchema = new Schema<IPayment>(
             unique: true,
         },
 
-        // Money breakdown
         agreedFee: {
             type: Number,
             required: true,
@@ -83,6 +82,7 @@ const paymentSchema = new Schema<IPayment>(
             enum: ["Stripe", "Bank"],
             default: undefined,
         },
+        reviewedSend: Boolean,
         isBookingFeePaidOnly: Boolean,
         bookingFeePaidDone: Number,
         comissionPaidDone: Number,
