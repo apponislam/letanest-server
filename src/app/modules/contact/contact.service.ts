@@ -19,7 +19,7 @@ const getContacts = async (query: any = {}) => {
 
     // Search functionality
     if (query.search) {
-        filter.$or = [{ firstName: { $regex: query.search, $options: "i" } }, { lastName: { $regex: query.search, $options: "i" } }, { email: { $regex: query.search, $options: "i" } }, { message: { $regex: query.search, $options: "i" } }];
+        filter.$or = [{ firstName: { $regex: query.search, $options: "i" } }, { lastName: { $regex: query.search, $options: "i" } }, { email: { $regex: query.search, $options: "i" } }, { phone: { $regex: query.search, $options: "i" } }, { message: { $regex: query.search, $options: "i" } }];
     }
 
     // Status filter
