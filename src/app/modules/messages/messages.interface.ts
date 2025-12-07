@@ -9,6 +9,7 @@ export const MESSAGE_TYPES = {
     REQUEST: "request",
     REVIEW: "review",
     MAKEOFFER: "makeoffer",
+    SYSTEM: "system",
 } as const;
 
 export type MessageType = (typeof MESSAGE_TYPES)[keyof typeof MESSAGE_TYPES];
