@@ -19,6 +19,11 @@ const contactSchema = new Schema<IContact>(
             trim: true,
             lowercase: true,
         },
+        phone: {
+            type: String,
+            required: true,
+            trim: true,
+        },
         message: {
             type: String,
             required: true,
