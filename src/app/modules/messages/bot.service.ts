@@ -205,7 +205,7 @@ const sendWelcomeMessage = async (userId: string, data: SendWelcomeMessageDto) =
         const welcomeMessage = await Message.create({
             conversationId: conversation._id,
             sender: botUser._id,
-            type: MESSAGE_TYPES.TEXT,
+            type: MESSAGE_TYPES.SYSTEM,
             text: messageContent,
             bot: true,
             // expiresAt: new Date(Date.now() + 60 * 1000),
