@@ -655,31 +655,7 @@ const createRatingService = async (ratingData: CreateRatingData): Promise<IRatin
         throw new ApiError(httpStatus.BAD_REQUEST, "Country is required for site ratings");
     }
 
-    // Check existing ratings
-    if (ratingData.type === RatingType.PROPERTY) {
-        const existingRating = await RatingModel.findOne({
-            userId: ratingData.userId,
-            propertyId: ratingData.propertyId,
-            type: RatingType.PROPERTY,
-        });
-
-        if (existingRating) {
-            throw new ApiError(httpStatus.BAD_REQUEST, "You have already rated this property");
-        }
-    }
-
-    if (ratingData.type === RatingType.GUEST) {
-        const existingRating = await RatingModel.findOne({
-            userId: ratingData.userId,
-            reviewedId: ratingData.reviewedId,
-            type: RatingType.GUEST,
-        });
-
-        if (existingRating) {
-            throw new ApiError(httpStatus.BAD_REQUEST, "You have already rated this guest");
-        }
-    }
-
+    // Check existing ratings - ONLY FOR SITE RATINGS
     if (ratingData.type === RatingType.SITE) {
         const existingRating = await RatingModel.findOne({
             userId: ratingData.userId,
@@ -690,6 +666,9 @@ const createRatingService = async (ratingData: CreateRatingData): Promise<IRatin
             throw new ApiError(httpStatus.BAD_REQUEST, "You have already rated the site");
         }
     }
+
+    // For PROPERTY and GUEST ratings, allow multiple reviews (no duplicate check)
+    // Users can review same property or same guest multiple times
 
     const rating = await RatingModel.create(ratingData);
     const populatedRating = await RatingModel.findById(rating._id).populate("userId", userPopulationFields).populate("propertyId", propertyPopulationFields).populate("reviewedId", userPopulationFields);
