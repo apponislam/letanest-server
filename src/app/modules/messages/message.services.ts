@@ -625,7 +625,44 @@ const updateBookingFeePaid = async (messageId: string, conversationId: string, u
         conversationId,
     });
 
-    console.log(`✅ Booking fee paid status updated to true by user ${userId}`);
+    return updatedMessage;
+};
+
+const reviewDone = async (messageId: string) => {
+    const message = await Message.findById(messageId);
+    if (!message) {
+        throw new ApiError(httpStatus.NOT_FOUND, "Message not found");
+    }
+    const updatedMessage = await Message.findByIdAndUpdate(
+        messageId,
+        {
+            reviewed: true,
+        },
+        { new: true }
+    )
+        .populate("sender", "name profileImg email phone role")
+        .populate({
+            path: "propertyId",
+            select: "propertyNumber price title images location createdBy",
+            populate: {
+                path: "createdBy",
+                select: "name email phone role profileImg",
+            },
+        });
+
+    if (!updatedMessage) {
+        throw new ApiError(httpStatus.INTERNAL_SERVER_ERROR, "Failed to update booking fee status");
+    }
+    await Conversation.findByIdAndUpdate(message.conversationId, {
+        lastMessage: updatedMessage._id,
+        updatedAt: new Date(),
+    });
+
+    emitToConversation(message.conversationId.toString(), "message:new", updatedMessage);
+    emitToConversation(message.conversationId.toString(), "offer:rejected", {
+        messageId: updatedMessage._id.toString(),
+        conversationId: message.conversationId.toString(),
+    });
 
     return updatedMessage;
 };
@@ -989,6 +1026,9 @@ export const messageServices = {
     convertMakeOfferToRequest,
     acceptOffer,
     updateBookingFeePaid,
+
+    // review done
+    reviewDone,
 
     // Mark all messages read in conversion
     markConversationAsRead,
