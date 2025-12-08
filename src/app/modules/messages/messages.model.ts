@@ -48,6 +48,7 @@ const messageSchema = new Schema<IMessage>(
         phone: String,
         reason: String,
         guestNo: String,
+        reviewed: Boolean,
         isRead: {
             type: Boolean,
             default: false,
@@ -55,7 +56,6 @@ const messageSchema = new Schema<IMessage>(
         bot: {
             type: Boolean,
         },
-        // Auto-delete fields - SIMPLE APPROACH
         expiresAt: {
             type: Date,
         },
@@ -66,14 +66,10 @@ const messageSchema = new Schema<IMessage>(
 );
 
 messageSchema.index({ conversationId: 1, createdAt: -1 });
-// CORRECT TTL index - documents will be deleted when expiresAt time is reached
 messageSchema.index({ expiresAt: 1 }, { expireAfterSeconds: 0 });
-
-// Auto-delete middleware - set expiration date only for bot messages
 messageSchema.pre("save", function (next) {
-    // Only set expiration if it's a bot message AND expiresAt is not already set
     if (this.bot === true && !this.expiresAt) {
-        this.expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours from now
+        this.expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000);
     }
     next();
 });
@@ -121,9 +117,8 @@ conversationSchema.index({ expiresAt: 1 }, { expireAfterSeconds: 0 });
 
 // Auto-delete middleware for conversations
 conversationSchema.pre("save", function (next) {
-    // Only set expiration if it's a bot conversation AND expiresAt is not already set
     if (this.bot === true && !this.expiresAt) {
-        this.expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours from now
+        this.expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000);
     }
     next();
 });

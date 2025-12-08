@@ -41,6 +41,7 @@ export interface IMessage {
     updatedAt?: Date;
     bot?: boolean;
     expiresAt?: Date;
+    reviewed?: boolean;
 }
 
 // Conversation Interface

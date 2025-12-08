@@ -576,6 +576,7 @@ import mongoose from "mongoose";
 import { IRating, RatingType, RatingStatus } from "./rating.interface";
 import ApiError from "../../../errors/ApiError";
 import { RatingModel } from "./rating.model";
+import { messageServices } from "../messages/message.services";
 
 interface CreateRatingData {
     type: RatingType;
@@ -589,6 +590,7 @@ interface CreateRatingData {
     overallExperience: number;
     country?: string;
     description?: string;
+    message?: string;
 }
 
 interface RatingStats {
@@ -667,11 +669,13 @@ const createRatingService = async (ratingData: CreateRatingData): Promise<IRatin
         }
     }
 
-    // For PROPERTY and GUEST ratings, allow multiple reviews (no duplicate check)
-    // Users can review same property or same guest multiple times
-
     const rating = await RatingModel.create(ratingData);
     const populatedRating = await RatingModel.findById(rating._id).populate("userId", userPopulationFields).populate("propertyId", propertyPopulationFields).populate("reviewedId", userPopulationFields);
+    if (ratingData?.message) {
+        messageServices.reviewDone(ratingData.message).catch((err) => {
+            console.error("Failed to update message review status:", err);
+        });
+    }
 
     return populatedRating as IRating;
 };
