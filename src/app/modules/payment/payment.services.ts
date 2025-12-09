@@ -111,7 +111,7 @@ const createPayment = async (data: CreatePaymentData) => {
                     stripePaymentIntentId: paymentIntent.id,
                     agreedFee: data.agreedFee,
                     bookingFee: data.bookingFee,
-                    extraFee: actualExtraFee, // ✅ Store ACTUAL extra fee
+                    extraFee: actualExtraFee,
                     totalAmount: totalAmount,
                     commissionRate: commissionResult.commissionRate,
                     commissionAmount: commissionResult.commissionAmount,
@@ -137,7 +137,7 @@ const createPayment = async (data: CreatePaymentData) => {
             stripePaymentIntentId: paymentIntent.id,
             agreedFee: data.agreedFee,
             bookingFee: data.bookingFee,
-            extraFee: actualExtraFee, // ✅ Store ACTUAL extra fee
+            extraFee: actualExtraFee,
             totalAmount: totalAmount,
             commissionRate: commissionResult.commissionRate,
             commissionAmount: commissionResult.commissionAmount,

@@ -282,7 +282,7 @@ const searchUserConversations = catchAsync(async (req, res) => {
 
 const editOffer = catchAsync(async (req, res) => {
     const { messageId } = req.params;
-    const { conversationId, agreedFee, checkInDate, checkOutDate, guestNo } = req.body;
+    const { conversationId, agreedFee, checkInDate, checkOutDate, guestNo, offerEdited } = req.body;
     const userId = req.user?._id;
 
     if (!userId) {
@@ -293,7 +293,7 @@ const editOffer = catchAsync(async (req, res) => {
         throw new ApiError(httpStatus.BAD_REQUEST, "Conversation ID is required");
     }
 
-    const updatedMessage = await messageServices.editOffer(messageId, conversationId, userId, { agreedFee, checkInDate, checkOutDate, guestNo });
+    const updatedMessage = await messageServices.editOffer(messageId, conversationId, userId, { agreedFee, checkInDate, checkOutDate, guestNo, offerEdited });
 
     sendResponse(res, {
         success: true,
