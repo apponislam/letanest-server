@@ -127,7 +127,7 @@ const createMessage = async (messageData: ICreateMessageDto) => {
             })
             .lean<IUser & { currentSubscription?: ISubscription }>();
 
-        console.log("🎯 Receiver with subscriptions and free trial populated:", receiverData);
+        // console.log("🎯 Receiver with subscriptions and free trial populated:", receiverData);
 
         console.log(messageData.agreedFee);
         const agreedFeeNum = Number(messageData?.agreedFee || 0);

@@ -3,7 +3,6 @@ import { IPayment } from "./payment.interfaces";
 
 const paymentSchema = new Schema<IPayment>(
     {
-        // Stripe
         stripePaymentIntentId: {
             type: String,
             required: true,
