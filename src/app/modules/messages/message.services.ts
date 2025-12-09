@@ -540,6 +540,7 @@ const acceptOffer = async (messageId: string, conversationId: string, userId: st
     const updatedMessage = await Message.findByIdAndUpdate(
         messageId,
         {
+            hostFeePaid: true,
             type: "accepted",
         },
         { new: true }
@@ -904,7 +905,7 @@ const searchUserConversations = async (searchTerm: string, page: number = 1, lim
     };
 };
 
-const editOffer = async (messageId: string, conversationId: string, userId: string, updateData: { agreedFee?: number; checkInDate?: string; checkOutDate?: string; guestNo?: number }) => {
+const editOffer = async (messageId: string, conversationId: string, userId: string, updateData: { agreedFee?: number; checkInDate?: string; checkOutDate?: string; guestNo?: number; offerEdited: boolean }) => {
     const message = await Message.findById(messageId);
     if (!message) {
         throw new ApiError(httpStatus.NOT_FOUND, "Message not found");
@@ -935,14 +936,10 @@ const editOffer = async (messageId: string, conversationId: string, userId: stri
 
     if (updateData.agreedFee !== undefined) {
         updateFields.agreedFee = updateData.agreedFee;
-
-        // Recalculate booking fee if agreedFee is updated
         let guest;
         if (message.type === "offer") {
-            // Offer sent by host, guest is the other participant
             guest = conversation.participants.find((p) => p.toString() !== message.sender.toString());
         } else if (message.type === "request") {
-            // Request sent by guest, guest is the sender
             guest = message.sender;
         }
 
@@ -978,6 +975,10 @@ const editOffer = async (messageId: string, conversationId: string, userId: stri
 
     if (updateData.guestNo !== undefined) {
         updateFields.guestNo = updateData.guestNo;
+    }
+
+    if (updateData.offerEdited !== undefined) {
+        updateFields.offerEdited = updateData.offerEdited;
     }
 
     // Update the message

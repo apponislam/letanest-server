@@ -30,6 +30,8 @@ export interface IMessage {
     extraFee?: number;
     extraFeePaid?: boolean;
     total?: number;
+    offerEdited?: boolean;
+    hostFeePaid?: boolean;
     propertyName?: string;
     address?: string;
     manager?: string;
