@@ -75,6 +75,10 @@ const getMySubscriptionsService = async (userId: Types.ObjectId): Promise<IUser 
             model: "UserSubscription",
         })
         .populate({
+            path: "currentSubscription",
+            model: "UserSubscription",
+        })
+        .populate({
             path: "freeTireSub",
             model: "Subscription",
             select: "billingPeriod bookingFee level paymentLink type freeBookings listingLimit commission",

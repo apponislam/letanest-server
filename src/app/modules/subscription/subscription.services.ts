@@ -218,7 +218,6 @@ export const subscriptionService = {
     toggleSubscriptionStatus,
     isFreeTier,
     activateFreeTierForUser,
-
     // Delete route
     deleteSubscription,
 };

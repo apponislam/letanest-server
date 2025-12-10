@@ -41,15 +41,24 @@ const createBankDetails = async (payload: ICreateBankDetails & { userId: string 
     return bankDetails;
 };
 
+// const getMyBankDetails = async (userId: string): Promise<IBankDetails | null> => {
+//     const bankDetails = await BankDetails.findOne({
+//         userId,
+//         isActive: true,
+//     });
+
+//     if (!bankDetails) {
+//         throw new ApiError(httpStatus.NOT_FOUND, "Bank details not found");
+//     }
+
+//     return bankDetails;
+// };
+
 const getMyBankDetails = async (userId: string): Promise<IBankDetails | null> => {
     const bankDetails = await BankDetails.findOne({
         userId,
         isActive: true,
     });
-
-    if (!bankDetails) {
-        throw new ApiError(httpStatus.NOT_FOUND, "Bank details not found");
-    }
 
     return bankDetails;
 };

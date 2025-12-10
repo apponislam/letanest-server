@@ -5,6 +5,7 @@ import { CreateUserSubscriptionData, IUserSubscription } from "./subscribed.inte
 import { UserSubscription } from "./subscribed.model";
 import mongoose, { Types } from "mongoose";
 import { UserModel } from "../auth/auth.model";
+import { stripeService } from "../subscription/stripe.services";
 
 const createUserSubscription = async (data: CreateUserSubscriptionData): Promise<IUserSubscription> => {
     const session = await mongoose.startSession();
@@ -12,8 +13,6 @@ const createUserSubscription = async (data: CreateUserSubscriptionData): Promise
 
     try {
         console.log("🔧 Creating/updating user subscription with data:", data);
-
-        // Validate required fields
         if (!data.userId) throw new ApiError(httpStatus.BAD_REQUEST, "User ID is required");
         if (!data.subscriptionId) throw new ApiError(httpStatus.BAD_REQUEST, "Subscription ID is required");
         if (!data.stripeCustomerId) throw new ApiError(httpStatus.BAD_REQUEST, "Stripe Customer ID is required");
@@ -21,6 +20,19 @@ const createUserSubscription = async (data: CreateUserSubscriptionData): Promise
         const subscription = await Subscription.findById(data.subscriptionId).session(session);
         if (!subscription) {
             throw new ApiError(httpStatus.NOT_FOUND, "Subscription plan not found");
+        }
+
+        const user = await UserModel.findById(data.userId).session(session);
+        if (user?.currentSubscription) {
+            await UserSubscription.findByIdAndUpdate(
+                user.currentSubscription,
+                {
+                    status: "canceled",
+                    cancelAtPeriodEnd: true,
+                    cancelledAt: new Date(),
+                },
+                { session }
+            );
         }
 
         // Check if the user already has this subscription
@@ -50,7 +62,6 @@ const createUserSubscription = async (data: CreateUserSubscriptionData): Promise
         };
 
         if (userSubscription) {
-            // Update existing subscription
             userSubscription.set(userSubscriptionData);
             await userSubscription.save({ session });
             console.log("🔄 User subscription updated:", userSubscription._id);
@@ -76,7 +87,6 @@ const createUserSubscription = async (data: CreateUserSubscriptionData): Promise
     } catch (error: any) {
         await session.abortTransaction();
         session.endSession();
-        console.error("❌ User subscription creation/updating failed:", error);
         throw new ApiError(httpStatus.INTERNAL_SERVER_ERROR, error instanceof Error ? error.message : "Failed to create/update user subscription");
     }
 };
@@ -100,15 +110,64 @@ const updateUserSubscriptionStatus = async (id: string, status: IUserSubscriptio
     return await UserSubscription.findByIdAndUpdate(id, { status }, { new: true, runValidators: true }).populate("subscription");
 };
 
-const cancelUserSubscription = async (id: string): Promise<IUserSubscription | null> => {
-    return await UserSubscription.findByIdAndUpdate(
-        id,
-        {
-            status: "canceled",
-            cancelAtPeriodEnd: true,
-        },
-        { new: true, runValidators: true }
-    ).populate("subscription");
+const cancelUserSubscription = async (id: string, userId: string): Promise<IUserSubscription | null> => {
+    const session = await mongoose.startSession();
+    session.startTransaction();
+
+    try {
+        // Get the user subscription
+        const userSubscription = await UserSubscription.findById(id).session(session);
+        if (!userSubscription) {
+            throw new ApiError(httpStatus.NOT_FOUND, "Subscription not found");
+        }
+
+        // Check if this subscription belongs to the user
+        if (userSubscription.user.toString() !== userId) {
+            throw new ApiError(httpStatus.FORBIDDEN, "You don't have permission to cancel this subscription");
+        }
+
+        // Check if already cancelled
+        if (userSubscription.status === "canceled") {
+            throw new ApiError(httpStatus.BAD_REQUEST, "Subscription is already cancelled");
+        }
+
+        // If it's a paid subscription with Stripe, cancel in Stripe
+        if (userSubscription.stripeSubscriptionId && !userSubscription.isFreeTier) {
+            try {
+                await stripeService.cancelSubscription(userSubscription.stripeSubscriptionId);
+                console.log(`✅ Stripe subscription ${userSubscription.stripeSubscriptionId} cancelled`);
+            } catch (error: any) {
+                console.error("Failed to cancel Stripe subscription:", error);
+                // Continue anyway to update our database
+            }
+        }
+
+        // Update in database
+        const updated = await UserSubscription.findByIdAndUpdate(
+            id,
+            {
+                status: "canceled",
+                cancelAtPeriodEnd: true,
+                cancelledAt: new Date(),
+            },
+            { new: true, session, runValidators: true }
+        ).populate("subscription");
+
+        // Update user's current subscription if this is the active one
+        const user = await UserModel.findById(userId).session(session);
+        if (user?.currentSubscription?.toString() === id) {
+            await UserModel.findByIdAndUpdate(userId, { $unset: { currentSubscription: "" } }, { session });
+        }
+
+        await session.commitTransaction();
+        session.endSession();
+
+        return updated;
+    } catch (error: any) {
+        await session.abortTransaction();
+        session.endSession();
+        throw error;
+    }
 };
 
 const incrementBookingCount = async (userSubscriptionId: string): Promise<IUserSubscription | null> => {

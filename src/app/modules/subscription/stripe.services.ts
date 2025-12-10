@@ -189,84 +189,10 @@ export class StripeService {
         }
     }
 
-    // async createCheckoutSessionWithUser(priceId: string, metadata: CheckoutSessionMetadata, customerId?: string) {
-    //     try {
-    //         console.log("🎯 Creating authenticated checkout session with metadata:", metadata);
-    //         console.log("💰 Price ID:", priceId);
-    //         console.log("👤 Customer ID:", customerId);
-
-    //         // Build the session parameters
-    //         const sessionParams: any = {
-    //             mode: "subscription",
-    //             payment_method_types: ["card"],
-    //             line_items: [
-    //                 {
-    //                     price: priceId,
-    //                     quantity: 1,
-    //                 },
-    //             ],
-    //             customer_email: metadata.userEmail,
-    //             success_url: `${config.client_url}/payment/success?session_id={CHECKOUT_SESSION_ID}`,
-    //             cancel_url: `${config.client_url}/payment/cancel`,
-
-    //             // CRITICAL: Add comprehensive metadata
-    //             metadata: {
-    //                 userId: metadata.userId,
-    //                 subscriptionPlanId: metadata.subscriptionPlanId,
-    //                 type: metadata.type,
-    //                 level: metadata.level,
-    //                 userEmail: metadata.userEmail,
-    //                 userName: metadata.userName,
-    //                 source: "authenticated_checkout",
-    //             },
-
-    //             // Also add to subscription data
-    //             subscription_data: {
-    //                 metadata: {
-    //                     userId: metadata.userId,
-    //                     subscriptionPlanId: metadata.subscriptionPlanId,
-    //                     type: metadata.type,
-    //                     level: metadata.level,
-    //                     userEmail: metadata.userEmail,
-    //                     userName: metadata.userName,
-    //                     realUserId: metadata.userId,
-    //                 },
-    //             },
-    //         };
-
-    //         // FIX: Only add customer if provided, don't use customer_creation in subscription mode
-    //         if (customerId) {
-    //             sessionParams.customer = customerId;
-    //             console.log("✅ Using existing customer:", customerId);
-    //         } else {
-    //             console.log("ℹ️ No customer ID provided - Stripe will create one automatically");
-    //         }
-
-    //         console.log("📦 Session params:", JSON.stringify(sessionParams, null, 2));
-
-    //         const session = await stripe.checkout.sessions.create(sessionParams);
-
-    //         console.log("✅ Authenticated checkout session created:", session.id);
-    //         console.log("🔗 Checkout URL:", session.url);
-    //         return session;
-    //     } catch (error: any) {
-    //         console.error("❌ STRIPE ERROR DETAILS:");
-    //         console.error("Error type:", error.type);
-    //         console.error("Error code:", error.code);
-    //         console.error("Error message:", error.message);
-
-    //         throw new Error(`Failed to create checkout session: ${error.message}`);
-    //     }
-    // }
-
     // Create customer in Stripe
 
     async createCheckoutSessionWithUser(priceId: string, metadata: CheckoutSessionMetadata, customerId?: string) {
         try {
-            console.log("🎯 Creating authenticated checkout session with metadata:", metadata);
-            console.log("💰 Price ID:", priceId);
-            console.log("👤 Customer ID:", customerId);
-
             // Build the session parameters
             const sessionParams: any = {
                 mode: "subscription",
@@ -304,8 +230,6 @@ export class StripeService {
                     },
                 },
             };
-
-            // FIX: Only use one approach - either customer (existing) or customer_email (new)
             if (customerId) {
                 // Use existing customer
                 sessionParams.customer = customerId;
@@ -472,12 +396,21 @@ export class StripeService {
     }
 
     // Cancel subscription
-    async cancelSubscription(subscriptionId: string) {
+    async cancelSubscription(subscriptionId: string): Promise<Stripe.Subscription> {
         try {
-            return await stripe.subscriptions.cancel(subscriptionId);
-        } catch (error) {
+            const subscription = await stripe.subscriptions.retrieve(subscriptionId);
+
+            if (subscription.status === "canceled") {
+                throw new Error(`Subscription ${subscriptionId} is already cancelled`);
+            }
+
+            const cancelled = await stripe.subscriptions.cancel(subscriptionId);
+
+            console.log(`✅ Subscription ${subscriptionId} cancelled successfully`);
+            return cancelled;
+        } catch (error: any) {
             console.error("Failed to cancel subscription:", error);
-            throw new Error("Failed to cancel subscription");
+            throw new Error(`Failed to cancel subscription: ${error.message}`);
         }
     }
 

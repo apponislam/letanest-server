@@ -59,7 +59,5 @@ export const checkPropertyListingLimit = catchAsync(async (req: Request, res: Re
             throw new ApiError(httpStatus.FORBIDDEN, "Your subscription is not active. Please subscribe to a plan to list properties.");
         }
     }
-
-    // If we reach here, user has no free trial or subscription
     throw new ApiError(httpStatus.FORBIDDEN, "You are not subscribed to any plan. Please choose a subscription plan to list properties.");
 });

@@ -13,6 +13,6 @@ router.patch("/:id/cancel", auth, userSubscriptionController.cancelSubscription)
 router.patch("/:id/status", auth, userSubscriptionController.updateSubscriptionStatus);
 
 // Webhook (might not need auth depending on your setup)
-router.post("/webhook/stripe", userSubscriptionController.handleStripeWebhook);
+// router.post("/webhook/stripe", userSubscriptionController.handleStripeWebhook);
 
 export const userSubscriptionRoutes = router;

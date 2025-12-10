@@ -127,8 +127,6 @@ const createMessage = async (messageData: ICreateMessageDto) => {
             })
             .lean<IUser & { currentSubscription?: ISubscription }>();
 
-        // console.log("🎯 Receiver with subscriptions and free trial populated:", receiverData);
-
         console.log(messageData.agreedFee);
         const agreedFeeNum = Number(messageData?.agreedFee || 0);
 
@@ -159,14 +157,11 @@ const createMessage = async (messageData: ICreateMessageDto) => {
 
     const message = await Message.create({ ...finalMessageData, bookingFee });
 
-    // const message = await Message.create({ ...messageData, bookingFee });
-
     await Conversation.findByIdAndUpdate(messageData.conversationId, {
         lastMessage: message._id,
         updatedAt: new Date(),
     });
 
-    // const populatedMessage = await Message.findById(message._id).populate("sender", "name profileImg email phone role").populate("propertyId", "propertyNumber price title location createdBy");
     const populatedMessage = await Message.findById(message._id)
         .populate("sender", "name profileImg email phone role")
         .populate({
@@ -210,14 +205,10 @@ const getConversationMessages = async (conversationId: string, userId: string, p
         participants: userId,
         isActive: true,
     });
-
     if (!conversation) {
         throw new ApiError(httpStatus.FORBIDDEN, "Access denied to this conversation");
     }
-
     const skip = (page - 1) * limit;
-
-    // const messages = await Message.find({ conversationId }).populate("sender", "name profileImg email phone role").populate("propertyId", "propertyNumber price title location createdBy").sort({ createdAt: -1 }).skip(skip).limit(limit);
     const messages = await Message.find({ conversationId })
         .populate("sender", "name profileImg email phone role")
         .populate({
@@ -453,12 +444,9 @@ const convertMakeOfferToRequest = async (
         throw new ApiError(httpStatus.FORBIDDEN, "Access denied to this conversation");
     }
 
-    // Calculate booking fee - For request type, receiver is the SENDER (same as your existing request logic)
     let bookingFee = 0;
-    const receiver = userId; // For request type, receiver is the sender themselves
-
+    const receiver = userId;
     const receiverData = await UserModel.findById(receiver).select("currentSubscription").populate("currentSubscription", "bookingFee bookingLimit").lean<IUser & { currentSubscription?: ISubscription }>();
-
     const agreedFeeNum = Number(requestData.agreedFee);
 
     if (receiverData?.currentSubscription) {
@@ -925,13 +913,6 @@ const editOffer = async (messageId: string, conversationId: string, userId: stri
     if (!conversation) {
         throw new ApiError(httpStatus.FORBIDDEN, "Access denied to this conversation");
     }
-
-    // Only the sender can edit their own message
-    // if (message.sender.toString() !== userId.toString()) {
-    //     throw new ApiError(httpStatus.FORBIDDEN, "You can only edit your own messages");
-    // }
-
-    // Prepare update data
     const updateFields: any = {};
 
     if (updateData.agreedFee !== undefined) {

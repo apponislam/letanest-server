@@ -13,7 +13,6 @@ export const calculateCommission = async (hostId: string, agreedFee: number): Pr
     if (!host) throw new Error("Host not found");
     let commissionRate = 10;
     let usedFreeBooking = false;
-
     if (host.freeTireData && (host.freeTireData.freeBookings || 0) > 0) {
         commissionRate = 0;
         usedFreeBooking = true;
@@ -32,9 +31,7 @@ export const calculateCommission = async (hostId: string, agreedFee: number): Pr
             }
         }
     }
-
     const commissionAmount = agreedFee * (commissionRate / 100);
     const hostAmount = agreedFee - commissionAmount;
-
     return { commissionRate, commissionAmount, hostAmount, usedFreeBooking };
 };

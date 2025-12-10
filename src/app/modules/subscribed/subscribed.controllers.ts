@@ -3,6 +3,7 @@ import httpStatus from "http-status";
 import catchAsync from "../../../utils/catchAsync";
 import sendResponse from "../../../utils/sendResponse.";
 import { userSubscriptionService } from "./subscribed.services";
+import ApiError from "../../../errors/ApiError";
 
 const createUserSubscription = catchAsync(async (req: Request, res: Response) => {
     const userSubscription = await userSubscriptionService.createUserSubscription({
@@ -54,7 +55,13 @@ const getUserSubscription = catchAsync(async (req: Request, res: Response) => {
 
 const cancelSubscription = catchAsync(async (req: Request, res: Response) => {
     const { id } = req.params;
-    const subscription = await userSubscriptionService.cancelUserSubscription(id);
+    const userId = req.user?._id;
+
+    if (!userId) {
+        throw new ApiError(httpStatus.UNAUTHORIZED, "User not authenticated");
+    }
+
+    const subscription = await userSubscriptionService.cancelUserSubscription(id, userId.toString());
 
     sendResponse(res, {
         statusCode: httpStatus.OK,
@@ -78,34 +85,34 @@ const updateSubscriptionStatus = catchAsync(async (req: Request, res: Response) 
     });
 });
 
-const handleStripeWebhook = catchAsync(async (req: Request, res: Response) => {
-    const { event } = req.body;
+// const handleStripeWebhook = catchAsync(async (req: Request, res: Response) => {
+//     const { event } = req.body;
 
-    let updatedSubscription;
+//     let updatedSubscription;
 
-    switch (event.type) {
-        case "customer.subscription.updated":
-        case "customer.subscription.created":
-            updatedSubscription = await userSubscriptionService.updateUserSubscriptionByStripeId(event.data.object.id, {
-                status: event.data.object.status,
-                currentPeriodStart: new Date(event.data.object.current_period_start * 1000),
-                currentPeriodEnd: new Date(event.data.object.current_period_end * 1000),
-                cancelAtPeriodEnd: event.data.object.cancel_at_period_end,
-            });
-            break;
+//     switch (event.type) {
+//         case "customer.subscription.updated":
+//         case "customer.subscription.created":
+//             updatedSubscription = await userSubscriptionService.updateUserSubscriptionByStripeId(event.data.object.id, {
+//                 status: event.data.object.status,
+//                 currentPeriodStart: new Date(event.data.object.current_period_start * 1000),
+//                 currentPeriodEnd: new Date(event.data.object.current_period_end * 1000),
+//                 cancelAtPeriodEnd: event.data.object.cancel_at_period_end,
+//             });
+//             break;
 
-        case "customer.subscription.deleted":
-            updatedSubscription = await userSubscriptionService.updateUserSubscriptionByStripeId(event.data.object.id, { status: "canceled" });
-            break;
-    }
+//         case "customer.subscription.deleted":
+//             updatedSubscription = await userSubscriptionService.updateUserSubscriptionByStripeId(event.data.object.id, { status: "canceled" });
+//             break;
+//     }
 
-    sendResponse(res, {
-        statusCode: httpStatus.OK,
-        success: true,
-        message: "Webhook processed successfully",
-        data: updatedSubscription,
-    });
-});
+//     sendResponse(res, {
+//         statusCode: httpStatus.OK,
+//         success: true,
+//         message: "Webhook processed successfully",
+//         data: updatedSubscription,
+//     });
+// });
 
 export const userSubscriptionController = {
     createUserSubscription,
@@ -114,5 +121,5 @@ export const userSubscriptionController = {
     getUserSubscription,
     cancelSubscription,
     updateSubscriptionStatus,
-    handleStripeWebhook,
+    // handleStripeWebhook,
 };
