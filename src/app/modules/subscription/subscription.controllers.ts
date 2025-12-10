@@ -203,7 +203,7 @@ const createCheckoutSession = catchAsync(async (req: Request, res: Response) => 
             userEmail: user.email,
             userName: user.name || user.email,
         },
-        user.stripeCustomerId // if you have this
+        user.stripeCustomerId
     );
 
     sendResponse(res, {
