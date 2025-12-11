@@ -7,7 +7,7 @@ export const roles = {
 };
 
 export type TermsCreator = typeof roles.ADMIN | typeof roles.HOST;
-export type TermsTarget = typeof roles.HOST | typeof roles.GUEST;
+export type TermsTarget = typeof roles.HOST | typeof roles.GUEST | "property";
 export type HostTCTarget = "default" | "property";
 
 export interface TermsAndConditions {

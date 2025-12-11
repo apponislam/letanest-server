@@ -7,7 +7,6 @@ const createTermsService = async (data: any, userId: string) => {
 
     cleanData.createdBy = userId;
 
-    // EXTREMELY IMPORTANT: Remove ALL id fields that might cause conflicts
     const finalData = { ...cleanData };
     delete finalData.id;
     delete finalData._id;
@@ -21,13 +20,6 @@ const createTermsService = async (data: any, userId: string) => {
             creatorType: roles.ADMIN,
             target: finalData.target,
         });
-
-        console.log("🔍 Existing admin terms check:", {
-            creatorType: roles.ADMIN,
-            target: finalData.target,
-            found: existing,
-        });
-
         if (existing) {
             throw new ApiError(httpStatus.BAD_REQUEST, `Admin T&C for ${finalData.target} already exists`);
         }
@@ -80,6 +72,10 @@ const getMyDefaultHostTermsService = async (userId: string) => {
     return defaultTerms;
 };
 
+const getPropertyTermsService = async () => {
+    return TermsAndConditionsModel.findOne({ target: "property" }).populate("createdBy", "name email");
+};
+
 export const termsService = {
     createTermsService,
     getAllTermsService,
@@ -90,4 +86,5 @@ export const termsService = {
     getTermsByTargetService,
     // getPropertyTermsService,
     getMyDefaultHostTermsService,
+    getPropertyTermsService,
 };

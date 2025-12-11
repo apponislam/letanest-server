@@ -5,6 +5,7 @@ import { termsController } from "./public.controllers";
 const router = express.Router();
 
 router.get("/my-default-host", auth, termsController.getMyDefaultHostTermsController);
+router.get("/default/property", termsController.getPropertyTermsController);
 
 router.post("/", auth, termsController.createTermsController);
 router.get("/", termsController.getAllTermsController);
