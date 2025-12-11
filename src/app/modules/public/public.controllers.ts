@@ -57,6 +57,16 @@ const getMyDefaultHostTermsController = catchAsync(async (req: Request, res: Res
     });
 });
 
+const getPropertyTermsController = catchAsync(async (_req, res) => {
+    const term = await termsService.getPropertyTermsService();
+    sendResponse(res, {
+        statusCode: httpStatus.OK,
+        success: true,
+        message: "Property Terms & Conditions retrieved successfully",
+        data: term,
+    });
+});
+
 export const termsController = {
     createTermsController,
     getAllTermsController,
@@ -67,4 +77,5 @@ export const termsController = {
     getTermsByTargetController,
     // getPropertyTermsController,
     getMyDefaultHostTermsController,
+    getPropertyTermsController,
 };
