@@ -995,6 +995,73 @@ const editOffer = async (messageId: string, conversationId: string, userId: stri
     return updatedMessage;
 };
 
+const filterConversationsByUpdatedAt = async (filter: string, page: number = 1, limit: number = 20) => {
+    const skip = (page - 1) * limit;
+
+    // Build filter query based on the filter parameter
+    let dateFilter = {};
+    const now = new Date();
+
+    switch (filter) {
+        case "24h":
+            const last24Hours = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+            dateFilter = { updatedAt: { $gte: last24Hours } };
+            break;
+        case "7d":
+            const last7Days = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+            dateFilter = { updatedAt: { $gte: last7Days } };
+            break;
+        case "30d":
+            const last30Days = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+            dateFilter = { updatedAt: { $gte: last30Days } };
+            break;
+        case "6m":
+            const last6Months = new Date(now.getTime() - 6 * 30 * 24 * 60 * 60 * 1000);
+            dateFilter = { updatedAt: { $gte: last6Months } };
+            break;
+        case "1y":
+            const last1Year = new Date(now.getTime() - 365 * 24 * 60 * 60 * 1000);
+            dateFilter = { updatedAt: { $gte: last1Year } };
+            break;
+        case "all":
+        default:
+            // No date filter for "all"
+            dateFilter = {};
+            break;
+    }
+
+    // Build the complete query - ADMIN VIEW: No user filtering!
+    const query = {
+        isActive: true,
+        ...dateFilter,
+    };
+
+    // Get conversations with pagination
+    const conversations = await Conversation.find(query)
+        .populate("participants", "name profileImg email phone role isVerifiedByAdmin")
+        .populate({
+            path: "lastMessage",
+            populate: {
+                path: "propertyId",
+                select: "title images location price propertyNumber _id createdBy",
+            },
+        })
+        .sort({ updatedAt: -1 })
+        .skip(skip)
+        .limit(limit);
+
+    const totalConversations = await Conversation.countDocuments(query);
+
+    return {
+        conversations: conversations,
+        meta: {
+            page,
+            limit,
+            total: totalConversations,
+        },
+    };
+};
+
 export const messageServices = {
     createConversation,
     getUserConversations,
@@ -1023,4 +1090,7 @@ export const messageServices = {
 
     //Edit Offer
     editOffer,
+
+    //new route for filter admin
+    filterConversationsByUpdatedAt,
 };
