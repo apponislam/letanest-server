@@ -29,6 +29,7 @@ router.patch("/:messageId/convert-makeoffer-to-request", auth, messageController
 //edit offer
 router.patch("/:messageId/edit-offer", auth, messageControllers.editOffer);
 
+router.get("/admin/conversations/filter/by-updated", auth, messageControllers.filterConversationsByUpdatedAt);
 router.get("/admin/conversations/user/:userId", auth, messageControllers.getConversationsByUserId);
 router.get("/admin/conversations/:conversationId/messages", auth, messageControllers.getAllConversationMessages);
 router.get("/admin/conversations/search/users", auth, messageControllers.searchUserConversations);

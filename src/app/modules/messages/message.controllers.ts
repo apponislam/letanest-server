@@ -303,6 +303,21 @@ const editOffer = catchAsync(async (req, res) => {
     });
 });
 
+const filterConversationsByUpdatedAt = catchAsync(async (req, res) => {
+    const { filter = "all", page = 1, limit = 20 } = req.query;
+
+    // Don't pass user ID for admin view!
+    const result = await messageServices.filterConversationsByUpdatedAt(filter as string, Number(page), Number(limit));
+
+    sendResponse(res, {
+        success: true,
+        statusCode: httpStatus.OK,
+        message: "Conversations filtered successfully",
+        data: result.conversations,
+        meta: result.meta,
+    });
+});
+
 export const messageControllers = {
     createConversation,
     getUserConversations,
@@ -326,4 +341,7 @@ export const messageControllers = {
 
     //edit offer
     editOffer,
+
+    //new route for filter admin
+    filterConversationsByUpdatedAt,
 };
