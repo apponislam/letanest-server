@@ -49,6 +49,7 @@ const messageSchema = new Schema<IMessage>(
             type: Boolean,
             default: false,
         },
+
         total: Number,
         propertyName: String,
         address: String,
@@ -108,7 +109,7 @@ const conversationSchema = new Schema<IConversation>(
         bot: {
             type: Boolean,
         },
-        // Auto-delete fields for conversations
+        isReplyAllowed: Boolean,
         expiresAt: {
             type: Date,
         },
@@ -124,12 +125,12 @@ conversationSchema.index({ updatedAt: -1 });
 conversationSchema.index({ expiresAt: 1 }, { expireAfterSeconds: 0 });
 
 // Auto-delete middleware for conversations
-conversationSchema.pre("save", function (next) {
-    if (this.bot === true && !this.expiresAt) {
-        this.expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000);
-    }
-    next();
-});
+// conversationSchema.pre("save", function (next) {
+//     if (this.bot === true && !this.expiresAt) {
+//         this.expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000);
+//     }
+//     next();
+// });
 
 // Static method to cleanup expired conversations and messages (manual cleanup as backup)
 conversationSchema.statics.cleanupExpired = async function () {

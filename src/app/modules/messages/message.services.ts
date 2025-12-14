@@ -16,6 +16,12 @@ const createConversation = async (conversationData: ICreateConversationDto) => {
     });
 
     if (existingConversation) {
+        if (existingConversation.isReplyAllowed) {
+            Conversation.findByIdAndUpdate(existingConversation._id, {
+                isReplyAllowed: conversationData.isReplyAllowed,
+            });
+        }
+
         await Conversation.findByIdAndUpdate(existingConversation._id, {
             updatedAt: new Date(),
         });
@@ -102,9 +108,14 @@ const createMessage = async (messageData: ICreateMessageDto) => {
         throw new ApiError(httpStatus.FORBIDDEN, "Cannot send message to this conversation");
     }
 
-    let receiver;
+    const sender = await UserModel.findById(messageData.sender).select("role").lean();
+    if (sender?.role === "HOST") {
+        await Conversation.findByIdAndUpdate(messageData.conversationId, {
+            isReplyAllowed: true,
+        });
+    }
 
-    console.log(messageData);
+    let receiver;
 
     if (messageData.type === "offer") {
         receiver = conversation.participants.find((p) => p.toString() !== messageData.sender.toString());
