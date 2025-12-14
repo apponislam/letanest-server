@@ -57,6 +57,7 @@ export interface IConversation {
         [userId: string]: number;
     };
     isActive?: boolean;
+    isReplyAllowed?: boolean;
     createdAt?: Date;
     updatedAt?: Date;
     bot?: boolean;
@@ -90,6 +91,7 @@ export interface ICreateMessageDto {
 export interface ICreateConversationDto {
     participants: string[];
     propertyId?: string;
+    isReplyAllowed?: boolean;
     bot?: boolean;
 }
 
