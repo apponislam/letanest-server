@@ -103,6 +103,8 @@ const getAllPropertiesService = async (query: IPropertyQuery): Promise<IProperty
         calendarEnabled: true,
     };
 
+    console.log(query);
+
     // Search filter
     if (search) {
         filter.$or = [{ title: { $regex: search, $options: "i" } }, { description: { $regex: search, $options: "i" } }, { location: { $regex: search, $options: "i" } }, { propertyNumber: { $regex: search, $options: "i" } }];
@@ -163,7 +165,6 @@ const getAllPropertiesService = async (query: IPropertyQuery): Promise<IProperty
         }
     }
 
-    // Amenities filter
     if (amenities) {
         let amenitiesArray: string[];
         if (typeof amenities === "string") {
@@ -181,12 +182,7 @@ const getAllPropertiesService = async (query: IPropertyQuery): Promise<IProperty
 
     const skip = (Number(page) - 1) * Number(limit);
 
-    // If rating filter is applied, use aggregation pipeline
     if (rating) {
-        // First, let's debug by checking what ratings actually exist
-        console.log("Rating filter applied:", rating);
-
-        // Build the main pipeline
         const pipeline: any[] = [
             { $match: filter },
             {

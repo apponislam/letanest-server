@@ -10,6 +10,8 @@ import { generateOtp, generateVerificationToken } from "../../../utils/tokenGene
 import { sendVerificationEmail } from "../../../shared/emailVerifyMail";
 import { sendOtpEmail } from "../../../shared/sendOtpEmail";
 import { Types } from "mongoose";
+import { Subscription } from "../subscription/subscription.model";
+import { userServices } from "../users/users.services";
 
 const registerUser = async (data: RegisterInput & { profileImg?: string }) => {
     // Check if email exists
@@ -51,6 +53,20 @@ const registerUser = async (data: RegisterInput & { profileImg?: string }) => {
     const refreshToken = jwtHelper.generateToken(jwtPayload, config.jwt_refresh_secret as string, config.jwt_refresh_expire as string);
 
     const { password, ...userWithoutPassword } = createdUser.toObject();
+
+    const subscription = await Subscription.findOne({
+        type: createdUser.role,
+        isActive: true,
+        isDeleted: false,
+        paymentLink: { $regex: "^free-tier" },
+    })
+        .select("_id")
+        .lean();
+
+    if (subscription?._id) {
+        const userId = new Types.ObjectId(createdUser._id);
+        userServices.activateFreeTierService(userId, subscription._id);
+    }
 
     setTimeout(() => {
         const verificationUrl = `${config.client_url}/verify-email?token=${token}&id=${createdUser._id}`;
