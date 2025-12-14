@@ -109,7 +109,7 @@ const createMessage = async (messageData: ICreateMessageDto) => {
     }
 
     const sender = await UserModel.findById(messageData.sender).select("role").lean();
-    if (sender?.role === "HOST") {
+    if (sender?.role === "HOST" || sender?.role === "ADMIN") {
         await Conversation.findByIdAndUpdate(messageData.conversationId, {
             isReplyAllowed: true,
         });
