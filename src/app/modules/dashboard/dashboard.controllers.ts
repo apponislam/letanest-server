@@ -3,6 +3,7 @@ import httpStatus from "http-status";
 import { dashboardServices } from "./dashboard.services";
 import catchAsync from "../../../utils/catchAsync";
 import sendResponse from "../../../utils/sendResponse.";
+import ApiError from "../../../errors/ApiError";
 
 const getDashboardStats = catchAsync(async (req: Request, res: Response) => {
     const stats = await dashboardServices.getDashboardStats();
@@ -77,9 +78,25 @@ const getSiteStats = catchAsync(async (req: Request, res: Response) => {
     });
 });
 
+const getHostStats = catchAsync(async (req: Request, res: Response) => {
+    if (!req.user?._id) {
+        throw new ApiError(httpStatus.UNAUTHORIZED, "User not authenticated");
+    }
+
+    const stats = await dashboardServices.getHostStats(req.user._id);
+
+    sendResponse(res, {
+        statusCode: httpStatus.OK,
+        success: true,
+        message: "Host statistics retrieved successfully",
+        data: stats,
+    });
+});
+
 export const dashboardControllers = {
     getDashboardStats,
     getRevenueChartData,
     getPropertyStatusStats,
     getSiteStats,
+    getHostStats,
 };

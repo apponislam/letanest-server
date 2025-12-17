@@ -9,4 +9,6 @@ router.get("/revenue-chart", auth, dashboardControllers.getRevenueChartData);
 router.get("/property-status", auth, dashboardControllers.getPropertyStatusStats);
 router.get("/site-stats", dashboardControllers.getSiteStats);
 
+router.get("/host-stats", auth, dashboardControllers.getHostStats);
+
 export const dashboardRoutes = router;
