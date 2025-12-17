@@ -331,9 +331,28 @@ const getSiteStatsService = async () => {
     };
 };
 
+const getHostStats = async (hostId: string) => {
+    const totalBookings = await PaymentModel.countDocuments({
+        hostId: hostId,
+        status: "completed",
+    });
+
+    const totalProperties = await PropertyModel.countDocuments({
+        createdBy: hostId,
+        isDeleted: false,
+        status: "published",
+    });
+
+    return {
+        totalBookings,
+        totalProperties,
+    };
+};
+
 export const dashboardServices = {
     getDashboardStats,
     getRevenueChartData,
     getPropertyStatusStats,
     getSiteStatsService,
+    getHostStats,
 };
