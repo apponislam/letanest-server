@@ -28,10 +28,10 @@ const createPropertyService = async (data: IProperty): Promise<IProperty> => {
                 };
                 console.log(`Coordinates found: ${geocodedData.lat}, ${geocodedData.lng}`);
 
-                // Find nearby places
                 const nearbyPlaces = await findNearbyPlaces(geocodedData.lat, geocodedData.lng);
                 parsedData.nearbyPlaces = nearbyPlaces;
                 console.log(`Found ${nearbyPlaces.length} nearby places`);
+                // console.log(nearbyPlaces)
             }
         }
 
@@ -67,6 +67,7 @@ const updatePropertyService = async (id: string, data: Partial<IProperty>): Prom
                     const nearbyPlaces = await findNearbyPlaces(geocodedData.lat, geocodedData.lng);
                     updateData.nearbyPlaces = nearbyPlaces;
                     console.log(`Updated ${nearbyPlaces.length} nearby places for property ${id}`);
+                    console.log(nearbyPlaces);
                 }
             }
         }

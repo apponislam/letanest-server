@@ -5,7 +5,7 @@ import mongoose from "mongoose";
 import http from "http";
 import createSuperAdmin from "./scripts/createSuperAdmin";
 import { initSocket } from "./socket/socket";
-import { geocodeAddress } from "./app/modules/property/geocodingService";
+import { findNearbyPlaces, geocodeAddress } from "./app/modules/property/geocodingService";
 import axios from "axios";
 import createBotAdmin from "./scripts/createBotAdmin";
 import { reviewReminderCron } from "./app/modules/rating/ratingReminder.cron";
@@ -27,11 +27,15 @@ async function main() {
         // const ipResponse = await axios.get("https://api.ipify.org?format=json");
         // console.log("🌐 Backend public IP:", ipResponse.data.ip);
 
-        // const location = "London";
-        // const postCode = "SW1A 1AA";
+        // const location = "Glasgow";
+        // const postCode = "G1 5PO";
 
         // const result = await geocodeAddress(location, postCode);
         // console.log(result);
+        // if (result) {
+        //     const nearby = await findNearbyPlaces(result?.lat, result?.lng);
+        //     console.log(nearby);
+        // }
 
         // server.listen(Number(config.port), config.ip || "0.0.0.0", () => {
         //     console.log(`✅ App listening on port ${config.port}`);
