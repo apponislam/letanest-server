@@ -76,12 +76,12 @@ const messageSchema = new Schema<IMessage>(
 
 messageSchema.index({ conversationId: 1, createdAt: -1 });
 messageSchema.index({ expiresAt: 1 }, { expireAfterSeconds: 0 });
-messageSchema.pre("save", function (next) {
-    if (this.bot === true && !this.expiresAt) {
-        this.expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000);
-    }
-    next();
-});
+// messageSchema.pre("save", function (next) {
+//     if (this.bot === true && !this.expiresAt) {
+//         this.expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000);
+//     }
+//     next();
+// });
 
 // Conversation Schema
 const conversationSchema = new Schema<IConversation>(
