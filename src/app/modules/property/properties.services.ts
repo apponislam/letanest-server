@@ -96,6 +96,245 @@ const getSinglePropertyService = async (id: string): Promise<IProperty | null> =
         .populate("termsAndConditions"); // Populate terms and conditions
 };
 
+// const getAllPropertiesService = async (query: IPropertyQuery): Promise<IPropertyListResponse> => {
+//     const { page = 1, limit = 10, search, status = "published", minPrice, maxPrice, propertyType, propertyTypes, guests, bedrooms, availableFrom, availableTo, location, amenities, rating } = query;
+
+//     const filter: Record<string, any> = {
+//         isDeleted: false,
+//         status: status,
+//         calendarEnabled: true,
+//     };
+
+//     console.log(query);
+
+//     // Search filter
+//     if (search) {
+//         filter.$or = [{ title: { $regex: search, $options: "i" } }, { description: { $regex: search, $options: "i" } }, { location: { $regex: search, $options: "i" } }, { propertyNumber: { $regex: search, $options: "i" } }];
+//     }
+
+//     // Price filter
+//     if (minPrice !== undefined || maxPrice !== undefined) {
+//         filter.price = {};
+//         if (minPrice !== undefined) filter.price.$gte = Number(minPrice);
+//         if (maxPrice !== undefined) filter.price.$lte = Number(maxPrice);
+//     }
+
+//     // Property type filter
+//     if (propertyTypes) {
+//         let propertyTypesArray: string[];
+//         if (typeof propertyTypes === "string") {
+//             propertyTypesArray = propertyTypes.split(",").map((type) => type.trim());
+//         } else if (Array.isArray(propertyTypes)) {
+//             propertyTypesArray = propertyTypes;
+//         } else {
+//             propertyTypesArray = [];
+//         }
+//         const propertyTypesRegex = propertyTypesArray.filter((type) => type.trim() !== "").map((type) => new RegExp(type.trim(), "i"));
+//         if (propertyTypesRegex.length > 0) {
+//             filter.propertyType = { $in: propertyTypesRegex };
+//         }
+//     } else if (propertyType) {
+//         filter.propertyType = { $regex: propertyType, $options: "i" };
+//     }
+
+//     // Guests filter
+//     if (guests) {
+//         filter.maxGuests = { $gte: Number(guests) };
+//     }
+
+//     // Bedrooms filter
+//     if (bedrooms) {
+//         filter.bedrooms = { $gte: Number(bedrooms) };
+//     }
+
+//     // Location filter
+//     if (location) {
+//         filter.location = { $regex: location, $options: "i" };
+//     }
+
+//     // Availability date filter
+//     if (availableFrom || availableTo) {
+//         if (availableFrom && availableTo) {
+//             const checkInDate = new Date(availableFrom);
+//             const checkOutDate = new Date(availableTo);
+//             filter.$and = [{ $or: [{ availableFrom: { $lte: checkInDate } }, { availableFrom: null }] }, { $or: [{ availableTo: { $gte: checkOutDate } }, { availableTo: null }] }];
+//         } else if (availableFrom) {
+//             const checkInDate = new Date(availableFrom);
+//             filter.$or = [{ availableFrom: { $lte: checkInDate } }, { availableFrom: null }];
+//         } else if (availableTo) {
+//             const checkOutDate = new Date(availableTo);
+//             filter.$or = [{ availableTo: { $gte: checkOutDate } }, { availableTo: null }];
+//         }
+//     }
+
+//     if (amenities) {
+//         let amenitiesArray: string[];
+//         if (typeof amenities === "string") {
+//             amenitiesArray = amenities.split(",").map((a) => a.trim());
+//         } else if (Array.isArray(amenities)) {
+//             amenitiesArray = amenities;
+//         } else {
+//             amenitiesArray = [];
+//         }
+//         const amenitiesRegex = amenitiesArray.filter((amenity) => amenity.trim() !== "").map((amenity) => new RegExp(amenity.trim(), "i"));
+//         if (amenitiesRegex.length > 0) {
+//             filter.amenities = { $all: amenitiesRegex };
+//         }
+//     }
+
+//     const skip = (Number(page) - 1) * Number(limit);
+
+//     if (rating) {
+//         const pipeline: any[] = [
+//             { $match: filter },
+//             {
+//                 $lookup: {
+//                     from: "ratings",
+//                     localField: "_id",
+//                     foreignField: "propertyId",
+//                     as: "propertyRatings",
+//                 },
+//             },
+//             {
+//                 $addFields: {
+//                     averageRating: {
+//                         $cond: {
+//                             if: { $gt: [{ $size: "$propertyRatings" }, 0] },
+//                             then: {
+//                                 $round: [
+//                                     {
+//                                         $avg: "$propertyRatings.overallExperience",
+//                                     },
+//                                     1,
+//                                 ],
+//                             },
+//                             else: 0,
+//                         },
+//                     },
+//                     ratingsCount: { $size: "$propertyRatings" },
+//                 },
+//             },
+//         ];
+
+//         // Add rating filter
+//         let ratingFilter: any = {};
+//         switch (rating) {
+//             case "Pleasant":
+//                 ratingFilter.averageRating = { $gte: 3 };
+//                 break;
+//             case "Great":
+//                 ratingFilter.averageRating = { $gte: 4 };
+//                 break;
+//             case "Outstanding":
+//                 ratingFilter.averageRating = { $gte: 5 };
+//                 break;
+//             default:
+//                 break;
+//         }
+
+//         // Only add rating filter if it's defined
+//         if (Object.keys(ratingFilter).length > 0) {
+//             pipeline.push({ $match: ratingFilter });
+//         }
+
+//         // Add pagination and population at the end
+//         pipeline.push(
+//             { $skip: skip },
+//             { $limit: Number(limit) },
+//             {
+//                 $lookup: {
+//                     from: "users",
+//                     localField: "createdBy",
+//                     foreignField: "_id",
+//                     as: "createdBy",
+//                     pipeline: [{ $project: { name: 1, email: 1, isVerifiedByAdmin: 1, profileImg: 1, verificationStatus: 1 } }],
+//                 },
+//             },
+//             { $unwind: { path: "$createdBy", preserveNullAndEmptyArrays: true } }
+//         );
+
+//         // Count pipeline (same as main pipeline but without pagination)
+//         const countPipeline: any[] = [
+//             { $match: filter },
+//             {
+//                 $lookup: {
+//                     from: "ratings",
+//                     localField: "_id",
+//                     foreignField: "propertyId",
+//                     as: "propertyRatings",
+//                 },
+//             },
+//             {
+//                 $addFields: {
+//                     averageRating: {
+//                         $cond: {
+//                             if: { $gt: [{ $size: "$propertyRatings" }, 0] },
+//                             then: {
+//                                 $round: [
+//                                     {
+//                                         $avg: "$propertyRatings.overallExperience",
+//                                     },
+//                                     1,
+//                                 ],
+//                             },
+//                             else: 0,
+//                         },
+//                     },
+//                 },
+//             },
+//         ];
+
+//         // Add rating filter to count pipeline
+//         if (Object.keys(ratingFilter).length > 0) {
+//             countPipeline.push({ $match: ratingFilter });
+//         }
+
+//         countPipeline.push({ $count: "total" });
+
+//         try {
+//             const [properties, totalResult] = await Promise.all([PropertyModel.aggregate(pipeline), PropertyModel.aggregate(countPipeline)]);
+
+//             console.log(`Found ${properties.length} properties with rating filter`);
+//             console.log(
+//                 "Sample property with ratings:",
+//                 properties.length > 0
+//                     ? {
+//                           title: properties[0].title,
+//                           averageRating: properties[0].averageRating,
+//                           ratingsCount: properties[0].ratingsCount,
+//                       }
+//                     : "No properties found"
+//             );
+
+//             const total = totalResult.length > 0 ? totalResult[0].total : 0;
+
+//             return {
+//                 properties,
+//                 meta: {
+//                     total,
+//                     page: Number(page),
+//                     limit: Number(limit),
+//                 },
+//             };
+//         } catch (error) {
+//             console.error("Aggregation error:", error);
+//             throw error;
+//         }
+//     }
+
+//     // If no rating filter, use normal query
+//     const [properties, total] = await Promise.all([PropertyModel.find(filter).skip(skip).limit(Number(limit)).sort({ createdAt: -1 }).populate("createdBy", "name email isVerifiedByAdmin profileImg verificationStatus"), PropertyModel.countDocuments(filter)]);
+
+//     return {
+//         properties,
+//         meta: {
+//             total,
+//             page: Number(page),
+//             limit: Number(limit),
+//         },
+//     };
+// };
+
 const getAllPropertiesService = async (query: IPropertyQuery): Promise<IPropertyListResponse> => {
     const { page = 1, limit = 10, search, status = "published", minPrice, maxPrice, propertyType, propertyTypes, guests, bedrooms, availableFrom, availableTo, location, amenities, rating } = query;
 
@@ -184,39 +423,41 @@ const getAllPropertiesService = async (query: IPropertyQuery): Promise<IProperty
 
     const skip = (Number(page) - 1) * Number(limit);
 
-    if (rating) {
-        const pipeline: any[] = [
-            { $match: filter },
-            {
-                $lookup: {
-                    from: "ratings",
-                    localField: "_id",
-                    foreignField: "propertyId",
-                    as: "propertyRatings",
-                },
+    // ALWAYS USE AGGREGATION FOR CONSISTENT RANDOM SORTING
+    const pipeline: any[] = [
+        { $match: filter },
+        {
+            $lookup: {
+                from: "ratings",
+                localField: "_id",
+                foreignField: "propertyId",
+                as: "propertyRatings",
             },
-            {
-                $addFields: {
-                    averageRating: {
-                        $cond: {
-                            if: { $gt: [{ $size: "$propertyRatings" }, 0] },
-                            then: {
-                                $round: [
-                                    {
-                                        $avg: "$propertyRatings.overallExperience",
-                                    },
-                                    1,
-                                ],
-                            },
-                            else: 0,
+        },
+        {
+            $addFields: {
+                averageRating: {
+                    $cond: {
+                        if: { $gt: [{ $size: "$propertyRatings" }, 0] },
+                        then: {
+                            $round: [
+                                {
+                                    $avg: "$propertyRatings.overallExperience",
+                                },
+                                1,
+                            ],
                         },
+                        else: 0,
                     },
-                    ratingsCount: { $size: "$propertyRatings" },
                 },
+                ratingsCount: { $size: "$propertyRatings" },
+                randomSort: { $rand: {} }, // Add random field for sorting
             },
-        ];
+        },
+    ];
 
-        // Add rating filter
+    // Add rating filter if provided
+    if (rating) {
         let ratingFilter: any = {};
         switch (rating) {
             case "Pleasant":
@@ -231,108 +472,109 @@ const getAllPropertiesService = async (query: IPropertyQuery): Promise<IProperty
             default:
                 break;
         }
-
-        // Only add rating filter if it's defined
         if (Object.keys(ratingFilter).length > 0) {
             pipeline.push({ $match: ratingFilter });
         }
+    }
 
-        // Add pagination and population at the end
-        pipeline.push(
-            { $skip: skip },
-            { $limit: Number(limit) },
-            {
-                $lookup: {
-                    from: "users",
-                    localField: "createdBy",
-                    foreignField: "_id",
-                    as: "createdBy",
-                    pipeline: [{ $project: { name: 1, email: 1, isVerifiedByAdmin: 1, profileImg: 1, verificationStatus: 1 } }],
-                },
+    // Add random sort, then pagination and population
+    pipeline.push(
+        { $sort: { randomSort: 1 } }, // Sort randomly
+        { $skip: skip },
+        { $limit: Number(limit) },
+        {
+            $lookup: {
+                from: "users",
+                localField: "createdBy",
+                foreignField: "_id",
+                as: "createdBy",
+                pipeline: [{ $project: { name: 1, email: 1, isVerifiedByAdmin: 1, profileImg: 1, verificationStatus: 1 } }],
             },
-            { $unwind: { path: "$createdBy", preserveNullAndEmptyArrays: true } }
-        );
+        },
+        { $unwind: { path: "$createdBy", preserveNullAndEmptyArrays: true } }
+    );
 
-        // Count pipeline (same as main pipeline but without pagination)
-        const countPipeline: any[] = [
-            { $match: filter },
-            {
-                $lookup: {
-                    from: "ratings",
-                    localField: "_id",
-                    foreignField: "propertyId",
-                    as: "propertyRatings",
-                },
+    // Count pipeline
+    const countPipeline: any[] = [
+        { $match: filter },
+        {
+            $lookup: {
+                from: "ratings",
+                localField: "_id",
+                foreignField: "propertyId",
+                as: "propertyRatings",
             },
-            {
-                $addFields: {
-                    averageRating: {
-                        $cond: {
-                            if: { $gt: [{ $size: "$propertyRatings" }, 0] },
-                            then: {
-                                $round: [
-                                    {
-                                        $avg: "$propertyRatings.overallExperience",
-                                    },
-                                    1,
-                                ],
-                            },
-                            else: 0,
+        },
+        {
+            $addFields: {
+                averageRating: {
+                    $cond: {
+                        if: { $gt: [{ $size: "$propertyRatings" }, 0] },
+                        then: {
+                            $round: [
+                                {
+                                    $avg: "$propertyRatings.overallExperience",
+                                },
+                                1,
+                            ],
                         },
+                        else: 0,
                     },
                 },
             },
-        ];
+        },
+    ];
 
-        // Add rating filter to count pipeline
+    // Add rating filter to count pipeline if needed
+    if (rating) {
+        let ratingFilter: any = {};
+        switch (rating) {
+            case "Pleasant":
+                ratingFilter.averageRating = { $gte: 3 };
+                break;
+            case "Great":
+                ratingFilter.averageRating = { $gte: 4 };
+                break;
+            case "Outstanding":
+                ratingFilter.averageRating = { $gte: 5 };
+                break;
+        }
         if (Object.keys(ratingFilter).length > 0) {
             countPipeline.push({ $match: ratingFilter });
         }
-
-        countPipeline.push({ $count: "total" });
-
-        try {
-            const [properties, totalResult] = await Promise.all([PropertyModel.aggregate(pipeline), PropertyModel.aggregate(countPipeline)]);
-
-            console.log(`Found ${properties.length} properties with rating filter`);
-            console.log(
-                "Sample property with ratings:",
-                properties.length > 0
-                    ? {
-                          title: properties[0].title,
-                          averageRating: properties[0].averageRating,
-                          ratingsCount: properties[0].ratingsCount,
-                      }
-                    : "No properties found"
-            );
-
-            const total = totalResult.length > 0 ? totalResult[0].total : 0;
-
-            return {
-                properties,
-                meta: {
-                    total,
-                    page: Number(page),
-                    limit: Number(limit),
-                },
-            };
-        } catch (error) {
-            console.error("Aggregation error:", error);
-            throw error;
-        }
     }
 
-    // If no rating filter, use normal query
-    const [properties, total] = await Promise.all([PropertyModel.find(filter).skip(skip).limit(Number(limit)).sort({ createdAt: -1 }).populate("createdBy", "name email isVerifiedByAdmin profileImg verificationStatus"), PropertyModel.countDocuments(filter)]);
+    countPipeline.push({ $count: "total" });
 
-    return {
-        properties,
-        meta: {
-            total,
-            page: Number(page),
-            limit: Number(limit),
-        },
-    };
+    try {
+        const [properties, totalResult] = await Promise.all([PropertyModel.aggregate(pipeline), PropertyModel.aggregate(countPipeline)]);
+
+        console.log(`Found ${properties.length} properties`);
+        console.log(
+            "Sample property:",
+            properties.length > 0
+                ? {
+                      title: properties[0].title,
+                      averageRating: properties[0].averageRating,
+                      ratingsCount: properties[0].ratingsCount,
+                  }
+                : "No properties found"
+        );
+
+        const total = totalResult.length > 0 ? totalResult[0].total : 0;
+
+        return {
+            properties,
+            meta: {
+                total,
+                page: Number(page),
+                limit: Number(limit),
+            },
+        };
+    } catch (error) {
+        console.error("Aggregation error:", error);
+        throw error;
+    }
 };
 
 const getAllPublishedPropertiesService = async (query: IPropertyQuery): Promise<IPropertyListResponse> => {
