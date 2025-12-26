@@ -28,6 +28,7 @@ export const geocodeAddress = async (location: string, postCode: string): Promis
                 key: API_KEY,
             },
         });
+        console.log(response);
 
         if (response.data.status === "OK" && response.data.results.length > 0) {
             const result = response.data.results[0];
