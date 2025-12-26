@@ -27,8 +27,8 @@ async function main() {
         // const ipResponse = await axios.get("https://api.ipify.org?format=json");
         // console.log("🌐 Backend public IP:", ipResponse.data.ip);
 
-        // const location = "Glasgow";
-        // const postCode = "G1 5PO";
+        // const location = "Musselburgh";
+        // const postCode = "EH17 7RE";
 
         // const result = await geocodeAddress(location, postCode);
         // console.log(result);
