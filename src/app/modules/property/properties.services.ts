@@ -48,7 +48,8 @@ const updatePropertyService = async (id: string, data: Partial<IProperty>): Prom
         status: "pending" as const,
     };
 
-    // Only add geocoding and nearby places if location data is being updated
+    console.log(data.location, data.postCode);
+
     if (data.location || data.postCode) {
         const existingProperty = await PropertyModel.findById(id);
         if (existingProperty) {
@@ -62,7 +63,7 @@ const updatePropertyService = async (id: string, data: Partial<IProperty>): Prom
                         lat: geocodedData.lat,
                         lng: geocodedData.lng,
                     };
-
+                    console.log(geocodedData);
                     // Update nearby places when location changes
                     const nearbyPlaces = await findNearbyPlaces(geocodedData.lat, geocodedData.lng);
                     updateData.nearbyPlaces = nearbyPlaces;
