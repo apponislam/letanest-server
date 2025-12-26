@@ -54,6 +54,7 @@ export const geocodeAddress = async (location: string, postCode: string): Promis
 
 export const findNearbyPlaces = async (lat: number, lng: number): Promise<NearbyPlace[]> => {
     try {
+        const agent = new https.Agent({ family: 4 });
         const API_KEY = config.server_map_api_key;
 
         // Search for each important type separately with small radius
@@ -63,7 +64,15 @@ export const findNearbyPlaces = async (lat: number, lng: number): Promise<Nearby
 
         for (const placeType of placeTypes) {
             try {
-                const response = await axios.get(`https://maps.googleapis.com/maps/api/place/nearbysearch/json?location=${lat},${lng}&radius=160934&type=${placeType}&key=${API_KEY}`);
+                const response = await axios.get(`https://maps.googleapis.com/maps/api/place/nearbysearch/json`, {
+                    params: {
+                        location: `${lat},${lng}`,
+                        radius: 160934,
+                        type: placeType,
+                        key: API_KEY,
+                    },
+                    httpsAgent: agent,
+                });
 
                 if (response.data.status === "OK" && response.data.results.length > 0) {
                     // Find the closest result for this type
