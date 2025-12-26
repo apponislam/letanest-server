@@ -1,5 +1,6 @@
 import axios from "axios";
 import config from "../../config";
+import https from "https";
 
 export interface GeocodingResult {
     lat: number;
@@ -18,6 +19,7 @@ export interface NearbyPlace {
 
 export const geocodeAddress = async (location: string, postCode: string): Promise<GeocodingResult | null> => {
     try {
+        const agent = new https.Agent({ family: 4 });
         const API_KEY = config.server_map_api_key;
 
         // const response = await axios.get(`https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(location + " " + postCode)}&key=${API_KEY}`);
@@ -27,6 +29,7 @@ export const geocodeAddress = async (location: string, postCode: string): Promis
                 address: `${location} ${postCode}`.trim(),
                 key: API_KEY,
             },
+            httpsAgent: agent,
         });
         console.log(response);
 
