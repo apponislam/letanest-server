@@ -20,7 +20,14 @@ export const geocodeAddress = async (location: string, postCode: string): Promis
     try {
         const API_KEY = config.server_map_api_key;
 
-        const response = await axios.get(`https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(location + " " + postCode)}&key=${API_KEY}`);
+        // const response = await axios.get(`https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(location + " " + postCode)}&key=${API_KEY}`);
+
+        const response = await axios.get("https://maps.googleapis.com/maps/api/geocode/json", {
+            params: {
+                address: `${location} ${postCode}`.trim(),
+                key: API_KEY,
+            },
+        });
 
         if (response.data.status === "OK" && response.data.results.length > 0) {
             const result = response.data.results[0];
