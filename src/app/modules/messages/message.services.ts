@@ -138,7 +138,6 @@ const createMessage = async (messageData: ICreateMessageDto) => {
             })
             .lean<IUser & { currentSubscription?: ISubscription }>();
 
-        console.log(messageData.agreedFee);
         const agreedFeeNum = Number(messageData?.agreedFee || 0);
 
         if (receiverData?.currentSubscription) {
@@ -150,7 +149,6 @@ const createMessage = async (messageData: ICreateMessageDto) => {
             }
         } else {
             bookingFee = agreedFeeNum * 0.1;
-            console.log("in condition", bookingFee);
         }
         bookingFee = Number(bookingFee.toFixed(2));
     }
