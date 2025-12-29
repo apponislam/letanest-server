@@ -12,4 +12,5 @@ router.get("/stats", auth_1.default, dashboard_controllers_1.dashboardController
 router.get("/revenue-chart", auth_1.default, dashboard_controllers_1.dashboardControllers.getRevenueChartData);
 router.get("/property-status", auth_1.default, dashboard_controllers_1.dashboardControllers.getPropertyStatusStats);
 router.get("/site-stats", dashboard_controllers_1.dashboardControllers.getSiteStats);
+router.get("/host-stats", auth_1.default, dashboard_controllers_1.dashboardControllers.getHostStats);
 exports.dashboardRoutes = router;

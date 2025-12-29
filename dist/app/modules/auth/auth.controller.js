@@ -26,7 +26,7 @@ const register = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 
         httpOnly: true,
         secure: config_1.default.node_env === "production",
         sameSite: "strict",
-        maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
+        maxAge: 30 * 24 * 60 * 60 * 1000,
     });
     (0, sendResponse_1.default)(res, {
         statusCode: http_status_1.default.CREATED,

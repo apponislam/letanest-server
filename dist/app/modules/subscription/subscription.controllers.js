@@ -180,8 +180,7 @@ const createCheckoutSession = (0, catchAsync_1.default)((req, res) => __awaiter(
         level: subscription.level,
         userEmail: user.email,
         userName: user.name || user.email,
-    }, user.stripeCustomerId // if you have this
-    );
+    }, user.stripeCustomerId);
     (0, sendResponse_1.default)(res, {
         statusCode: http_status_1.default.OK,
         success: true,
@@ -202,6 +201,16 @@ const getCheckoutSession = (0, catchAsync_1.default)((req, res) => __awaiter(voi
         data: session,
     });
 }));
+const deleteSubscription = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const { id } = req.params;
+    const subscription = yield subscription_services_1.subscriptionService.deleteSubscription(id);
+    (0, sendResponse_1.default)(res, {
+        statusCode: http_status_1.default.OK,
+        success: true,
+        message: "Subscription deleted successfully",
+        data: subscription,
+    });
+}));
 exports.subscriptionController = {
     createSubscription,
     getAllSubscriptions,
@@ -215,4 +224,6 @@ exports.subscriptionController = {
     toggleSubscriptionStatus,
     createCheckoutSession,
     getCheckoutSession,
+    // delete route
+    deleteSubscription,
 };

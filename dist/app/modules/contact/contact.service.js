@@ -16,6 +16,7 @@ exports.contactServices = void 0;
 const ApiError_1 = __importDefault(require("../../../errors/ApiError"));
 const contact_model_1 = require("./contact.model");
 const http_status_1 = __importDefault(require("http-status"));
+const contactEmail_1 = require("./contactEmail");
 const createContact = (contactData) => __awaiter(void 0, void 0, void 0, function* () {
     const contact = yield contact_model_1.Contact.create(contactData);
     return contact;
@@ -28,7 +29,7 @@ const getContacts = (...args_1) => __awaiter(void 0, [...args_1], void 0, functi
     const filter = {};
     // Search functionality
     if (query.search) {
-        filter.$or = [{ firstName: { $regex: query.search, $options: "i" } }, { lastName: { $regex: query.search, $options: "i" } }, { email: { $regex: query.search, $options: "i" } }, { message: { $regex: query.search, $options: "i" } }];
+        filter.$or = [{ firstName: { $regex: query.search, $options: "i" } }, { lastName: { $regex: query.search, $options: "i" } }, { email: { $regex: query.search, $options: "i" } }, { phone: { $regex: query.search, $options: "i" } }, { message: { $regex: query.search, $options: "i" } }];
     }
     // Status filter
     if (query.status) {
@@ -58,9 +59,28 @@ const updateContactStatus = (contactId, status) => __awaiter(void 0, void 0, voi
     }
     return contact;
 });
+const replyToContact = (contactId, replyMessage) => __awaiter(void 0, void 0, void 0, function* () {
+    const contact = yield contact_model_1.Contact.findById(contactId);
+    if (!contact) {
+        throw new ApiError_1.default(http_status_1.default.NOT_FOUND, "Contact not found");
+    }
+    yield (0, contactEmail_1.sendContactReply)({
+        to: contact.email,
+        name: `${contact.firstName} ${contact.lastName}`,
+        originalMessage: contact.message,
+        reply: replyMessage,
+    });
+    const updatedContact = yield contact_model_1.Contact.findByIdAndUpdate(contactId, {
+        status: "replied",
+        replyMessage: replyMessage,
+        repliedAt: new Date(),
+    }, { new: true });
+    return updatedContact;
+});
 exports.contactServices = {
     createContact,
     getContacts,
     getContactById,
     updateContactStatus,
+    replyToContact,
 };

@@ -19,6 +19,11 @@ const rating_routes_1 = require("../modules/rating/rating.routes");
 const contact_route_1 = require("../modules/contact/contact.route");
 const pages_routes_1 = require("../modules/pages/pages.routes");
 const reports_routes_1 = require("../modules/reports/reports.routes");
+const bankDetails_routes_1 = require("../modules/bankDetails/bankDetails.routes");
+const privacyPolicy_routes_1 = require("../modules/privacy-policy/privacyPolicy.routes");
+const messageTypes_routes_1 = require("../modules/automessages/messageTypes.routes");
+const location_routes_1 = require("../modules/location/location.routes");
+const peaceOfMindFee_routes_1 = require("../modules/peaceOfMindFee/peaceOfMindFee.routes");
 const router = express_1.default.Router();
 const moduleRoutes = [
     {
@@ -80,6 +85,26 @@ const moduleRoutes = [
     {
         path: "/reports",
         route: reports_routes_1.reportRoutes,
+    },
+    {
+        path: "/bank-details",
+        route: bankDetails_routes_1.bankDetailsRoutes,
+    },
+    {
+        path: "/privacy-policy",
+        route: privacyPolicy_routes_1.privacyPolicyRoutes,
+    },
+    {
+        path: "/message-types",
+        route: messageTypes_routes_1.messageTypesRoutes,
+    },
+    {
+        path: "/locations",
+        route: location_routes_1.locationRoutes,
+    },
+    {
+        path: "/peace-of-mind-fee",
+        route: peaceOfMindFee_routes_1.peaceOfMindFeeRoutes,
     },
 ];
 moduleRoutes.forEach((route) => router.use(route.path, route.route));

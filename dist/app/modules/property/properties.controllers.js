@@ -29,7 +29,6 @@ const createPropertyController = (0, catchAsync_1.default)((req, res) => __await
     if (photosFiles.length > 0)
         mediaData.photos = photosFiles.map((file) => `/uploads/photos/${file.filename}`);
     const propertyData = Object.assign(Object.assign(Object.assign({}, req.body), mediaData), { createdBy: (_b = req.user) === null || _b === void 0 ? void 0 : _b._id, agreeTerms: req.body.agreeTerms === "true" || req.body.agreeTerms === true });
-    // Parse amenities if it's a string
     if (typeof req.body.amenities === "string") {
         try {
             propertyData.amenities = JSON.parse(req.body.amenities);
@@ -57,11 +56,21 @@ const updatePropertyController = (0, catchAsync_1.default)((req, res) => __await
     if (photosFiles.length > 0)
         mediaData.photos = photosFiles.map((file) => `/uploads/photos/${file.filename}`);
     const propertyData = Object.assign(Object.assign({}, req.body), mediaData);
+    console.log(req.body);
     const property = yield properties_services_1.propertyServices.updatePropertyService(req.params.id, propertyData);
     (0, sendResponse_1.default)(res, {
         statusCode: property ? http_status_1.default.OK : http_status_1.default.NOT_FOUND,
         success: !!property,
         message: property ? "Property updated successfully" : "Property not found",
+        data: property || null,
+    });
+}));
+const refreshNearbyPlacesController = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const property = yield properties_services_1.propertyServices.refreshNearbyPlacesService(req.params.id);
+    (0, sendResponse_1.default)(res, {
+        statusCode: property ? http_status_1.default.OK : http_status_1.default.NOT_FOUND,
+        success: !!property,
+        message: property ? "Nearby places refreshed successfully" : "Property not found or no coordinates available",
         data: property || null,
     });
 }));
@@ -208,9 +217,37 @@ const toggleTrendingStatusController = (0, catchAsync_1.default)((req, res) => _
         data: result,
     });
 }));
+const toggleCalendarController = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const { id } = req.params;
+    const { calendarEnabled, availableFrom, availableTo } = req.body;
+    if (typeof calendarEnabled !== "boolean") {
+        throw new ApiError_1.default(http_status_1.default.BAD_REQUEST, "calendarEnabled is required and must be a boolean");
+    }
+    if (availableFrom && availableTo) {
+        const fromDate = new Date(availableFrom);
+        const toDate = new Date(availableTo);
+        if (isNaN(fromDate.getTime()) || isNaN(toDate.getTime())) {
+            throw new ApiError_1.default(http_status_1.default.BAD_REQUEST, "Invalid date format for availableFrom or availableTo");
+        }
+        if (fromDate >= toDate) {
+            throw new ApiError_1.default(http_status_1.default.BAD_REQUEST, "availableFrom must be before availableTo");
+        }
+    }
+    const result = yield properties_services_1.propertyServices.toggleCalendarService(id, calendarEnabled, availableFrom, availableTo);
+    if (!result) {
+        throw new ApiError_1.default(http_status_1.default.NOT_FOUND, "Property not found");
+    }
+    (0, sendResponse_1.default)(res, {
+        statusCode: http_status_1.default.OK,
+        success: true,
+        message: `Calendar ${calendarEnabled ? "opened" : "closed"} successfully`,
+        data: result,
+    });
+}));
 exports.propertyControllers = {
     createPropertyController,
     updatePropertyController,
+    refreshNearbyPlacesController,
     getSinglePropertyController,
     getAllPropertiesController,
     getAllPublishedPropertiesController,
@@ -225,4 +262,5 @@ exports.propertyControllers = {
     // Toggle
     toggleFeaturedStatusController,
     toggleTrendingStatusController,
+    toggleCalendarController,
 };

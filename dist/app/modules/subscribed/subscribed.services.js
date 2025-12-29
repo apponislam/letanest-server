@@ -52,12 +52,12 @@ const subscription_model_1 = require("../subscription/subscription.model");
 const subscribed_model_1 = require("./subscribed.model");
 const mongoose_1 = __importStar(require("mongoose"));
 const auth_model_1 = require("../auth/auth.model");
+const stripe_services_1 = require("../subscription/stripe.services");
 const createUserSubscription = (data) => __awaiter(void 0, void 0, void 0, function* () {
     const session = yield mongoose_1.default.startSession();
     session.startTransaction();
     try {
         console.log("🔧 Creating/updating user subscription with data:", data);
-        // Validate required fields
         if (!data.userId)
             throw new ApiError_1.default(http_status_1.default.BAD_REQUEST, "User ID is required");
         if (!data.subscriptionId)
@@ -67,6 +67,14 @@ const createUserSubscription = (data) => __awaiter(void 0, void 0, void 0, funct
         const subscription = yield subscription_model_1.Subscription.findById(data.subscriptionId).session(session);
         if (!subscription) {
             throw new ApiError_1.default(http_status_1.default.NOT_FOUND, "Subscription plan not found");
+        }
+        const user = yield auth_model_1.UserModel.findById(data.userId).session(session);
+        if (user === null || user === void 0 ? void 0 : user.currentSubscription) {
+            yield subscribed_model_1.UserSubscription.findByIdAndUpdate(user.currentSubscription, {
+                status: "canceled",
+                cancelAtPeriodEnd: true,
+                cancelledAt: new Date(),
+            }, { session });
         }
         // Check if the user already has this subscription
         let userSubscription = yield subscribed_model_1.UserSubscription.findOne({
@@ -93,21 +101,20 @@ const createUserSubscription = (data) => __awaiter(void 0, void 0, void 0, funct
             currency: subscription.currency,
         };
         if (userSubscription) {
-            // Update existing subscription
             userSubscription.set(userSubscriptionData);
             yield userSubscription.save({ session });
             console.log("🔄 User subscription updated:", userSubscription._id);
         }
         else {
-            // Create new subscription
             userSubscription = new subscribed_model_1.UserSubscription(userSubscriptionData);
             yield userSubscription.save({ session });
-            // Update the user document with the new subscription _id
             yield auth_model_1.UserModel.findByIdAndUpdate(data.userId, {
                 $push: { subscriptions: { subscription: userSubscription._id } },
+                $set: { currentSubscription: userSubscription._id },
             }, { session, new: true });
             console.log("✅ User subscription created and linked to user:", userSubscription._id);
         }
+        yield auth_model_1.UserModel.findByIdAndUpdate(data.userId, { $set: { currentSubscription: userSubscription._id } }, { session });
         yield session.commitTransaction();
         session.endSession();
         return userSubscription;
@@ -115,7 +122,6 @@ const createUserSubscription = (data) => __awaiter(void 0, void 0, void 0, funct
     catch (error) {
         yield session.abortTransaction();
         session.endSession();
-        console.error("❌ User subscription creation/updating failed:", error);
         throw new ApiError_1.default(http_status_1.default.INTERNAL_SERVER_ERROR, error instanceof Error ? error.message : "Failed to create/update user subscription");
     }
 });
@@ -134,11 +140,55 @@ const getUserSubscriptionById = (id) => __awaiter(void 0, void 0, void 0, functi
 const updateUserSubscriptionStatus = (id, status) => __awaiter(void 0, void 0, void 0, function* () {
     return yield subscribed_model_1.UserSubscription.findByIdAndUpdate(id, { status }, { new: true, runValidators: true }).populate("subscription");
 });
-const cancelUserSubscription = (id) => __awaiter(void 0, void 0, void 0, function* () {
-    return yield subscribed_model_1.UserSubscription.findByIdAndUpdate(id, {
-        status: "canceled",
-        cancelAtPeriodEnd: true,
-    }, { new: true, runValidators: true }).populate("subscription");
+const cancelUserSubscription = (id, userId) => __awaiter(void 0, void 0, void 0, function* () {
+    var _a;
+    const session = yield mongoose_1.default.startSession();
+    session.startTransaction();
+    try {
+        // Get the user subscription
+        const userSubscription = yield subscribed_model_1.UserSubscription.findById(id).session(session);
+        if (!userSubscription) {
+            throw new ApiError_1.default(http_status_1.default.NOT_FOUND, "Subscription not found");
+        }
+        // Check if this subscription belongs to the user
+        if (userSubscription.user.toString() !== userId) {
+            throw new ApiError_1.default(http_status_1.default.FORBIDDEN, "You don't have permission to cancel this subscription");
+        }
+        // Check if already cancelled
+        if (userSubscription.status === "canceled") {
+            throw new ApiError_1.default(http_status_1.default.BAD_REQUEST, "Subscription is already cancelled");
+        }
+        // If it's a paid subscription with Stripe, cancel in Stripe
+        if (userSubscription.stripeSubscriptionId && !userSubscription.isFreeTier) {
+            try {
+                yield stripe_services_1.stripeService.cancelSubscription(userSubscription.stripeSubscriptionId);
+                console.log(`✅ Stripe subscription ${userSubscription.stripeSubscriptionId} cancelled`);
+            }
+            catch (error) {
+                console.error("Failed to cancel Stripe subscription:", error);
+                // Continue anyway to update our database
+            }
+        }
+        // Update in database
+        const updated = yield subscribed_model_1.UserSubscription.findByIdAndUpdate(id, {
+            status: "canceled",
+            cancelAtPeriodEnd: true,
+            cancelledAt: new Date(),
+        }, { new: true, session, runValidators: true }).populate("subscription");
+        // Update user's current subscription if this is the active one
+        const user = yield auth_model_1.UserModel.findById(userId).session(session);
+        if (((_a = user === null || user === void 0 ? void 0 : user.currentSubscription) === null || _a === void 0 ? void 0 : _a.toString()) === id) {
+            yield auth_model_1.UserModel.findByIdAndUpdate(userId, { $unset: { currentSubscription: "" } }, { session });
+        }
+        yield session.commitTransaction();
+        session.endSession();
+        return updated;
+    }
+    catch (error) {
+        yield session.abortTransaction();
+        session.endSession();
+        throw error;
+    }
 });
 const incrementBookingCount = (userSubscriptionId) => __awaiter(void 0, void 0, void 0, function* () {
     return yield subscribed_model_1.UserSubscription.findByIdAndUpdate(userSubscriptionId, { $inc: { bookingCount: 1 } }, { new: true, runValidators: true });

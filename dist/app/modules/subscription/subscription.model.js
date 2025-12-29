@@ -40,6 +40,10 @@ const subscriptionSchema = new mongoose_1.Schema({
     // Features
     features: [subscriptionFeatureSchema],
     badge: { type: String },
+    isDeleted: {
+        type: Boolean,
+        default: false,
+    },
     // Metadata
     description: { type: String, required: true },
     isActive: { type: Boolean, default: true },
@@ -48,7 +52,7 @@ const subscriptionSchema = new mongoose_1.Schema({
 });
 // Add indexes for better performance
 subscriptionSchema.index({ type: 1, level: 1 });
-subscriptionSchema.index({ isActive: 1 });
+subscriptionSchema.index({ isDeleted: 1, isActive: 1 });
 subscriptionSchema.index({ stripeProductId: 1 });
 subscriptionSchema.index({ stripePriceId: 1 });
 exports.Subscription = (0, mongoose_1.model)("Subscription", subscriptionSchema);

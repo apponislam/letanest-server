@@ -38,8 +38,12 @@ const auth = (0, catchAsync_1.default)((req, res, next) => __awaiter(void 0, voi
     if (!user) {
         throw new ApiError_1.default(404, "Authentication failed: User not found");
     }
-    // console.log(user);
-    // console.log(decoded);
+    if (!user.isActive) {
+        throw new ApiError_1.default(401, "Authentication failed: Your account has been deactivated. Please contact support.");
+    }
+    if (user.role !== (decoded === null || decoded === void 0 ? void 0 : decoded.role)) {
+        throw new ApiError_1.default(403, "Authentication failed: Role mismatch. Please login again.");
+    }
     req.user = user;
     next();
 }));

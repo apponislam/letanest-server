@@ -36,15 +36,20 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.ReportModel = void 0;
 const mongoose_1 = __importStar(require("mongoose"));
 const reportSchema = new mongoose_1.Schema({
-    guestId: {
+    reporterId: {
         type: mongoose_1.Schema.Types.ObjectId,
         ref: "User",
         required: true,
     },
-    hostId: {
+    reportedUserId: {
         type: mongoose_1.Schema.Types.ObjectId,
         ref: "User",
         required: true,
+    },
+    conversationId: {
+        type: mongoose_1.Schema.Types.ObjectId,
+        ref: "Conversation",
+        required: false, // Optional field
     },
     reason: {
         type: String,
@@ -57,14 +62,15 @@ const reportSchema = new mongoose_1.Schema({
     },
     status: {
         type: String,
-        enum: ["pending", "resolved"],
+        enum: ["pending", "resolved", "dismissed"],
         default: "pending",
     },
 }, {
     timestamps: true,
 });
 // Index for efficient queries
-reportSchema.index({ guestId: 1, createdAt: -1 });
-reportSchema.index({ hostId: 1, createdAt: -1 });
+reportSchema.index({ reporterId: 1, createdAt: -1 });
+reportSchema.index({ reportedUserId: 1, createdAt: -1 });
 reportSchema.index({ status: 1 });
+reportSchema.index({ conversationId: 1 });
 exports.ReportModel = mongoose_1.default.model("Report", reportSchema);

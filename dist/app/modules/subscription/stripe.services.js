@@ -16,7 +16,8 @@ exports.stripeService = exports.StripeService = void 0;
 const stripe_1 = __importDefault(require("stripe"));
 const config_1 = __importDefault(require("../../config"));
 const stripe = new stripe_1.default(config_1.default.stripe_secret_key, {
-    apiVersion: "2025-09-30.clover",
+    // apiVersion: "2025-09-30.clover",
+    apiVersion: "2025-07-30.basil",
 });
 class StripeService {
     // Create subscription product in Stripe
@@ -168,12 +169,10 @@ class StripeService {
             }
         });
     }
+    // Create customer in Stripe
     createCheckoutSessionWithUser(priceId, metadata, customerId) {
         return __awaiter(this, void 0, void 0, function* () {
             try {
-                console.log("🎯 Creating authenticated checkout session with metadata:", metadata);
-                console.log("💰 Price ID:", priceId);
-                console.log("👤 Customer ID:", customerId);
                 // Build the session parameters
                 const sessionParams = {
                     mode: "subscription",
@@ -184,7 +183,6 @@ class StripeService {
                             quantity: 1,
                         },
                     ],
-                    customer_email: metadata.userEmail,
                     success_url: `${config_1.default.client_url}/payment/success?session_id={CHECKOUT_SESSION_ID}`,
                     cancel_url: `${config_1.default.client_url}/payment/cancel`,
                     // CRITICAL: Add comprehensive metadata
@@ -210,14 +208,15 @@ class StripeService {
                         },
                     },
                 };
-                // FIX: Only add customer if provided, don't use customer_creation in subscription mode
                 if (customerId) {
+                    // Use existing customer
                     sessionParams.customer = customerId;
                     console.log("✅ Using existing customer:", customerId);
                 }
                 else {
-                    console.log("ℹ️ No customer ID provided - Stripe will create one automatically");
-                    // Don't add customer_creation - Stripe will handle customer creation automatically
+                    // Create new customer with email
+                    sessionParams.customer_email = metadata.userEmail;
+                    console.log("✅ Creating new customer with email:", metadata.userEmail);
                 }
                 console.log("📦 Session params:", JSON.stringify(sessionParams, null, 2));
                 const session = yield stripe.checkout.sessions.create(sessionParams);
@@ -234,7 +233,6 @@ class StripeService {
             }
         });
     }
-    // Create customer in Stripe
     createCustomer(userId, email, name) {
         return __awaiter(this, void 0, void 0, function* () {
             try {
@@ -359,6 +357,9 @@ class StripeService {
     handleWebhookEvent(payload, signature) {
         return __awaiter(this, void 0, void 0, function* () {
             try {
+                // console.log(payload);
+                // console.log(signature);
+                // console.log(config.stripe_webhook_secret);
                 const event = stripe.webhooks.constructEvent(payload, signature, config_1.default.stripe_webhook_secret);
                 return event;
             }
@@ -386,11 +387,17 @@ class StripeService {
     cancelSubscription(subscriptionId) {
         return __awaiter(this, void 0, void 0, function* () {
             try {
-                return yield stripe.subscriptions.cancel(subscriptionId);
+                const subscription = yield stripe.subscriptions.retrieve(subscriptionId);
+                if (subscription.status === "canceled") {
+                    throw new Error(`Subscription ${subscriptionId} is already cancelled`);
+                }
+                const cancelled = yield stripe.subscriptions.cancel(subscriptionId);
+                console.log(`✅ Subscription ${subscriptionId} cancelled successfully`);
+                return cancelled;
             }
             catch (error) {
                 console.error("Failed to cancel subscription:", error);
-                throw new Error("Failed to cancel subscription");
+                throw new Error(`Failed to cancel subscription: ${error.message}`);
             }
         });
     }
@@ -523,7 +530,7 @@ class StripeService {
     get stripe() {
         // You might want to make this a private property in your class
         const stripe = new stripe_1.default(config_1.default.stripe_secret_key, {
-            apiVersion: "2025-09-30.clover",
+            apiVersion: "2025-07-30.basil",
         });
         return stripe;
     }
@@ -702,6 +709,46 @@ class StripeService {
             catch (error) {
                 console.error("Error confirming PaymentIntent:", error);
                 throw new Error(`Failed to confirm PaymentIntent: ${error instanceof Error ? error.message : "Unknown error"}`);
+            }
+        });
+    }
+    // only booking fee payment
+    createBookingFeePayment(bookingFee, customerId) {
+        return __awaiter(this, void 0, void 0, function* () {
+            try {
+                const paymentIntent = yield this.stripe.paymentIntents.create({
+                    amount: Math.round(bookingFee * 100),
+                    currency: "gbp",
+                    customer: customerId,
+                    automatic_payment_methods: {
+                        enabled: true,
+                    },
+                    metadata: {
+                        paymentType: "booking_fee",
+                    },
+                });
+                console.log("✅ Booking fee payment intent created:", paymentIntent.id);
+                return paymentIntent;
+            }
+            catch (error) {
+                console.error("Error creating booking fee payment:", error);
+                throw new Error(`Failed to create booking fee payment: ${error instanceof Error ? error.message : "Unknown error"}`);
+            }
+        });
+    }
+    confirmBookingFeePayment(paymentIntentId, paymentMethodId) {
+        return __awaiter(this, void 0, void 0, function* () {
+            try {
+                const paymentIntent = yield this.stripe.paymentIntents.confirm(paymentIntentId, {
+                    payment_method: paymentMethodId,
+                    return_url: `${config_1.default.client_url}/payment/success`,
+                });
+                console.log(`✅ Booking fee PaymentIntent ${paymentIntentId} confirmed with status: ${paymentIntent.status}`);
+                return paymentIntent;
+            }
+            catch (error) {
+                console.error("Error confirming booking fee PaymentIntent:", error);
+                throw new Error(`Failed to confirm booking fee PaymentIntent: ${error instanceof Error ? error.message : "Unknown error"}`);
             }
         });
     }

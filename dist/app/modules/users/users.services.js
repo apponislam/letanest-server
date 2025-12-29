@@ -8,12 +8,24 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
+var __rest = (this && this.__rest) || function (s, e) {
+    var t = {};
+    for (var p in s) if (Object.prototype.hasOwnProperty.call(s, p) && e.indexOf(p) < 0)
+        t[p] = s[p];
+    if (s != null && typeof Object.getOwnPropertySymbols === "function")
+        for (var i = 0, p = Object.getOwnPropertySymbols(s); i < p.length; i++) {
+            if (e.indexOf(p[i]) < 0 && Object.prototype.propertyIsEnumerable.call(s, p[i]))
+                t[p[i]] = s[p[i]];
+        }
+    return t;
+};
 var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.userServices = void 0;
 const mongoose_1 = require("mongoose");
+const auth_interface_1 = require("../auth/auth.interface");
 const auth_model_1 = require("../auth/auth.model");
 const ApiError_1 = __importDefault(require("../../../errors/ApiError"));
 const http_status_1 = __importDefault(require("http-status"));
@@ -22,14 +34,14 @@ const stripe_services_1 = require("../subscription/stripe.services");
 const config_1 = __importDefault(require("../../config"));
 const getAllUsersService = (query) => __awaiter(void 0, void 0, void 0, function* () {
     const { page = 1, limit = 10, search, role, isActive } = query;
-    const filter = {};
+    const filter = {
+        isActive: true,
+    };
     if (search) {
         filter.$or = [{ name: { $regex: search, $options: "i" } }, { email: { $regex: search, $options: "i" } }, { phone: { $regex: search, $options: "i" } }];
     }
     if (role)
         filter.role = role;
-    if (isActive)
-        filter.isActive = isActive === "true";
     const skip = (Number(page) - 1) * Number(limit);
     const [users, total] = yield Promise.all([auth_model_1.UserModel.find(filter).select("-password").skip(skip).limit(Number(limit)).sort({ createdAt: -1 }), auth_model_1.UserModel.countDocuments(filter)]);
     return {
@@ -38,7 +50,6 @@ const getAllUsersService = (query) => __awaiter(void 0, void 0, void 0, function
             total,
             page: Number(page),
             limit: Number(limit),
-            totalPages: Math.ceil(total / Number(limit)),
         },
     };
 });
@@ -46,8 +57,12 @@ const getSingleUserService = (id) => __awaiter(void 0, void 0, void 0, function*
     return yield auth_model_1.UserModel.findById(id).select("-password");
 });
 const updateUserProfileService = (userId, updateData, profileImg) => __awaiter(void 0, void 0, void 0, function* () {
+    let fullName = updateData.firstName;
+    if (updateData.lastName && updateData.lastName.trim() !== "") {
+        fullName = `${updateData.firstName} ${updateData.lastName}`;
+    }
     const updateFields = {
-        name: `${updateData.firstName} ${updateData.lastName}`,
+        name: fullName.trim(), // Trim to remove any accidental spaces
         phone: updateData.phone,
         address: updateData.address,
         gender: updateData.gender,
@@ -65,6 +80,10 @@ const getMySubscriptionsService = (userId) => __awaiter(void 0, void 0, void 0, 
         model: "UserSubscription",
     })
         .populate({
+        path: "currentSubscription",
+        model: "UserSubscription",
+    })
+        .populate({
         path: "freeTireSub",
         model: "Subscription",
         select: "billingPeriod bookingFee level paymentLink type freeBookings listingLimit commission",
@@ -74,27 +93,6 @@ const getMySubscriptionsService = (userId) => __awaiter(void 0, void 0, void 0, 
     }
     return user;
 });
-// ONLY THIS NEW SERVICE - Activate free tier
-// const activateFreeTierService = async (userId: Types.ObjectId, subscriptionId: string) => {
-//     // Calculate expiry date (30 days from now for free tier)
-//     const freeTireExpiry = new Date();
-//     freeTireExpiry.setDate(freeTireExpiry.getDate() + 30);
-//     // Update user with free tier data
-//     const updatedUser = await UserModel.findByIdAndUpdate(
-//         userId,
-//         {
-//             freeTireUsed: true,
-//             freeTireExpiry: freeTireExpiry,
-//             freeTireSub: new Types.ObjectId(subscriptionId),
-//         },
-//         { new: true }
-//     ).populate("freeTireSub");
-//     return {
-//         freeTireUsed: updatedUser?.freeTireUsed,
-//         freeTireExpiry: updatedUser?.freeTireExpiry,
-//         freeTireSub: updatedUser?.freeTireSub,
-//     };
-// };
 const activateFreeTierService = (userId, subscriptionId) => __awaiter(void 0, void 0, void 0, function* () {
     // Calculate expiry date (30 days from now for free tier)
     const freeTireExpiry = new Date();
@@ -262,16 +260,21 @@ const getMyProfileService = (userId) => __awaiter(void 0, void 0, void 0, functi
         .populate({
         path: "subscriptions.subscription",
         model: "UserSubscription",
+        // Remove the nested populate since UserSubscription should have the badge directly
+    })
+        .populate({
+        path: "currentSubscription",
+        model: "UserSubscription",
         populate: {
             path: "subscription",
             model: "Subscription",
-            select: "badge",
+            select: "name badge level type price",
         },
     })
         .populate({
         path: "freeTireSub",
         model: "Subscription",
-        select: "billingPeriod bookingFee level paymentLink type freeBookings listingLimit commission",
+        select: "name badge billingPeriod bookingFee level paymentLink type freeBookings listingLimit commission",
     })
         .lean();
     if (!user) {
@@ -292,9 +295,11 @@ const getMyProfileService = (userId) => __awaiter(void 0, void 0, void 0, functi
             createdAt: user.createdAt,
             updatedAt: user.updatedAt,
             verificationStatus: user.verificationStatus,
+            isVerifiedByAdmin: user.isVerifiedByAdmin,
         },
         subscriptions: {
             activeSubscriptions: user.subscriptions,
+            currentSubscription: user.currentSubscription,
             freeTier: {
                 used: user.freeTireUsed,
                 expiry: user.freeTireExpiry,
@@ -309,11 +314,49 @@ const getMyProfileService = (userId) => __awaiter(void 0, void 0, void 0, functi
                 verifiedAt: user.hostStripeAccount.verifiedAt,
             }
             : null,
+        stripeCustomerId: user.stripeCustomerId, // Add stripe customer ID
     };
 });
 const getRandomAdminService = () => __awaiter(void 0, void 0, void 0, function* () {
     const admin = yield auth_model_1.UserModel.aggregate([{ $match: { role: "ADMIN", isActive: true } }, { $sample: { size: 1 } }, { $project: { _id: 1, name: 1, email: 1, phone: 1, profileImg: 1, role: 1 } }]);
     return admin.length > 0 ? admin[0] : null;
+});
+const changeUserRoleService = (userId, newRole, adminId) => __awaiter(void 0, void 0, void 0, function* () {
+    // Check if user exists
+    const user = yield auth_model_1.UserModel.findById(userId);
+    if (!user) {
+        throw new ApiError_1.default(http_status_1.default.NOT_FOUND, "User not found");
+    }
+    if (!Object.values(auth_interface_1.roles).includes(newRole)) {
+        throw new ApiError_1.default(http_status_1.default.BAD_REQUEST, "Invalid role");
+    }
+    if (user.role === newRole) {
+        throw new ApiError_1.default(http_status_1.default.BAD_REQUEST, `User is already a ${newRole}`);
+    }
+    user.role = newRole;
+    yield user.save();
+    const _a = user.toObject(), { password } = _a, userWithoutPassword = __rest(_a, ["password"]);
+    return userWithoutPassword;
+});
+const deleteUserService = (userId, adminId) => __awaiter(void 0, void 0, void 0, function* () {
+    // Check if user exists
+    const user = yield auth_model_1.UserModel.findById(userId);
+    if (!user) {
+        throw new ApiError_1.default(http_status_1.default.NOT_FOUND, "User not found");
+    }
+    // Check if user is already inactive
+    if (!user.isActive) {
+        throw new ApiError_1.default(http_status_1.default.BAD_REQUEST, "User is already deleted");
+    }
+    // Prevent admin from deleting themselves
+    if (userId === adminId) {
+        throw new ApiError_1.default(http_status_1.default.BAD_REQUEST, "Cannot delete your own account");
+    }
+    // Soft delete by setting isActive to false
+    user.isActive = false;
+    yield user.save();
+    const _a = user.toObject(), { password } = _a, userWithoutPassword = __rest(_a, ["password"]);
+    return userWithoutPassword;
 });
 exports.userServices = {
     getAllUsersService,
@@ -330,4 +373,8 @@ exports.userServices = {
     getMyProfileService,
     // random admin
     getRandomAdminService,
+    //change user role
+    changeUserRoleService,
+    //delete user
+    deleteUserService,
 };

@@ -3,13 +3,11 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.PaymentModel = void 0;
 const mongoose_1 = require("mongoose");
 const paymentSchema = new mongoose_1.Schema({
-    // Stripe
     stripePaymentIntentId: {
         type: String,
         required: true,
         unique: true,
     },
-    // Money breakdown
     agreedFee: {
         type: Number,
         required: true,
@@ -22,6 +20,7 @@ const paymentSchema = new mongoose_1.Schema({
         type: Number,
         default: 0,
     },
+    extraFeePaid: Boolean,
     totalAmount: {
         type: Number,
         required: true,
@@ -73,6 +72,16 @@ const paymentSchema = new mongoose_1.Schema({
         enum: ["pending", "completed", "failed"],
         default: "pending",
     },
+    paymentType: {
+        type: String,
+        enum: ["Stripe", "Bank"],
+        default: undefined,
+    },
+    reviewedSend: Boolean,
+    isBookingFeePaidOnly: Boolean,
+    bookingFeePaidDone: Number,
+    comissionPaidDone: Number,
+    commissionPaid: Boolean,
     paidAt: {
         type: Date,
     },

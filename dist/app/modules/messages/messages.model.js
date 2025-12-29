@@ -32,11 +32,19 @@ var __importStar = (this && this.__importStar) || (function () {
         return result;
     };
 })();
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.Conversation = exports.Message = void 0;
 const mongoose_1 = __importStar(require("mongoose"));
 const messages_interface_1 = require("./messages.interface");
-// Message Schema (same as before)
 const messageSchema = new mongoose_1.Schema({
     conversationId: {
         type: mongoose_1.Schema.Types.ObjectId,
@@ -67,20 +75,52 @@ const messageSchema = new mongoose_1.Schema({
     checkOutDate: String,
     agreedFee: Number,
     bookingFee: Number,
+    bookingFeePaid: {
+        type: Boolean,
+        default: false,
+    },
+    hostFeePaid: {
+        type: Boolean,
+        default: false,
+    },
+    offerEdited: {
+        type: Boolean,
+        default: false,
+    },
+    extraFee: Number,
+    extraFeePaid: {
+        type: Boolean,
+        default: false,
+    },
     total: Number,
     propertyName: String,
     address: String,
     manager: String,
     phone: String,
     reason: String,
+    guestNo: String,
+    reviewed: Boolean,
     isRead: {
         type: Boolean,
         default: false,
+    },
+    bot: {
+        type: Boolean,
+    },
+    expiresAt: {
+        type: Date,
     },
 }, {
     timestamps: true,
 });
 messageSchema.index({ conversationId: 1, createdAt: -1 });
+messageSchema.index({ expiresAt: 1 }, { expireAfterSeconds: 0 });
+// messageSchema.pre("save", function (next) {
+//     if (this.bot === true && !this.expiresAt) {
+//         this.expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000);
+//     }
+//     next();
+// });
 // Conversation Schema
 const conversationSchema = new mongoose_1.Schema({
     participants: [
@@ -94,12 +134,7 @@ const conversationSchema = new mongoose_1.Schema({
         type: mongoose_1.Schema.Types.ObjectId,
         ref: "Message",
     },
-    // unreadCount: {
-    //     type: Number,
-    //     default: 0,
-    // },
     unreadCounts: {
-        // NEW: Per-user unread counts
         type: Map,
         of: Number,
         default: {},
@@ -108,10 +143,58 @@ const conversationSchema = new mongoose_1.Schema({
         type: Boolean,
         default: true,
     },
+    bot: {
+        type: Boolean,
+    },
+    isReplyAllowed: Boolean,
+    expiresAt: {
+        type: Date,
+    },
 }, {
     timestamps: true,
 });
 conversationSchema.index({ participants: 1 });
 conversationSchema.index({ updatedAt: -1 });
+// CORRECT TTL index for conversations
+conversationSchema.index({ expiresAt: 1 }, { expireAfterSeconds: 0 });
+// Auto-delete middleware for conversations
+// conversationSchema.pre("save", function (next) {
+//     if (this.bot === true && !this.expiresAt) {
+//         this.expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000);
+//     }
+//     next();
+// });
+// Static method to cleanup expired conversations and messages (manual cleanup as backup)
+conversationSchema.statics.cleanupExpired = function () {
+    return __awaiter(this, void 0, void 0, function* () {
+        try {
+            const result = yield this.deleteMany({
+                expiresAt: { $lte: new Date() },
+            });
+            if (result.deletedCount > 0) {
+                console.log(`Cleaned up ${result.deletedCount} expired bot conversations`);
+            }
+        }
+        catch (error) {
+            console.error("Error cleaning up expired conversations:", error);
+        }
+    });
+};
+// Static method for messages cleanup (manual cleanup as backup)
+messageSchema.statics.cleanupExpired = function () {
+    return __awaiter(this, void 0, void 0, function* () {
+        try {
+            const result = yield this.deleteMany({
+                expiresAt: { $lte: new Date() },
+            });
+            if (result.deletedCount > 0) {
+                console.log(`Cleaned up ${result.deletedCount} expired bot messages`);
+            }
+        }
+        catch (error) {
+            console.error("Error cleaning up expired messages:", error);
+        }
+    });
+};
 exports.Message = mongoose_1.default.model("Message", messageSchema);
 exports.Conversation = mongoose_1.default.model("Conversation", conversationSchema);

@@ -52,6 +52,11 @@ const contactSchema = new mongoose_1.Schema({
         trim: true,
         lowercase: true,
     },
+    phone: {
+        type: String,
+        required: true,
+        trim: true,
+    },
     message: {
         type: String,
         required: true,
@@ -61,6 +66,13 @@ const contactSchema = new mongoose_1.Schema({
         type: String,
         enum: ["pending", "read", "replied"],
         default: "pending",
+    },
+    replyMessage: {
+        type: String,
+        trim: true,
+    },
+    repliedAt: {
+        type: Date,
     },
 }, {
     timestamps: true,

@@ -9,6 +9,7 @@ const auth_1 = __importDefault(require("../../middlewares/auth"));
 const public_controllers_1 = require("./public.controllers");
 const router = express_1.default.Router();
 router.get("/my-default-host", auth_1.default, public_controllers_1.termsController.getMyDefaultHostTermsController);
+router.get("/default/property", public_controllers_1.termsController.getPropertyTermsController);
 router.post("/", auth_1.default, public_controllers_1.termsController.createTermsController);
 router.get("/", public_controllers_1.termsController.getAllTermsController);
 router.get("/:id", public_controllers_1.termsController.getTermByIdController);

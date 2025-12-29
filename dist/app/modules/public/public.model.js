@@ -58,7 +58,7 @@ const TermsAndConditionsSchema = new mongoose_1.default.Schema({
     },
     target: {
         type: String,
-        enum: [exports.roles.HOST, exports.roles.GUEST],
+        enum: [exports.roles.HOST, exports.roles.GUEST, "property"],
         required: [true, "Target is required"],
         default: exports.roles.GUEST,
     },
@@ -85,11 +85,4 @@ const TermsAndConditionsSchema = new mongoose_1.default.Schema({
     //     },
     // },
 }, { timestamps: true });
-// Optional: pre-save validation for HOST property-specific T&C
-// TermsAndConditionsSchema.pre("save", function (next) {
-//     if (this.creatorType === roles.HOST && this.hostTarget === "property" && !this.propertyId) {
-//         return next(new Error("PropertyId is required for property-specific T&C"));
-//     }
-//     next();
-// });
 exports.TermsAndConditionsModel = mongoose_1.default.model("TermsAndConditions", TermsAndConditionsSchema);

@@ -19,26 +19,23 @@ const auth_interface_1 = require("../app/modules/auth/auth.interface");
 function createSuperAdmin() {
     return __awaiter(this, void 0, void 0, function* () {
         try {
-            // Check if an admin already exists
             const existingAdmin = yield auth_model_1.UserModel.findOne({ role: auth_interface_1.roles.ADMIN });
             if (existingAdmin) {
                 console.log("✅ Admin already exists:", existingAdmin.email);
                 return;
             }
-            // Hash the super admin password
             const passwordHash = yield bcrypt_1.default.hash(config_1.default.superAdminPassword, Number(config_1.default.bcrypt_salt_rounds));
-            // Prepare super admin data
             const userData = {
                 name: "Super Admin",
                 email: config_1.default.superAdminEmail,
                 password: passwordHash,
                 role: auth_interface_1.roles.ADMIN,
                 isActive: true,
-                phone: undefined, // optional
-                profileImg: undefined, // optional
+                phone: undefined,
+                profileImg: undefined,
                 isEmailVerified: true,
+                isVerifiedByAdmin: true,
             };
-            // Create the super admin user
             const superAdmin = yield auth_model_1.UserModel.create(userData);
             console.log("✅ Super admin created:", superAdmin.email, "with ID:", superAdmin._id);
         }

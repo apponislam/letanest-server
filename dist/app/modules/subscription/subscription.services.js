@@ -64,7 +64,9 @@ const getAllSubscriptionsAdmin = (query) => __awaiter(void 0, void 0, void 0, fu
     const page = Number(query.page) || 1;
     const limit = Number(query.limit) || 10;
     const skip = (page - 1) * limit;
-    const filter = {};
+    const filter = {
+        isDeleted: false,
+    };
     if (query.type)
         filter.type = query.type;
     if (query.level)
@@ -84,13 +86,13 @@ const getSubscriptionById = (id) => __awaiter(void 0, void 0, void 0, function* 
     return yield subscription_model_1.Subscription.findById(id);
 });
 const getSubscriptionsByType = (type) => __awaiter(void 0, void 0, void 0, function* () {
-    return yield subscription_model_1.Subscription.find({ type, isActive: true }).sort({ cost: 1 });
+    return yield subscription_model_1.Subscription.find({ type, isActive: true, isDeleted: false }).sort({ cost: 1 });
 });
 const getSubscriptionsByTypeForAdmin = (type) => __awaiter(void 0, void 0, void 0, function* () {
-    return yield subscription_model_1.Subscription.find({ type }).sort({ cost: 1 });
+    return yield subscription_model_1.Subscription.find({ type, isDeleted: false }).sort({ cost: 1 });
 });
 const getActiveSubscriptionsByTypeAndLevel = (type, level) => __awaiter(void 0, void 0, void 0, function* () {
-    return yield subscription_model_1.Subscription.findOne({ type, level, isActive: true });
+    return yield subscription_model_1.Subscription.findOne({ type, level, isActive: true, isDeleted: false });
 });
 const updateSubscription = (id, updateData) => __awaiter(void 0, void 0, void 0, function* () {
     const subscription = yield subscription_model_1.Subscription.findById(id);
@@ -158,6 +160,18 @@ const activateFreeTierForUser = (userId, subscription) => __awaiter(void 0, void
         // });
     }
 });
+const deleteSubscription = (id) => __awaiter(void 0, void 0, void 0, function* () {
+    const subscription = yield subscription_model_1.Subscription.findById(id);
+    if (!subscription) {
+        throw new ApiError_1.default(http_status_1.default.NOT_FOUND, "Subscription not found");
+    }
+    // Soft delete - only set isDeleted to true
+    const deletedSubscription = yield subscription_model_1.Subscription.findByIdAndUpdate(id, {
+        isDeleted: true,
+        isActive: false, // Also deactivate when deleting
+    }, { new: true });
+    return deletedSubscription;
+});
 exports.subscriptionService = {
     createSubscription,
     getAllSubscriptions,
@@ -173,4 +187,6 @@ exports.subscriptionService = {
     toggleSubscriptionStatus,
     isFreeTier,
     activateFreeTierForUser,
+    // Delete route
+    deleteSubscription,
 };

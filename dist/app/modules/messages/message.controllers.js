@@ -121,6 +121,44 @@ const rejectOffer = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, vo
         data: result,
     });
 }));
+const convertRequestToOfferController = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    var _a;
+    const { messageId } = req.params;
+    const { conversationId } = req.body;
+    const userId = (_a = req.user) === null || _a === void 0 ? void 0 : _a._id;
+    if (!userId) {
+        throw new ApiError_1.default(http_status_1.default.UNAUTHORIZED, "User not authenticated");
+    }
+    if (!conversationId) {
+        throw new ApiError_1.default(http_status_1.default.BAD_REQUEST, "Conversation ID is required");
+    }
+    const result = yield message_services_1.messageServices.convertRequestToOffer(messageId, conversationId, userId);
+    (0, sendResponse_1.default)(res, {
+        success: true,
+        statusCode: http_status_1.default.OK,
+        message: "Request converted to offer successfully",
+        data: result,
+    });
+}));
+const convertMakeOfferToRequest = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    var _a;
+    const { messageId } = req.params;
+    const { conversationId, checkInDate, checkOutDate, agreedFee, guestNo } = req.body;
+    const userId = (_a = req.user) === null || _a === void 0 ? void 0 : _a._id;
+    if (!userId) {
+        throw new ApiError_1.default(http_status_1.default.UNAUTHORIZED, "User not authenticated");
+    }
+    if (!conversationId) {
+        throw new ApiError_1.default(http_status_1.default.BAD_REQUEST, "Conversation ID is required");
+    }
+    const result = yield message_services_1.messageServices.convertMakeOfferToRequest(messageId, conversationId, userId, { checkInDate, checkOutDate, agreedFee, guestNo });
+    (0, sendResponse_1.default)(res, {
+        success: true,
+        statusCode: http_status_1.default.OK,
+        message: "Makeoffer converted to request successfully",
+        data: result,
+    });
+}));
 const acceptOffer = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     var _a;
     const { messageId } = req.params;
@@ -162,6 +200,77 @@ const getTotalUnreadCount = (0, catchAsync_1.default)((req, res) => __awaiter(vo
         data: result,
     });
 }));
+//Admin Routes
+const getConversationsByUserId = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const { userId } = req.params;
+    const { page = 1, limit = 20 } = req.query;
+    const result = yield message_services_1.messageServices.getConversationsByUserId(userId, Number(page), Number(limit));
+    (0, sendResponse_1.default)(res, {
+        success: true,
+        statusCode: http_status_1.default.OK,
+        message: "User conversations fetched successfully",
+        data: result.conversations,
+        meta: result.meta,
+    });
+}));
+const getAllConversationMessages = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const { conversationId } = req.params;
+    const { page = 1, limit = 100 } = req.query;
+    const result = yield message_services_1.messageServices.getAllConversationMessages(conversationId, Number(page), Number(limit));
+    (0, sendResponse_1.default)(res, {
+        success: true,
+        statusCode: http_status_1.default.OK,
+        message: "All conversation messages fetched successfully",
+        data: {
+            messages: result.messages,
+            conversation: result.conversation,
+        },
+        meta: result.meta,
+    });
+}));
+const searchUserConversations = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const { searchTerm } = req.query;
+    const { page = 1, limit = 20 } = req.query;
+    const result = yield message_services_1.messageServices.searchUserConversations(searchTerm, Number(page), Number(limit));
+    (0, sendResponse_1.default)(res, {
+        success: true,
+        statusCode: http_status_1.default.OK,
+        message: "User conversations searched successfully",
+        data: result.results,
+        meta: result.meta,
+    });
+}));
+const editOffer = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    var _a;
+    const { messageId } = req.params;
+    const { conversationId, agreedFee, checkInDate, checkOutDate, guestNo, offerEdited } = req.body;
+    const userId = (_a = req.user) === null || _a === void 0 ? void 0 : _a._id;
+    if (!userId) {
+        throw new ApiError_1.default(http_status_1.default.UNAUTHORIZED, "User not authenticated");
+    }
+    if (!conversationId) {
+        throw new ApiError_1.default(http_status_1.default.BAD_REQUEST, "Conversation ID is required");
+    }
+    const updatedMessage = yield message_services_1.messageServices.editOffer(messageId, conversationId, userId, { agreedFee, checkInDate, checkOutDate, guestNo, offerEdited });
+    (0, sendResponse_1.default)(res, {
+        success: true,
+        statusCode: http_status_1.default.OK,
+        message: "Offer updated successfully",
+        data: updatedMessage,
+    });
+}));
+const filterConversationsByUpdatedAt = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const { filter = "all", page = 1, limit = 20 } = req.query;
+    // Don't pass user ID for admin view!
+    const result = yield message_services_1.messageServices.filterConversationsByUpdatedAt(filter, Number(page), Number(limit));
+    (0, sendResponse_1.default)(res, {
+        success: true,
+        statusCode: http_status_1.default.OK,
+        message: "Conversations filtered successfully",
+        data: result.conversations,
+        meta: result.meta,
+    });
+}));
 exports.messageControllers = {
     createConversation,
     getUserConversations,
@@ -172,8 +281,17 @@ exports.messageControllers = {
     getMessageById,
     markAsRead,
     rejectOffer,
+    convertRequestToOfferController,
+    convertMakeOfferToRequest,
     acceptOffer,
-    //mark all read
     markConversationAsRead,
     getTotalUnreadCount,
+    // Admin routes
+    getConversationsByUserId,
+    getAllConversationMessages,
+    searchUserConversations,
+    //edit offer
+    editOffer,
+    //new route for filter admin
+    filterConversationsByUpdatedAt,
 };
