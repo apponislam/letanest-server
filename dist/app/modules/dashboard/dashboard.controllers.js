@@ -17,6 +17,7 @@ const http_status_1 = __importDefault(require("http-status"));
 const dashboard_services_1 = require("./dashboard.services");
 const catchAsync_1 = __importDefault(require("../../../utils/catchAsync"));
 const sendResponse_1 = __importDefault(require("../../../utils/sendResponse."));
+const ApiError_1 = __importDefault(require("../../../errors/ApiError"));
 const getDashboardStats = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const stats = yield dashboard_services_1.dashboardServices.getDashboardStats();
     (0, sendResponse_1.default)(res, {
@@ -36,8 +37,28 @@ const getRevenueChartData = (0, catchAsync_1.default)((req, res) => __awaiter(vo
         data: chartData,
     });
 }));
+// const getPropertyStatusStats = catchAsync(async (req: Request, res: Response) => {
+//     const stats = await dashboardServices.getPropertyStatusStats();
+//     sendResponse(res, {
+//         statusCode: httpStatus.OK,
+//         success: true,
+//         message: "Property status statistics retrieved successfully",
+//         data: stats,
+//     });
+// });
 const getPropertyStatusStats = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    const stats = yield dashboard_services_1.dashboardServices.getPropertyStatusStats();
+    const { propertyType, startDate, endDate } = req.query;
+    const filters = {};
+    if (propertyType) {
+        filters.propertyType = propertyType;
+    }
+    if (startDate) {
+        filters.startDate = new Date(startDate);
+    }
+    if (endDate) {
+        filters.endDate = new Date(endDate);
+    }
+    const stats = yield dashboard_services_1.dashboardServices.getPropertyStatusStats(filters);
     (0, sendResponse_1.default)(res, {
         statusCode: http_status_1.default.OK,
         success: true,
@@ -54,9 +75,23 @@ const getSiteStats = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, v
         data: analytics,
     });
 }));
+const getHostStats = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    var _a;
+    if (!((_a = req.user) === null || _a === void 0 ? void 0 : _a._id)) {
+        throw new ApiError_1.default(http_status_1.default.UNAUTHORIZED, "User not authenticated");
+    }
+    const stats = yield dashboard_services_1.dashboardServices.getHostStats(req.user._id);
+    (0, sendResponse_1.default)(res, {
+        statusCode: http_status_1.default.OK,
+        success: true,
+        message: "Host statistics retrieved successfully",
+        data: stats,
+    });
+}));
 exports.dashboardControllers = {
     getDashboardStats,
     getRevenueChartData,
     getPropertyStatusStats,
     getSiteStats,
+    getHostStats,
 };

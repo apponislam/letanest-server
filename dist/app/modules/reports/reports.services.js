@@ -20,12 +20,12 @@ const createReportService = (reportData) => __awaiter(void 0, void 0, void 0, fu
     const report = yield reports_model_1.ReportModel.create(reportData);
     return report;
 });
-const getReportsByHostService = (hostId) => __awaiter(void 0, void 0, void 0, function* () {
-    const reports = yield reports_model_1.ReportModel.find({ hostId }).populate("guestId", "name email profileImg").sort({ createdAt: -1 });
+const getReportsByReporterService = (reporterId) => __awaiter(void 0, void 0, void 0, function* () {
+    const reports = yield reports_model_1.ReportModel.find({ reporterId }).populate("reportedUserId", "name email profileImg role").populate("conversationId", "participants").sort({ createdAt: -1 });
     return reports;
 });
-const getReportsByGuestService = (guestId) => __awaiter(void 0, void 0, void 0, function* () {
-    const reports = yield reports_model_1.ReportModel.find({ guestId }).populate("hostId", "name email profileImg").sort({ createdAt: -1 });
+const getReportsAgainstUserService = (reportedUserId) => __awaiter(void 0, void 0, void 0, function* () {
+    const reports = yield reports_model_1.ReportModel.find({ reportedUserId }).populate("reporterId", "name email profileImg role").populate("conversationId", "participants").sort({ createdAt: -1 });
     return reports;
 });
 const getAllReportsService = (...args_1) => __awaiter(void 0, [...args_1], void 0, function* (page = 1, limit = 10, status) {
@@ -35,35 +35,37 @@ const getAllReportsService = (...args_1) => __awaiter(void 0, [...args_1], void 
     if (status) {
         query.status = status;
     }
-    const [reports, total] = yield Promise.all([reports_model_1.ReportModel.find(query).populate("guestId", "name email profileImg").populate("hostId", "name email profileImg").sort({ createdAt: -1 }).skip(skip).limit(limit), reports_model_1.ReportModel.countDocuments(query)]);
+    const [reports, total] = yield Promise.all([reports_model_1.ReportModel.find(query).populate("reporterId", "name email profileImg role").populate("reportedUserId", "name email profileImg role").populate("conversationId", "participants").sort({ createdAt: -1 }).skip(skip).limit(limit), reports_model_1.ReportModel.countDocuments(query)]);
     return {
         reports,
         meta: {
             page,
             limit,
             total,
+            totalPages: Math.ceil(total / limit),
         },
     };
 });
 const updateReportStatusService = (reportId, status) => __awaiter(void 0, void 0, void 0, function* () {
-    const report = yield reports_model_1.ReportModel.findByIdAndUpdate(reportId, { status }, { new: true }).populate("guestId", "name email profileImg").populate("hostId", "name email profileImg");
+    const report = yield reports_model_1.ReportModel.findByIdAndUpdate(reportId, { status }, { new: true }).populate("reporterId", "name email profileImg role").populate("reportedUserId", "name email profileImg role").populate("conversationId", "participants");
     if (!report) {
         throw new ApiError_1.default(http_status_1.default.NOT_FOUND, "Report not found");
     }
     return report;
 });
 const getReportStatsService = () => __awaiter(void 0, void 0, void 0, function* () {
-    const [total, pending, resolved] = yield Promise.all([reports_model_1.ReportModel.countDocuments(), reports_model_1.ReportModel.countDocuments({ status: "pending" }), reports_model_1.ReportModel.countDocuments({ status: "resolved" })]);
+    const [total, pending, resolved, dismissed] = yield Promise.all([reports_model_1.ReportModel.countDocuments(), reports_model_1.ReportModel.countDocuments({ status: "pending" }), reports_model_1.ReportModel.countDocuments({ status: "resolved" }), reports_model_1.ReportModel.countDocuments({ status: "dismissed" })]);
     return {
         total,
         pending,
         resolved,
+        dismissed,
     };
 });
 exports.reportServices = {
     createReportService,
-    getReportsByHostService,
-    getReportsByGuestService,
+    getReportsByReporterService,
+    getReportsAgainstUserService,
     getAllReportsService,
     updateReportStatusService,
     getReportStatsService,

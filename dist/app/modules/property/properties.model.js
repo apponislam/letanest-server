@@ -61,13 +61,28 @@ const PropertySchema = new mongoose_1.Schema({
         lat: { type: Number },
         lng: { type: Number },
     },
+    // Nearby places array (optional)
+    nearbyPlaces: {
+        type: [
+            {
+                name: { type: String },
+                type: { type: String },
+                distance: { type: Number },
+                lat: { type: Number },
+                lng: { type: Number },
+                address: { type: String },
+            },
+        ],
+        default: [],
+    },
     // Step 2: Property details
     maxGuests: { type: Number, required: [true, "Max guests is required"] },
     bedrooms: { type: Number, required: [true, "Bedrooms count is required"] },
     bathrooms: { type: Number, required: [true, "Bathrooms count is required"] },
     price: { type: Number, required: [true, "Price is required"], min: 0 },
-    availableFrom: { type: Date, required: [true, "Available from date is required"] },
-    availableTo: { type: Date, required: [true, "Available to date is required"] },
+    availableFrom: { type: Date },
+    availableTo: { type: Date },
+    calendarEnabled: { type: Boolean, default: true },
     amenities: {
         type: [String],
         enum: properties_interface_1.amenitiesList,

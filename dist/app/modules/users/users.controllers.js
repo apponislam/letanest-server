@@ -177,6 +177,42 @@ const getRandomAdminController = (0, catchAsync_1.default)((req, res) => __await
         data: admin || null,
     });
 }));
+const changeUserRoleController = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    var _a;
+    const { userId, newRole } = req.body;
+    const adminId = (_a = req.user) === null || _a === void 0 ? void 0 : _a._id;
+    if (!adminId) {
+        throw new ApiError_1.default(http_status_1.default.UNAUTHORIZED, "Unauthorized");
+    }
+    if (!userId || !newRole) {
+        throw new ApiError_1.default(http_status_1.default.BAD_REQUEST, "User ID and new role are required");
+    }
+    const result = yield users_services_1.userServices.changeUserRoleService(userId, newRole, adminId.toString());
+    (0, sendResponse_1.default)(res, {
+        statusCode: http_status_1.default.OK,
+        success: true,
+        message: `User role changed to ${newRole} successfully`,
+        data: result,
+    });
+}));
+const deleteUserController = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    var _a;
+    const { userId } = req.body;
+    const adminId = (_a = req.user) === null || _a === void 0 ? void 0 : _a._id;
+    if (!adminId) {
+        throw new ApiError_1.default(http_status_1.default.UNAUTHORIZED, "Unauthorized");
+    }
+    if (!userId) {
+        throw new ApiError_1.default(http_status_1.default.BAD_REQUEST, "User ID is required");
+    }
+    const result = yield users_services_1.userServices.deleteUserService(userId, adminId.toString());
+    (0, sendResponse_1.default)(res, {
+        statusCode: http_status_1.default.OK,
+        success: true,
+        message: "User deleted successfully",
+        data: result,
+    });
+}));
 exports.userControllers = {
     getAllUsersController,
     getSingleUserController,
@@ -192,4 +228,8 @@ exports.userControllers = {
     getMyProfileController,
     // randorm admin
     getRandomAdminController,
+    //change user role
+    changeUserRoleController,
+    //delete user
+    deleteUserController,
 };

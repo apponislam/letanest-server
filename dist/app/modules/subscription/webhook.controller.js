@@ -98,55 +98,56 @@ const attemptToCreateMissingSubscription = (subscription) => __awaiter(void 0, v
 const handleWebhook = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     var _a;
     const signature = req.headers["stripe-signature"];
+    const rawBody = Buffer.isBuffer(req.body) ? req.body : typeof req.body === "string" ? Buffer.from(req.body) : Buffer.from(JSON.stringify(req.body));
     if (!signature) {
         return res.status(http_status_1.default.BAD_REQUEST).send({
             error: "Missing stripe signature",
         });
     }
     try {
-        const event = yield stripe_services_1.stripeService.handleWebhookEvent(req.body, signature);
+        const event = yield stripe_services_1.stripeService.handleWebhookEvent(rawBody, signature);
         console.log(`🔔 Processing event: ${event.type}`);
         // Handle different webhook events
         switch (event.type) {
             case "checkout.session.completed":
                 const session = event.data.object;
-                console.log("🛒 Checkout session completed:", session.id);
-                console.log("📋 Session metadata:", session.metadata);
+                // console.log("🛒 Checkout session completed:", session.id);
+                // console.log("📋 Session metadata:", session.metadata);
                 if (session.mode === "subscription" && session.subscription) {
-                    console.log("✅ Subscription checkout completed");
+                    // console.log("✅ Subscription checkout completed");
                 }
                 break;
             case "customer.subscription.created":
                 const subscription = event.data.object;
-                console.log("📝 Subscription created:", subscription.id);
-                console.log("🔍 Subscription metadata:", subscription.metadata);
+                // console.log("📝 Subscription created:", subscription.id);
+                // console.log("🔍 Subscription metadata:", subscription.metadata);
                 try {
                     // Extract and validate metadata
                     const metadata = subscription.metadata || {};
-                    console.log("📋 Subscription metadata:", metadata);
+                    // console.log("📋 Subscription metadata:", metadata);
                     // Use realUserId if available, otherwise use userId
                     const realUserId = metadata.realUserId || metadata.userId;
                     if (!realUserId) {
-                        console.error("❌ No valid user ID found in metadata");
+                        // console.error("❌ No valid user ID found in metadata");
                         break;
                     }
                     // Get price ID from subscription
                     const priceId = (_a = subscription.items.data[0]) === null || _a === void 0 ? void 0 : _a.price.id;
                     if (!priceId) {
-                        console.error("❌ No price ID found in subscription");
+                        // console.error("❌ No price ID found in subscription");
                         break;
                     }
                     // Find the subscription plan in our database
                     const subscriptionPlan = yield findSubscriptionByStripePriceId(priceId);
                     if (!subscriptionPlan || !subscriptionPlan._id) {
-                        console.error("❌ No subscription plan found for price ID:", priceId);
+                        // console.error("❌ No subscription plan found for price ID:", priceId);
                         break;
                     }
-                    console.log("✅ Found subscription plan:", subscriptionPlan._id);
+                    // console.log("✅ Found subscription plan:", subscriptionPlan._id);
                     // Check if user subscription already exists
                     const existingUserSubscription = yield subscribed_services_1.userSubscriptionService.getUserSubscriptionByStripeId(subscription.id);
                     if (existingUserSubscription) {
-                        console.log("ℹ️ User subscription already exists, updating...");
+                        // console.log("ℹ️ User subscription already exists, updating...");
                         break;
                     }
                     // Create dates with your existing calculation system

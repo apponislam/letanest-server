@@ -35,6 +35,8 @@ const tokenGenerator_1 = require("../../../utils/tokenGenerator");
 const emailVerifyMail_1 = require("../../../shared/emailVerifyMail");
 const sendOtpEmail_1 = require("../../../shared/sendOtpEmail");
 const mongoose_1 = require("mongoose");
+const subscription_model_1 = require("../subscription/subscription.model");
+const users_services_1 = require("../users/users.services");
 const registerUser = (data) => __awaiter(void 0, void 0, void 0, function* () {
     // Check if email exists
     const existing = yield auth_model_1.UserModel.findOne({ email: data.email });
@@ -63,6 +65,18 @@ const registerUser = (data) => __awaiter(void 0, void 0, void 0, function* () {
     const accessToken = jwtHelpers_1.jwtHelper.generateToken(jwtPayload, config_1.default.jwt_access_secret, config_1.default.jwt_access_expire);
     const refreshToken = jwtHelpers_1.jwtHelper.generateToken(jwtPayload, config_1.default.jwt_refresh_secret, config_1.default.jwt_refresh_expire);
     const _a = createdUser.toObject(), { password } = _a, userWithoutPassword = __rest(_a, ["password"]);
+    const subscription = yield subscription_model_1.Subscription.findOne({
+        type: createdUser.role,
+        isActive: true,
+        isDeleted: false,
+        paymentLink: { $regex: "^free-tier" },
+    })
+        .select("_id")
+        .lean();
+    if (subscription === null || subscription === void 0 ? void 0 : subscription._id) {
+        const userId = new mongoose_1.Types.ObjectId(createdUser._id);
+        users_services_1.userServices.activateFreeTierService(userId, subscription._id);
+    }
     setTimeout(() => {
         const verificationUrl = `${config_1.default.client_url}/verify-email?token=${token}&id=${createdUser._id}`;
         (0, emailVerifyMail_1.sendVerificationEmail)({

@@ -60,6 +60,11 @@ const userSchema = new mongoose_1.Schema({
         ],
         default: [],
     },
+    currentSubscription: {
+        type: mongoose_1.Schema.Types.ObjectId,
+        ref: "UserSubscription",
+        default: null,
+    },
     freeTireUsed: { type: Boolean, default: false },
     freeTireExpiry: { type: Date, default: null },
     freeTireSub: { type: mongoose_1.Schema.Types.ObjectId, ref: "Subscription", default: null },
@@ -74,6 +79,7 @@ const userSchema = new mongoose_1.Schema({
         type: hostStripeAccountSchema,
         default: null,
     },
+    isBot: { type: Boolean },
     // OTP / password reset
     resetPasswordOtp: { type: String, default: undefined },
     resetPasswordOtpExpiry: { type: Date, default: undefined },

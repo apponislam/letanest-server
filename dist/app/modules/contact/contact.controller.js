@@ -54,9 +54,20 @@ const updateContactStatus = (0, catchAsync_1.default)((req, res) => __awaiter(vo
         data: contact,
     });
 }));
+const replyToContact = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const { replyMessage } = req.body;
+    const contact = yield contact_service_1.contactServices.replyToContact(req.params.id, replyMessage);
+    (0, sendResponse_1.default)(res, {
+        success: true,
+        statusCode: http_status_1.default.OK,
+        message: "Reply sent successfully",
+        data: contact,
+    });
+}));
 exports.contactControllers = {
     createContact,
     getContacts,
     getContactById,
     updateContactStatus,
+    replyToContact,
 };

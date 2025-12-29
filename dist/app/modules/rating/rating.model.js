@@ -49,24 +49,24 @@ const ratingSchema = new mongoose_1.Schema({
             return this.type === rating_interface_1.RatingType.PROPERTY;
         },
     },
-    hostId: {
-        type: mongoose_1.Schema.Types.ObjectId,
-        ref: "User",
-        required: function () {
-            return this.type === rating_interface_1.RatingType.PROPERTY;
-        },
-    },
     userId: {
         type: mongoose_1.Schema.Types.ObjectId,
         ref: "User",
         required: true,
+    },
+    reviewedId: {
+        type: mongoose_1.Schema.Types.ObjectId,
+        ref: "User",
+        required: function () {
+            return this.type === rating_interface_1.RatingType.PROPERTY || this.type === rating_interface_1.RatingType.GUEST;
+        },
     },
     communication: {
         type: Number,
         min: 1,
         max: 5,
         required: function () {
-            return this.type === rating_interface_1.RatingType.PROPERTY;
+            return this.type === rating_interface_1.RatingType.PROPERTY || this.type === rating_interface_1.RatingType.GUEST;
         },
     },
     accuracy: {
@@ -74,7 +74,7 @@ const ratingSchema = new mongoose_1.Schema({
         min: 1,
         max: 5,
         required: function () {
-            return this.type === rating_interface_1.RatingType.PROPERTY;
+            return this.type === rating_interface_1.RatingType.PROPERTY || this.type === rating_interface_1.RatingType.GUEST;
         },
     },
     cleanliness: {
@@ -82,7 +82,7 @@ const ratingSchema = new mongoose_1.Schema({
         min: 1,
         max: 5,
         required: function () {
-            return this.type === rating_interface_1.RatingType.PROPERTY;
+            return this.type === rating_interface_1.RatingType.PROPERTY || this.type === rating_interface_1.RatingType.GUEST;
         },
     },
     checkInExperience: {
@@ -90,7 +90,7 @@ const ratingSchema = new mongoose_1.Schema({
         min: 1,
         max: 5,
         required: function () {
-            return this.type === rating_interface_1.RatingType.PROPERTY;
+            return this.type === rating_interface_1.RatingType.PROPERTY || this.type === rating_interface_1.RatingType.GUEST;
         },
     },
     overallExperience: {
@@ -105,30 +105,24 @@ const ratingSchema = new mongoose_1.Schema({
             return this.type === rating_interface_1.RatingType.SITE;
         },
     },
+    isDeleted: { type: Boolean, default: false },
     description: {
         type: String,
         maxlength: 500,
     },
+    status: {
+        type: String,
+        enum: Object.values(rating_interface_1.RatingStatus),
+        default: function () {
+            return this.type === rating_interface_1.RatingType.SITE ? rating_interface_1.RatingStatus.PENDING : rating_interface_1.RatingStatus.APPROVED;
+        },
+    },
 }, {
     timestamps: true,
 });
-// Compound index for property ratings (one rating per user per property)
-ratingSchema.index({ propertyId: 1, userId: 1 }, {
-    unique: true,
-    partialFilterExpression: { type: rating_interface_1.RatingType.PROPERTY },
-});
-// Compound index for property ratings with hostId
-ratingSchema.index({ hostId: 1, userId: 1 }, {
-    unique: true,
-    partialFilterExpression: { type: rating_interface_1.RatingType.PROPERTY },
-});
-// Index for site ratings (one rating per user for site)
-ratingSchema.index({ userId: 1 }, {
-    unique: true,
-    partialFilterExpression: { type: rating_interface_1.RatingType.SITE },
-});
-// Index for efficient queries
-ratingSchema.index({ hostId: 1, type: 1 });
-ratingSchema.index({ propertyId: 1, type: 1 });
+ratingSchema.index({ reviewedId: 1, type: 1 });
 ratingSchema.index({ userId: 1, type: 1 });
+ratingSchema.index({ status: 1 });
+ratingSchema.index({ propertyId: 1 });
+ratingSchema.index({ createdAt: 1 });
 exports.RatingModel = mongoose_1.default.model("Rating", ratingSchema);

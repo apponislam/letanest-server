@@ -7,4 +7,8 @@ exports.MESSAGE_TYPES = {
     OFFER: "offer",
     ACCEPTED: "accepted",
     REJECTED: "rejected",
+    REQUEST: "request",
+    REVIEW: "review",
+    MAKEOFFER: "makeoffer",
+    SYSTEM: "system",
 };

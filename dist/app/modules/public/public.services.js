@@ -30,7 +30,6 @@ const public_model_1 = require("./public.model");
 const createTermsService = (data, userId) => __awaiter(void 0, void 0, void 0, function* () {
     const { id } = data, cleanData = __rest(data, ["id"]);
     cleanData.createdBy = userId;
-    // EXTREMELY IMPORTANT: Remove ALL id fields that might cause conflicts
     const finalData = Object.assign({}, cleanData);
     delete finalData.id;
     delete finalData._id;
@@ -41,11 +40,6 @@ const createTermsService = (data, userId) => __awaiter(void 0, void 0, void 0, f
         const existing = yield public_model_1.TermsAndConditionsModel.findOne({
             creatorType: public_model_1.roles.ADMIN,
             target: finalData.target,
-        });
-        console.log("🔍 Existing admin terms check:", {
-            creatorType: public_model_1.roles.ADMIN,
-            target: finalData.target,
-            found: existing,
         });
         if (existing) {
             throw new ApiError_1.default(http_status_1.default.BAD_REQUEST, `Admin T&C for ${finalData.target} already exists`);
@@ -81,20 +75,18 @@ const deleteTermService = (id) => __awaiter(void 0, void 0, void 0, function* ()
 const getTermsByTargetService = (target) => __awaiter(void 0, void 0, void 0, function* () {
     return public_model_1.TermsAndConditionsModel.find({ target }).populate("createdBy", "name email");
 });
-// const getPropertyTermsService = async (propertyId: string) => {
-//     const term = await TermsAndConditionsModel.findOne({ propertyId }).populate("createdBy", "name email");
-//     if (!term) throw new ApiError(httpStatus.NOT_FOUND, "Property-specific T&C not found");
-//     return term;
-// };
 const getMyDefaultHostTermsService = (userId) => __awaiter(void 0, void 0, void 0, function* () {
     const defaultTerms = yield public_model_1.TermsAndConditionsModel.findOne({
         hostTarget: "default",
         createdBy: userId,
-    }).select("_id createdBy");
+    });
     if (!defaultTerms) {
         throw new ApiError_1.default(http_status_1.default.NOT_FOUND, "Default host terms and conditions not found for this user");
     }
     return defaultTerms;
+});
+const getPropertyTermsService = () => __awaiter(void 0, void 0, void 0, function* () {
+    return public_model_1.TermsAndConditionsModel.findOne({ target: "property" }).populate("createdBy", "name email");
 });
 exports.termsService = {
     createTermsService,
@@ -106,4 +98,5 @@ exports.termsService = {
     getTermsByTargetService,
     // getPropertyTermsService,
     getMyDefaultHostTermsService,
+    getPropertyTermsService,
 };

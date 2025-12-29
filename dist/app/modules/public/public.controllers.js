@@ -64,6 +64,15 @@ const getMyDefaultHostTermsController = (0, catchAsync_1.default)((req, res) => 
         data: result,
     });
 }));
+const getPropertyTermsController = (0, catchAsync_1.default)((_req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const term = yield public_services_1.termsService.getPropertyTermsService();
+    (0, sendResponse_1.default)(res, {
+        statusCode: http_status_1.default.OK,
+        success: true,
+        message: "Property Terms & Conditions retrieved successfully",
+        data: term,
+    });
+}));
 exports.termsController = {
     createTermsController,
     getAllTermsController,
@@ -74,4 +83,5 @@ exports.termsController = {
     getTermsByTargetController,
     // getPropertyTermsController,
     getMyDefaultHostTermsController,
+    getPropertyTermsController,
 };

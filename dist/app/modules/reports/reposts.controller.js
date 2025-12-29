@@ -19,7 +19,7 @@ const http_status_1 = __importDefault(require("http-status"));
 const reports_services_1 = require("./reports.services");
 const createReportController = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     var _a;
-    const reportData = Object.assign(Object.assign({}, req.body), { guestId: (_a = req.user) === null || _a === void 0 ? void 0 : _a._id });
+    const reportData = Object.assign(Object.assign({}, req.body), { reporterId: (_a = req.user) === null || _a === void 0 ? void 0 : _a._id });
     const report = yield reports_services_1.reportServices.createReportService(reportData);
     (0, sendResponse_1.default)(res, {
         statusCode: http_status_1.default.CREATED,
@@ -30,8 +30,8 @@ const createReportController = (0, catchAsync_1.default)((req, res) => __awaiter
 }));
 const getMyReportsController = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     var _a;
-    const guestId = (_a = req.user) === null || _a === void 0 ? void 0 : _a._id;
-    const reports = yield reports_services_1.reportServices.getReportsByGuestService(guestId);
+    const reporterId = (_a = req.user) === null || _a === void 0 ? void 0 : _a._id; // Changed from guestId to reporterId
+    const reports = yield reports_services_1.reportServices.getReportsByReporterService(reporterId);
     (0, sendResponse_1.default)(res, {
         statusCode: http_status_1.default.OK,
         success: true,
@@ -39,13 +39,14 @@ const getMyReportsController = (0, catchAsync_1.default)((req, res) => __awaiter
         data: reports,
     });
 }));
-const getHostReportsController = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    const { hostId } = req.params;
-    const reports = yield reports_services_1.reportServices.getReportsByHostService(hostId);
+const getReportsAgainstMeController = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    var _a;
+    const reportedUserId = (_a = req.user) === null || _a === void 0 ? void 0 : _a._id; // Changed from hostId to reportedUserId
+    const reports = yield reports_services_1.reportServices.getReportsAgainstUserService(reportedUserId);
     (0, sendResponse_1.default)(res, {
         statusCode: http_status_1.default.OK,
         success: true,
-        message: "Host reports retrieved successfully",
+        message: "Reports against you retrieved successfully",
         data: reports,
     });
 }));
@@ -85,7 +86,7 @@ const getReportStatsController = (0, catchAsync_1.default)((req, res) => __await
 exports.reportControllers = {
     createReportController,
     getMyReportsController,
-    getHostReportsController,
+    getReportsAgainstMeController, // Renamed from getHostReportsController
     getAllReportsController,
     updateReportStatusController,
     getReportStatsController,

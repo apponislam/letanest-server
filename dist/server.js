@@ -18,6 +18,8 @@ const mongoose_1 = __importDefault(require("mongoose"));
 const http_1 = __importDefault(require("http"));
 const createSuperAdmin_1 = __importDefault(require("./scripts/createSuperAdmin"));
 const socket_1 = require("./socket/socket");
+const createBotAdmin_1 = __importDefault(require("./scripts/createBotAdmin"));
+const ratingReminder_cron_1 = require("./app/modules/rating/ratingReminder.cron");
 let server;
 function main() {
     return __awaiter(this, void 0, void 0, function* () {
@@ -26,6 +28,18 @@ function main() {
             server = http_1.default.createServer(app_1.default);
             (0, socket_1.initSocket)(server);
             (0, createSuperAdmin_1.default)();
+            (0, createBotAdmin_1.default)();
+            ratingReminder_cron_1.reviewReminderCron.start();
+            // const ipResponse = await axios.get("https://api.ipify.org?format=json");
+            // console.log("🌐 Backend public IP:", ipResponse.data.ip);
+            // const location = "Musselburgh";
+            // const postCode = "EH17 7RE";
+            // const result = await geocodeAddress(location, postCode);
+            // console.log(result);
+            // if (result) {
+            //     const nearby = await findNearbyPlaces(result?.lat, result?.lng);
+            //     console.log(nearby);
+            // }
             // server.listen(Number(config.port), config.ip || "0.0.0.0", () => {
             //     console.log(`✅ App listening on port ${config.port}`);
             // });
@@ -43,10 +57,12 @@ process.on("unhandledRejection", (error) => {
     console.log("❌ Unhandled Rejection detected:", error);
     if (server) {
         server.close(() => {
+            ratingReminder_cron_1.reviewReminderCron.stop();
             process.exit(1);
         });
     }
     else {
+        ratingReminder_cron_1.reviewReminderCron.stop();
         process.exit(1);
     }
 });
@@ -54,10 +70,12 @@ process.on("uncaughtException", (error) => {
     console.log("❌ Uncaught Exception detected:", error);
     if (server) {
         server.close(() => {
+            ratingReminder_cron_1.reviewReminderCron.stop();
             process.exit(1);
         });
     }
     else {
+        ratingReminder_cron_1.reviewReminderCron.stop();
         process.exit(1);
     }
 });

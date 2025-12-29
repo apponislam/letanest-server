@@ -11,6 +11,8 @@ exports.default = {
     node_env: process.env.NODE_ENV,
     port: process.env.PORT,
     mongodb_url: process.env.MONGODB_URL,
+    botEmail: process.env.BOTEMAIL,
+    botPassword: process.env.BOTPASSWORD,
     bcrypt_salt_rounds: process.env.BCRYPT_SALT_ROUNDS,
     jwt_access_secret: process.env.JWT_ACCESS_SECRET,
     jwt_access_expire: process.env.JWT_ACCESS_EXPIRE,
@@ -30,5 +32,5 @@ exports.default = {
     stripe_publishable_key: process.env.STRIPE_PUBLISHABLE_KEY,
     stripe_secret_key: process.env.STRIPE_SECRET_KEY,
     stripe_webhook_secret: process.env.STRIPE_WEBHOOK_SECRET,
-    map_api_key: process.env.MAP_API_KEY,
+    server_map_api_key: process.env.SERVER_MAP_API_KEY,
 };

@@ -205,9 +205,55 @@ const getRevenueChartData = (year) => __awaiter(void 0, void 0, void 0, function
 /**
  * Get property status statistics for pie chart
  */
-const getPropertyStatusStats = () => __awaiter(void 0, void 0, void 0, function* () {
-    // Get counts for each status
+// const getPropertyStatusStats = async () => {
+//     // Get counts for each status
+//     const statusCounts = await PropertyModel.aggregate([
+//         {
+//             $group: {
+//                 _id: "$status",
+//                 count: { $sum: 1 },
+//             },
+//         },
+//     ]);
+//     // Calculate total properties
+//     const totalProperties = await PropertyModel.countDocuments();
+//     // Create data array with all statuses, even if count is 0
+//     const allStatuses = ["published", "pending", "rejected", "hidden"];
+//     const statusData = allStatuses.map((status) => {
+//         const statusCount = statusCounts.find((item) => item._id === status);
+//         const count = statusCount?.count || 0;
+//         const percentage = totalProperties > 0 ? (count / totalProperties) * 100 : 0;
+//         return {
+//             status,
+//             count,
+//             percentage: Math.round(percentage),
+//         };
+//     });
+//     return {
+//         total: totalProperties,
+//         data: statusData,
+//     };
+// };
+const getPropertyStatusStats = (...args_1) => __awaiter(void 0, [...args_1], void 0, function* (filters = {}) {
+    // Build match stage for filters
+    const matchStage = {};
+    if (filters.propertyType) {
+        matchStage.propertyType = filters.propertyType;
+    }
+    if (filters.startDate || filters.endDate) {
+        matchStage.createdAt = {};
+        if (filters.startDate) {
+            matchStage.createdAt.$gte = filters.startDate;
+        }
+        if (filters.endDate) {
+            matchStage.createdAt.$lte = filters.endDate;
+        }
+    }
+    // Get counts for each status with filters
     const statusCounts = yield properties_model_1.PropertyModel.aggregate([
+        {
+            $match: matchStage,
+        },
         {
             $group: {
                 _id: "$status",
@@ -215,8 +261,8 @@ const getPropertyStatusStats = () => __awaiter(void 0, void 0, void 0, function*
             },
         },
     ]);
-    // Calculate total properties
-    const totalProperties = yield properties_model_1.PropertyModel.countDocuments();
+    // Calculate total properties with filters
+    const totalProperties = yield properties_model_1.PropertyModel.countDocuments(matchStage);
     // Create data array with all statuses, even if count is 0
     const allStatuses = ["published", "pending", "rejected", "hidden"];
     const statusData = allStatuses.map((status) => {
@@ -232,6 +278,11 @@ const getPropertyStatusStats = () => __awaiter(void 0, void 0, void 0, function*
     return {
         total: totalProperties,
         data: statusData,
+        filters: {
+            propertyType: filters.propertyType,
+            startDate: filters.startDate,
+            endDate: filters.endDate,
+        },
     };
 });
 const getSiteStatsService = () => __awaiter(void 0, void 0, void 0, function* () {
@@ -253,9 +304,25 @@ const getSiteStatsService = () => __awaiter(void 0, void 0, void 0, function* ()
         yearsSince2025: Math.max(0, yearsSince2025),
     };
 });
+const getHostStats = (hostId) => __awaiter(void 0, void 0, void 0, function* () {
+    const totalBookings = yield payment_model_1.PaymentModel.countDocuments({
+        hostId: hostId,
+        status: "completed",
+    });
+    const totalProperties = yield properties_model_1.PropertyModel.countDocuments({
+        createdBy: hostId,
+        isDeleted: false,
+        status: "published",
+    });
+    return {
+        totalBookings,
+        totalProperties,
+    };
+});
 exports.dashboardServices = {
     getDashboardStats,
     getRevenueChartData,
     getPropertyStatusStats,
     getSiteStatsService,
+    getHostStats,
 };

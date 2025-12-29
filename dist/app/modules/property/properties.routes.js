@@ -9,9 +9,11 @@ const properties_controllers_1 = require("./properties.controllers");
 const auth_1 = __importDefault(require("../../middlewares/auth"));
 const authorize_1 = __importDefault(require("../../middlewares/authorize"));
 const propertyPhotos_1 = require("../../middlewares/propertyPhotos");
+const checkPropertyListingLimit_1 = require("./checkPropertyListingLimit");
 const router = express_1.default.Router();
-router.post("/", auth_1.default, (0, authorize_1.default)(["ADMIN", "HOST"]), propertyPhotos_1.uploadPropertyFiles, properties_controllers_1.propertyControllers.createPropertyController);
+router.post("/", auth_1.default, (0, authorize_1.default)(["ADMIN", "HOST"]), checkPropertyListingLimit_1.checkPropertyListingLimit, propertyPhotos_1.uploadPropertyFiles, properties_controllers_1.propertyControllers.createPropertyController);
 router.put("/:id", auth_1.default, (0, authorize_1.default)(["ADMIN", "HOST"]), propertyPhotos_1.uploadPropertyFiles, properties_controllers_1.propertyControllers.updatePropertyController);
+router.patch("/:id/refresh-nearby-places", properties_controllers_1.propertyControllers.refreshNearbyPlacesController);
 // Anyone authenticated can view single property
 router.get("/:id", properties_controllers_1.propertyControllers.getSinglePropertyController);
 // Listing with pagination, search, filter
@@ -21,6 +23,7 @@ router.get("/admin/all", auth_1.default, (0, authorize_1.default)(["ADMIN"]), pr
 router.patch("/:id/toggle-featured", auth_1.default, (0, authorize_1.default)(["ADMIN"]), properties_controllers_1.propertyControllers.toggleFeaturedStatusController);
 router.patch("/:id/toggle-trending", auth_1.default, (0, authorize_1.default)(["ADMIN"]), properties_controllers_1.propertyControllers.toggleTrendingStatusController);
 router.patch("/:id/status", auth_1.default, (0, authorize_1.default)(["ADMIN"]), properties_controllers_1.propertyControllers.changePropertyStatusController);
+router.patch("/:id/calendar", auth_1.default, (0, authorize_1.default)(["ADMIN", "HOST"]), properties_controllers_1.propertyControllers.toggleCalendarController);
 // Host
 router.get("/host/my-properties", auth_1.default, properties_controllers_1.propertyControllers.getHostProperties);
 router.delete("/host/my-properties/:id", auth_1.default, properties_controllers_1.propertyControllers.deleteHostProperty);

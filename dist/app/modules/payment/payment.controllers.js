@@ -42,6 +42,30 @@ const confirmPayment = (0, catchAsync_1.default)((req, res) => __awaiter(void 0,
         data: payment,
     });
 }));
+const createBookingFeePayment = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    var _a;
+    const paymentData = Object.assign(Object.assign({}, req.body), { userId: (_a = req.user) === null || _a === void 0 ? void 0 : _a._id });
+    const result = yield payment_services_1.paymentServices.createBookingFeePayment(paymentData);
+    (0, sendResponse_1.default)(res, {
+        statusCode: http_status_1.default.CREATED,
+        success: true,
+        message: "Booking fee payment created successfully",
+        data: result,
+    });
+}));
+const confirmBookingFeePayment = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const { paymentIntentId, paymentMethodId } = req.body;
+    if (!paymentIntentId || !paymentMethodId) {
+        throw new ApiError_1.default(http_status_1.default.BAD_REQUEST, "Payment intent ID and payment method ID are required");
+    }
+    const payment = yield payment_services_1.paymentServices.confirmBookingFeePayment(paymentIntentId, paymentMethodId);
+    (0, sendResponse_1.default)(res, {
+        statusCode: http_status_1.default.OK,
+        success: true,
+        message: "Booking fee payment confirmed successfully",
+        data: payment,
+    });
+}));
 const getPayment = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const { id } = req.params;
     const payment = yield payment_services_1.paymentServices.getPaymentById(id);
@@ -78,15 +102,15 @@ const getAllPayments = (0, catchAsync_1.default)((req, res) => __awaiter(void 0,
         userId: req.query.userId,
         startDate: req.query.startDate,
         endDate: req.query.endDate,
+        search: req.query.search,
     };
-    console.log(filters);
     const options = {
         page: parseInt(req.query.page) || 1,
         limit: parseInt(req.query.limit) || 10,
         sortBy: req.query.sortBy || "createdAt",
         sortOrder: req.query.sortOrder || "desc",
+        search: req.query.search,
     };
-    console.log(options);
     const result = yield payment_services_1.paymentServices.getAllPayments(filters, options);
     (0, sendResponse_1.default)(res, {
         statusCode: http_status_1.default.OK,
@@ -126,10 +150,11 @@ const getPaymentStats = (0, catchAsync_1.default)((req, res) => __awaiter(void 0
 const getHostPayments = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     var _a;
     const hostId = (_a = req.user) === null || _a === void 0 ? void 0 : _a._id;
-    const { page = 1, limit = 10 } = req.query;
+    const { page = 1, limit = 10, search } = req.query;
     const result = yield payment_services_1.paymentServices.getPaymentsByHost(hostId, {
         page: Number(page),
         limit: Number(limit),
+        search: search,
     });
     (0, sendResponse_1.default)(res, {
         statusCode: http_status_1.default.OK,
@@ -139,36 +164,28 @@ const getHostPayments = (0, catchAsync_1.default)((req, res) => __awaiter(void 0
         meta: result.meta,
     });
 }));
-// /**
-//  * Download payments PDF (admin only)
-//  */
-// const downloadPaymentsPDF = catchAsync(async (req: Request, res: Response) => {
-//     const { fromDate, toDate } = req.body;
-//     // Validate dates
-//     if (!fromDate || !toDate) {
-//         throw new ApiError(httpStatus.BAD_REQUEST, "Both fromDate and toDate are required");
-//     }
-//     // Validate date format
-//     const from = new Date(fromDate);
-//     const to = new Date(toDate);
-//     if (isNaN(from.getTime()) || isNaN(to.getTime())) {
-//         throw new ApiError(httpStatus.BAD_REQUEST, "Invalid date format");
-//     }
-//     if (from > to) {
-//         throw new ApiError(httpStatus.BAD_REQUEST, "fromDate cannot be after toDate");
-//     }
-//     // Generate PDF
-//     const pdfBuffer = await paymentServices.generatePaymentsPDF(fromDate, toDate);
-//     // Set response headers for PDF download
-//     res.setHeader("Content-Type", "application/pdf");
-//     res.setHeader("Content-Disposition", `attachment; filename=transactions-${fromDate}-to-${toDate}.pdf`);
-//     res.setHeader("Content-Length", pdfBuffer.length);
-//     // Send PDF
-//     res.send(pdfBuffer);
-// });
+const getPaymentsByProperty = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const { propertyId } = req.params;
+    const { page = 1, limit = 10, search } = req.query;
+    const result = yield payment_services_1.paymentServices.getPaymentsByProperty(propertyId, {
+        page: Number(page),
+        limit: Number(limit),
+        search: search,
+    });
+    (0, sendResponse_1.default)(res, {
+        statusCode: http_status_1.default.OK,
+        success: true,
+        message: "Payments by property retrieved successfully",
+        data: result.payments,
+        meta: result.meta,
+    });
+}));
 exports.paymentControllers = {
     createPayment,
     confirmPayment,
+    // Booking Fee Paid
+    createBookingFeePayment,
+    confirmBookingFeePayment,
     getPayment,
     getUserPayments,
     // For admin
@@ -178,4 +195,6 @@ exports.paymentControllers = {
     // downloadPaymentsPDF,
     // For Host
     getHostPayments,
+    // get payments by property
+    getPaymentsByProperty,
 };

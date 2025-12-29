@@ -41,6 +41,40 @@ const createConversation = async (conversationData: ICreateConversationDto) => {
     return populatedConversation;
 };
 
+// const getUserConversations = async (userId: string) => {
+//     const conversations = await Conversation.find({
+//         participants: userId,
+//         isActive: true,
+//     })
+//         .populate("participants", "name profileImg email phone role isVerifiedByAdmin")
+//         .populate({
+//             path: "lastMessage",
+//             populate: {
+//                 path: "propertyId",
+//                 select: "title images location price propertyNumber _id createdBy",
+//             },
+//         })
+//         .sort({ updatedAt: -1 });
+
+//     // NEW: Calculate unread count for each conversation
+//     const conversationsWithUnread = await Promise.all(
+//         conversations.map(async (conversation) => {
+//             const unreadCount = await Message.countDocuments({
+//                 conversationId: conversation._id,
+//                 sender: { $ne: userId }, // Messages from other users
+//                 isRead: false,
+//             });
+
+//             return {
+//                 ...conversation.toObject(),
+//                 unreadCount, // Add calculated unread count
+//             };
+//         })
+//     );
+
+//     return conversationsWithUnread;
+// };
+
 const getUserConversations = async (userId: string) => {
     const conversations = await Conversation.find({
         participants: userId,
@@ -61,18 +95,25 @@ const getUserConversations = async (userId: string) => {
         conversations.map(async (conversation) => {
             const unreadCount = await Message.countDocuments({
                 conversationId: conversation._id,
-                sender: { $ne: userId }, // Messages from other users
+                sender: { $ne: userId },
                 isRead: false,
             });
 
             return {
                 ...conversation.toObject(),
-                unreadCount, // Add calculated unread count
+                unreadCount,
             };
         })
     );
 
-    return conversationsWithUnread;
+    // NEW: Separate bot conversation and sort the rest
+    const botConversation = conversationsWithUnread.find((conv) => conv.bot === true);
+    const otherConversations = conversationsWithUnread.filter((conv) => conv.bot !== true);
+
+    // If bot conversation exists, put it first, then other conversations
+    const sortedConversations = botConversation ? [botConversation, ...otherConversations] : otherConversations;
+
+    return sortedConversations;
 };
 
 const getConversationById = async (conversationId: string, userId: string) => {

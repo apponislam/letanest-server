@@ -17,6 +17,7 @@ const http_status_1 = __importDefault(require("http-status"));
 const catchAsync_1 = __importDefault(require("../../../utils/catchAsync"));
 const sendResponse_1 = __importDefault(require("../../../utils/sendResponse."));
 const subscribed_services_1 = require("./subscribed.services");
+const ApiError_1 = __importDefault(require("../../../errors/ApiError"));
 const createUserSubscription = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     var _a;
     const userSubscription = yield subscribed_services_1.userSubscriptionService.createUserSubscription(Object.assign(Object.assign({}, req.body), { userId: (_a = req.user) === null || _a === void 0 ? void 0 : _a.userId }));
@@ -58,8 +59,13 @@ const getUserSubscription = (0, catchAsync_1.default)((req, res) => __awaiter(vo
     });
 }));
 const cancelSubscription = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    var _a;
     const { id } = req.params;
-    const subscription = yield subscribed_services_1.userSubscriptionService.cancelUserSubscription(id);
+    const userId = (_a = req.user) === null || _a === void 0 ? void 0 : _a._id;
+    if (!userId) {
+        throw new ApiError_1.default(http_status_1.default.UNAUTHORIZED, "User not authenticated");
+    }
+    const subscription = yield subscribed_services_1.userSubscriptionService.cancelUserSubscription(id, userId.toString());
     (0, sendResponse_1.default)(res, {
         statusCode: http_status_1.default.OK,
         success: true,
@@ -78,30 +84,30 @@ const updateSubscriptionStatus = (0, catchAsync_1.default)((req, res) => __await
         data: subscription,
     });
 }));
-const handleStripeWebhook = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    const { event } = req.body;
-    let updatedSubscription;
-    switch (event.type) {
-        case "customer.subscription.updated":
-        case "customer.subscription.created":
-            updatedSubscription = yield subscribed_services_1.userSubscriptionService.updateUserSubscriptionByStripeId(event.data.object.id, {
-                status: event.data.object.status,
-                currentPeriodStart: new Date(event.data.object.current_period_start * 1000),
-                currentPeriodEnd: new Date(event.data.object.current_period_end * 1000),
-                cancelAtPeriodEnd: event.data.object.cancel_at_period_end,
-            });
-            break;
-        case "customer.subscription.deleted":
-            updatedSubscription = yield subscribed_services_1.userSubscriptionService.updateUserSubscriptionByStripeId(event.data.object.id, { status: "canceled" });
-            break;
-    }
-    (0, sendResponse_1.default)(res, {
-        statusCode: http_status_1.default.OK,
-        success: true,
-        message: "Webhook processed successfully",
-        data: updatedSubscription,
-    });
-}));
+// const handleStripeWebhook = catchAsync(async (req: Request, res: Response) => {
+//     const { event } = req.body;
+//     let updatedSubscription;
+//     switch (event.type) {
+//         case "customer.subscription.updated":
+//         case "customer.subscription.created":
+//             updatedSubscription = await userSubscriptionService.updateUserSubscriptionByStripeId(event.data.object.id, {
+//                 status: event.data.object.status,
+//                 currentPeriodStart: new Date(event.data.object.current_period_start * 1000),
+//                 currentPeriodEnd: new Date(event.data.object.current_period_end * 1000),
+//                 cancelAtPeriodEnd: event.data.object.cancel_at_period_end,
+//             });
+//             break;
+//         case "customer.subscription.deleted":
+//             updatedSubscription = await userSubscriptionService.updateUserSubscriptionByStripeId(event.data.object.id, { status: "canceled" });
+//             break;
+//     }
+//     sendResponse(res, {
+//         statusCode: httpStatus.OK,
+//         success: true,
+//         message: "Webhook processed successfully",
+//         data: updatedSubscription,
+//     });
+// });
 exports.userSubscriptionController = {
     createUserSubscription,
     getMySubscriptions,
@@ -109,5 +115,5 @@ exports.userSubscriptionController = {
     getUserSubscription,
     cancelSubscription,
     updateSubscriptionStatus,
-    handleStripeWebhook,
+    // handleStripeWebhook,
 };
