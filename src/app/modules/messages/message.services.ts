@@ -146,9 +146,39 @@ const createMessage = async (messageData: ICreateMessageDto) => {
                 bookingFee = 0;
             } else {
                 bookingFee = sub.bookingFee !== undefined && sub.bookingFee !== null ? (agreedFeeNum * sub.bookingFee) / 100 : agreedFeeNum * 0.1;
+
+                if (messageData.checkInDate && messageData.checkOutDate) {
+                    const checkIn = new Date(messageData.checkInDate);
+                    const checkOut = new Date(messageData.checkOutDate);
+
+                    // Calculate days difference
+                    const timeDiff = checkOut.getTime() - checkIn.getTime();
+                    const numberOfDays = Math.ceil(timeDiff / (1000 * 3600 * 24)) + 1;
+
+                    // Minimum $10 per day
+                    const minimumFee = numberOfDays * 10;
+
+                    // Ensure booking fee is at least minimum
+                    if (bookingFee < minimumFee) {
+                        bookingFee = minimumFee;
+                    }
+                }
             }
         } else {
             bookingFee = agreedFeeNum * 0.1;
+
+            if (messageData.checkInDate && messageData.checkOutDate) {
+                const checkIn = new Date(messageData.checkInDate);
+                const checkOut = new Date(messageData.checkOutDate);
+
+                const timeDiff = checkOut.getTime() - checkIn.getTime();
+                const numberOfDays = Math.ceil(timeDiff / (1000 * 3600 * 24)) + 1;
+                const minimumFee = numberOfDays * 10;
+
+                if (bookingFee < minimumFee) {
+                    bookingFee = minimumFee;
+                }
+            }
         }
         bookingFee = Number(bookingFee.toFixed(2));
     }
@@ -922,6 +952,7 @@ const editOffer = async (messageId: string, conversationId: string, userId: stri
     if (!conversation) {
         throw new ApiError(httpStatus.FORBIDDEN, "Access denied to this conversation");
     }
+
     const updateFields: any = {};
 
     if (updateData.agreedFee !== undefined) {
@@ -946,11 +977,40 @@ const editOffer = async (messageId: string, conversationId: string, userId: stri
                 } else {
                     const feePercentage = sub.bookingFee !== undefined && sub.bookingFee !== null ? sub.bookingFee : 10;
                     bookingFee = (agreedFeeNum * feePercentage) / 100;
+                    // NEW: Add minimum fee calculation based on check-in/out dates
+                    if (message.checkInDate && message.checkOutDate) {
+                        const checkIn = new Date(message.checkInDate);
+                        const checkOut = new Date(message.checkOutDate);
+
+                        // Calculate days difference
+                        const timeDiff = checkOut.getTime() - checkIn.getTime();
+                        const numberOfDays = Math.ceil(timeDiff / (1000 * 3600 * 24)) + 1;
+
+                        // Minimum $10 per day
+                        const minimumFee = numberOfDays * 10;
+
+                        // Ensure booking fee is at least minimum
+                        if (bookingFee < minimumFee) {
+                            bookingFee = minimumFee;
+                        }
+                    }
                 }
             } else {
                 bookingFee = agreedFeeNum * 0.1;
-            }
 
+                if (message.checkInDate && message.checkOutDate) {
+                    const checkIn = new Date(message.checkInDate);
+                    const checkOut = new Date(message.checkOutDate);
+
+                    const timeDiff = checkOut.getTime() - checkIn.getTime();
+                    const numberOfDays = Math.ceil(timeDiff / (1000 * 3600 * 24)) + 1;
+                    const minimumFee = numberOfDays * 10;
+
+                    if (bookingFee < minimumFee) {
+                        bookingFee = minimumFee;
+                    }
+                }
+            }
             updateFields.bookingFee = Number(bookingFee.toFixed(2));
         }
     }
