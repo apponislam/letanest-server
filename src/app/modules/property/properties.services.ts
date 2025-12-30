@@ -621,7 +621,7 @@ const getAllNonPublishedPropertiesService = async (query: IPropertyQuery): Promi
     const { page = 1, limit = 10, search, status } = query;
 
     const filter: Record<string, any> = {
-        status: { $ne: "published" },
+        status: { $nin: ["published", "hidden"] },
         isDeleted: false,
     };
 
