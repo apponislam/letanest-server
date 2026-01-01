@@ -12,7 +12,7 @@ const app: Application = express();
 app.post("/api/v1/subscription/webhook", express.raw({ type: "application/json" }), webhookController.handleWebhook);
 
 const corsOptions = {
-    origin: ["http://localhost:3000", "http://10.10.7.50:3000", "http://206.162.244.155:3050", "http://72.167.224.54:3050", "http://87.106.67.163:3000", "http://87.106.67.163"],
+    origin: ["http://localhost:3000", "http://10.10.7.50:3000", "http://206.162.244.155:3050", "http://72.167.224.54:3050", "http://87.106.67.163:3000", "http://87.106.67.163", "https://letanest.co.uk", "http://letanest.co.uk", "https://letanest.com", "http://letanest.com", "https://www.letanest.co.uk", "http://www.letanest.co.uk", "https://www.letanest.com", "http://www.letanest.com"],
     methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization"],
     credentials: true,
