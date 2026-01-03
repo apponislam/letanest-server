@@ -13,6 +13,7 @@ export const sendContactReply = async ({ to, name, originalMessage, reply }: Con
     const transporter = nodemailer.createTransport({
         host: config.mail.smtp_host,
         port: Number(config.mail.smtp_port),
+        secure: true,
         auth: {
             user: config.mail.smtp_user,
             pass: config.mail.smtp_pass,
