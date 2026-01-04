@@ -54,7 +54,8 @@ const generateHostSingleInvoicePDF = async (req: Request, res: Response): Promis
         // Type assertions for populated fields
         const populatedPayment = payment as any;
 
-        const templatePath = path.join(__dirname, "../../../../public/templates/HostSingleinvoiceTemplate.html");
+        // const templatePath = path.join(__dirname, "../../../../public/templates/HostSingleinvoiceTemplate.html");
+        const templatePath = path.resolve(process.cwd(), "public/templates/HostSingleinvoiceTemplate.html");
 
         if (!fs.existsSync(templatePath)) {
             throw new Error(`Template file not found at: ${templatePath}`);
@@ -194,7 +195,8 @@ const generateHostPaymentsPDF = async (req: Request, res: Response): Promise<voi
             return;
         }
 
-        const templatePath = path.join(__dirname, "../../../../public/templates/HostInvoicesTemplate.html");
+        // const templatePath = path.join(__dirname, "../../../../public/templates/HostInvoicesTemplate.html");
+        const templatePath = path.resolve(process.cwd(), "public/templates/HostInvoicesTemplate.html");
 
         if (!fs.existsSync(templatePath)) {
             throw new Error(`Template file not found at: ${templatePath}`);
@@ -333,7 +335,8 @@ export const generatePaymentsPDF = async (req: Request, res: Response): Promise<
         );
 
         // Read HTML template
-        const templatePath = path.join(__dirname, "../../../../public/templates/AdminPaymentsReport.html");
+        // const templatePath = path.join(__dirname, "../../../../public/templates/AdminPaymentsReport.html");
+        const templatePath = path.resolve(process.cwd(), "public/templates/AdminPaymentsReport.html");
         if (!fs.existsSync(templatePath)) {
             throw new Error(`Template file not found at: ${templatePath}`);
         }
