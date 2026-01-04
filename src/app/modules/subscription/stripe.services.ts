@@ -464,16 +464,16 @@ export class StripeService {
     async createPaymentMethod(customerId: string, paymentMethodId: string, isDefault: boolean = false) {
         try {
             // Attach payment method to customer
-            await this.stripe.paymentMethods.attach(paymentMethodId, {
+            await stripe.paymentMethods.attach(paymentMethodId, {
                 customer: customerId,
             });
 
             // Retrieve payment method details
-            const paymentMethod = await this.stripe.paymentMethods.retrieve(paymentMethodId);
+            const paymentMethod = await stripe.paymentMethods.retrieve(paymentMethodId);
 
             // Set as default if requested
             if (isDefault) {
-                await this.stripe.customers.update(customerId, {
+                await stripe.customers.update(customerId, {
                     invoice_settings: {
                         default_payment_method: paymentMethodId,
                     },
@@ -492,7 +492,7 @@ export class StripeService {
      */
     async getCustomerPaymentMethods(customerId: string) {
         try {
-            const paymentMethods = await this.stripe.paymentMethods.list({
+            const paymentMethods = await stripe.paymentMethods.list({
                 customer: customerId,
                 type: "card",
             });
@@ -508,7 +508,7 @@ export class StripeService {
      */
     async setDefaultPaymentMethod(customerId: string, paymentMethodId: string) {
         try {
-            await this.stripe.customers.update(customerId, {
+            await stripe.customers.update(customerId, {
                 invoice_settings: {
                     default_payment_method: paymentMethodId,
                 },
@@ -524,7 +524,7 @@ export class StripeService {
      */
     async detachPaymentMethod(paymentMethodId: string) {
         try {
-            await this.stripe.paymentMethods.detach(paymentMethodId);
+            await stripe.paymentMethods.detach(paymentMethodId);
         } catch (error) {
             console.error("Error detaching payment method:", error);
             throw new Error("Failed to detach payment method");
@@ -532,13 +532,13 @@ export class StripeService {
     }
 
     // Add stripe instance getter if needed
-    private get stripe() {
-        // You might want to make this a private property in your class
-        const stripe = new Stripe(config.stripe_secret_key!, {
-            apiVersion: "2025-07-30.basil" as any,
-        });
-        return stripe;
-    }
+    // private get stripe() {
+    //     // You might want to make this a private property in your class
+    //     const stripe = new Stripe(config.stripe_secret_key!, {
+    //         apiVersion: "2025-07-30.basil" as any,
+    //     });
+    //     return stripe;
+    // }
 
     // connect stripe
     // connect stripe
@@ -654,7 +654,7 @@ export class StripeService {
     // if card is not saved
     async createCustomer2(customerData: { email: string; name?: string; metadata?: any }) {
         try {
-            const customer = await this.stripe.customers.create({
+            const customer = await stripe.customers.create({
                 email: customerData.email,
                 name: customerData.name,
                 metadata: customerData.metadata || {},
@@ -676,7 +676,7 @@ export class StripeService {
 
     async createConnectPayment(amount: number, hostAccountId: string, customerId: string, applicationFeeAmount: number) {
         try {
-            const paymentIntent = await this.stripe.paymentIntents.create({
+            const paymentIntent = await stripe.paymentIntents.create({
                 amount: Math.round(amount * 100),
                 currency: "gbp",
                 customer: customerId,
@@ -704,7 +704,7 @@ export class StripeService {
 
     async confirmPaymentIntent(paymentIntentId: string, paymentMethodId: string) {
         try {
-            const paymentIntent = await this.stripe.paymentIntents.confirm(paymentIntentId, {
+            const paymentIntent = await stripe.paymentIntents.confirm(paymentIntentId, {
                 payment_method: paymentMethodId,
                 return_url: `${config.client_url}/payment/success`,
             });
@@ -721,7 +721,7 @@ export class StripeService {
 
     async createBookingFeePayment(bookingFee: number, customerId: string) {
         try {
-            const paymentIntent = await this.stripe.paymentIntents.create({
+            const paymentIntent = await stripe.paymentIntents.create({
                 amount: Math.round(bookingFee * 100),
                 currency: "gbp",
                 customer: customerId,
@@ -743,7 +743,7 @@ export class StripeService {
 
     async confirmBookingFeePayment(paymentIntentId: string, paymentMethodId: string) {
         try {
-            const paymentIntent = await this.stripe.paymentIntents.confirm(paymentIntentId, {
+            const paymentIntent = await stripe.paymentIntents.confirm(paymentIntentId, {
                 payment_method: paymentMethodId,
                 return_url: `${config.client_url}/payment/success`,
             });

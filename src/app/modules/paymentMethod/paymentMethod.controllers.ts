@@ -21,7 +21,7 @@ const createPaymentMethod = catchAsync(async (req, res) => {
         userId,
         paymentMethodId,
         isDefault,
-    } as any); // Use 'as any' temporarily since we're not sending all fields
+    } as any);
 
     sendResponse(res, {
         statusCode: httpStatus.CREATED,
