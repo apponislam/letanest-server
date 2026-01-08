@@ -85,6 +85,7 @@ const getSinglePropertyController = (0, catchAsync_1.default)((req, res) => __aw
 }));
 const getAllPropertiesController = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const query = req.query;
+    // query.seed = Date.now().toString();
     const data = yield properties_services_1.propertyServices.getAllPropertiesService(query);
     (0, sendResponse_1.default)(res, {
         statusCode: http_status_1.default.OK,

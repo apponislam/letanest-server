@@ -11,6 +11,8 @@ const bot_controller_1 = require("./bot.controller");
 const router = express_1.default.Router();
 // welcome message
 router.post("/welcome", auth_1.default, bot_controller_1.botController.sendWelcomeMessage);
+router.post("/bot/send-to-all", auth_1.default, bot_controller_1.botController.sendMessageToAll);
+router.get("/bot/templates/active", auth_1.default, bot_controller_1.botController.getActiveMessageTemplates);
 router.get("/unread-count", auth_1.default, message_controllers_1.messageControllers.getTotalUnreadCount);
 router.post("/conversations", auth_1.default, message_controllers_1.messageControllers.createConversation);
 router.get("/conversations/my-conversations", auth_1.default, message_controllers_1.messageControllers.getUserConversations);

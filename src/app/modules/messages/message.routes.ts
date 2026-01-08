@@ -7,6 +7,8 @@ const router = express.Router();
 
 // welcome message
 router.post("/welcome", auth, botController.sendWelcomeMessage);
+router.post("/bot/send-to-all", auth, botController.sendMessageToAll);
+router.get("/bot/templates/active", auth, botController.getActiveMessageTemplates);
 
 router.get("/unread-count", auth, messageControllers.getTotalUnreadCount);
 

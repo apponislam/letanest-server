@@ -91,6 +91,9 @@ const getSinglePropertyController = catchAsync(async (req: Request, res: Respons
 
 const getAllPropertiesController = catchAsync(async (req: Request, res: Response) => {
     const query = req.query as unknown as IPropertyQuery;
+
+    // query.seed = Date.now().toString();
+
     const data = await propertyServices.getAllPropertiesService(query);
 
     sendResponse(res, {

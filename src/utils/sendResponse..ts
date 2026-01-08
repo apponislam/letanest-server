@@ -10,6 +10,7 @@ type TResponse<T> = {
         limit: number;
         total: number;
         totalAmount?: number;
+        seed?: string;
     };
 };
 

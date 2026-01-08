@@ -34,6 +34,35 @@ const sendWelcomeMessage = (0, catchAsync_1.default)((req, res) => __awaiter(voi
         data: result,
     });
 }));
+// Send message to all users based on MessageType
+const sendMessageToAll = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const { messageTypeId, userType } = req.body;
+    if (!messageTypeId) {
+        throw new ApiError_1.default(http_status_1.default.BAD_REQUEST, "Message Type ID is required");
+    }
+    const result = yield bot_service_1.botServices.sendMessageToAll({
+        messageTypeId,
+        userType,
+    });
+    (0, sendResponse_1.default)(res, {
+        statusCode: http_status_1.default.OK,
+        success: true,
+        message: `Message "${result.messageTemplate.name}" sent to ${result.successful} ${result.userType} users successfully. ${result.failed} failed.`,
+        data: result,
+    });
+}));
+// Get active message templates
+const getActiveMessageTemplates = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const templates = yield bot_service_1.botServices.getActiveMessageTemplates();
+    (0, sendResponse_1.default)(res, {
+        statusCode: http_status_1.default.OK,
+        success: true,
+        message: "Active message templates retrieved successfully",
+        data: templates,
+    });
+}));
 exports.botController = {
     sendWelcomeMessage,
+    sendMessageToAll,
+    getActiveMessageTemplates,
 };

@@ -133,6 +133,7 @@ export interface IPropertyQuery {
     amenities?: string | string[];
     rating?: string;
     type?: "featured" | "trending";
+    seed?: string;
 }
 
 export interface IPropertyMeta {
@@ -140,6 +141,7 @@ export interface IPropertyMeta {
     page: number;
     limit: number;
     totalAmount?: number;
+    seed?: string;
 }
 
 export interface IPropertyListResponse {
