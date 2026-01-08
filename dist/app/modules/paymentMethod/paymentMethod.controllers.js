@@ -33,7 +33,7 @@ const createPaymentMethod = (0, catchAsync_1.default)((req, res) => __awaiter(vo
         userId,
         paymentMethodId,
         isDefault,
-    }); // Use 'as any' temporarily since we're not sending all fields
+    });
     (0, sendResponse_1.default)(res, {
         statusCode: http_status_1.default.CREATED,
         success: true,

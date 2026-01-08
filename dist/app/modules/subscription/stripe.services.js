@@ -455,14 +455,14 @@ class StripeService {
         return __awaiter(this, arguments, void 0, function* (customerId, paymentMethodId, isDefault = false) {
             try {
                 // Attach payment method to customer
-                yield this.stripe.paymentMethods.attach(paymentMethodId, {
+                yield stripe.paymentMethods.attach(paymentMethodId, {
                     customer: customerId,
                 });
                 // Retrieve payment method details
-                const paymentMethod = yield this.stripe.paymentMethods.retrieve(paymentMethodId);
+                const paymentMethod = yield stripe.paymentMethods.retrieve(paymentMethodId);
                 // Set as default if requested
                 if (isDefault) {
-                    yield this.stripe.customers.update(customerId, {
+                    yield stripe.customers.update(customerId, {
                         invoice_settings: {
                             default_payment_method: paymentMethodId,
                         },
@@ -482,7 +482,7 @@ class StripeService {
     getCustomerPaymentMethods(customerId) {
         return __awaiter(this, void 0, void 0, function* () {
             try {
-                const paymentMethods = yield this.stripe.paymentMethods.list({
+                const paymentMethods = yield stripe.paymentMethods.list({
                     customer: customerId,
                     type: "card",
                 });
@@ -500,7 +500,7 @@ class StripeService {
     setDefaultPaymentMethod(customerId, paymentMethodId) {
         return __awaiter(this, void 0, void 0, function* () {
             try {
-                yield this.stripe.customers.update(customerId, {
+                yield stripe.customers.update(customerId, {
                     invoice_settings: {
                         default_payment_method: paymentMethodId,
                     },
@@ -518,7 +518,7 @@ class StripeService {
     detachPaymentMethod(paymentMethodId) {
         return __awaiter(this, void 0, void 0, function* () {
             try {
-                yield this.stripe.paymentMethods.detach(paymentMethodId);
+                yield stripe.paymentMethods.detach(paymentMethodId);
             }
             catch (error) {
                 console.error("Error detaching payment method:", error);
@@ -527,13 +527,13 @@ class StripeService {
         });
     }
     // Add stripe instance getter if needed
-    get stripe() {
-        // You might want to make this a private property in your class
-        const stripe = new stripe_1.default(config_1.default.stripe_secret_key, {
-            apiVersion: "2025-07-30.basil",
-        });
-        return stripe;
-    }
+    // private get stripe() {
+    //     // You might want to make this a private property in your class
+    //     const stripe = new Stripe(config.stripe_secret_key!, {
+    //         apiVersion: "2025-07-30.basil" as any,
+    //     });
+    //     return stripe;
+    // }
     // connect stripe
     // connect stripe
     // connect stripe
@@ -649,7 +649,7 @@ class StripeService {
     createCustomer2(customerData) {
         return __awaiter(this, void 0, void 0, function* () {
             try {
-                const customer = yield this.stripe.customers.create({
+                const customer = yield stripe.customers.create({
                     email: customerData.email,
                     name: customerData.name,
                     metadata: customerData.metadata || {},
@@ -670,7 +670,7 @@ class StripeService {
     createConnectPayment(amount, hostAccountId, customerId, applicationFeeAmount) {
         return __awaiter(this, void 0, void 0, function* () {
             try {
-                const paymentIntent = yield this.stripe.paymentIntents.create({
+                const paymentIntent = yield stripe.paymentIntents.create({
                     amount: Math.round(amount * 100),
                     currency: "gbp",
                     customer: customerId,
@@ -699,7 +699,7 @@ class StripeService {
     confirmPaymentIntent(paymentIntentId, paymentMethodId) {
         return __awaiter(this, void 0, void 0, function* () {
             try {
-                const paymentIntent = yield this.stripe.paymentIntents.confirm(paymentIntentId, {
+                const paymentIntent = yield stripe.paymentIntents.confirm(paymentIntentId, {
                     payment_method: paymentMethodId,
                     return_url: `${config_1.default.client_url}/payment/success`,
                 });
@@ -716,7 +716,7 @@ class StripeService {
     createBookingFeePayment(bookingFee, customerId) {
         return __awaiter(this, void 0, void 0, function* () {
             try {
-                const paymentIntent = yield this.stripe.paymentIntents.create({
+                const paymentIntent = yield stripe.paymentIntents.create({
                     amount: Math.round(bookingFee * 100),
                     currency: "gbp",
                     customer: customerId,
@@ -739,7 +739,7 @@ class StripeService {
     confirmBookingFeePayment(paymentIntentId, paymentMethodId) {
         return __awaiter(this, void 0, void 0, function* () {
             try {
-                const paymentIntent = yield this.stripe.paymentIntents.confirm(paymentIntentId, {
+                const paymentIntent = yield stripe.paymentIntents.confirm(paymentIntentId, {
                     payment_method: paymentMethodId,
                     return_url: `${config_1.default.client_url}/payment/success`,
                 });

@@ -16,17 +16,6 @@ exports.bankDetailsServices = void 0;
 const http_status_1 = __importDefault(require("http-status"));
 const bankDetails_model_1 = require("./bankDetails.model");
 const ApiError_1 = __importDefault(require("../../../errors/ApiError"));
-// const createBankDetails = async (payload: ICreateBankDetails & { userId: string }): Promise<IBankDetails> => {
-//     const existingBankDetails = await BankDetails.findOne({
-//         userId: payload.userId,
-//         isActive: true,
-//     });
-//     if (existingBankDetails) {
-//         throw new ApiError(httpStatus.BAD_REQUEST, "Bank details already exist for this user");
-//     }
-//     const bankDetails = await BankDetails.create(payload);
-//     return bankDetails;
-// };
 const createBankDetails = (payload) => __awaiter(void 0, void 0, void 0, function* () {
     var _a, _b;
     if (((_a = payload.country) === null || _a === void 0 ? void 0 : _a.toLowerCase()) === "uk" || ((_b = payload.country) === null || _b === void 0 ? void 0 : _b.toLowerCase()) === "united kingdom") {
@@ -48,16 +37,6 @@ const createBankDetails = (payload) => __awaiter(void 0, void 0, void 0, functio
     const bankDetails = yield bankDetails_model_1.BankDetails.create(payload);
     return bankDetails;
 });
-// const getMyBankDetails = async (userId: string): Promise<IBankDetails | null> => {
-//     const bankDetails = await BankDetails.findOne({
-//         userId,
-//         isActive: true,
-//     });
-//     if (!bankDetails) {
-//         throw new ApiError(httpStatus.NOT_FOUND, "Bank details not found");
-//     }
-//     return bankDetails;
-// };
 const getMyBankDetails = (userId) => __awaiter(void 0, void 0, void 0, function* () {
     const bankDetails = yield bankDetails_model_1.BankDetails.findOne({
         userId,

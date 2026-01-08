@@ -123,6 +123,9 @@ const loginUser = (data) => __awaiter(void 0, void 0, void 0, function* () {
     const user = yield auth_model_1.UserModel.findOne({ email: data.email }).select("+password");
     if (!user)
         throw new ApiError_1.default(http_status_1.default.UNAUTHORIZED, "Incorrect email or password. Please try again.");
+    if (!user.isActive) {
+        throw new ApiError_1.default(http_status_1.default.FORBIDDEN, "Your account has been deactivated. Please contact support.");
+    }
     const isMatch = yield bcrypt_1.default.compare(data.password, user.password);
     if (!isMatch)
         throw new ApiError_1.default(http_status_1.default.UNAUTHORIZED, "Incorrect email or password. Please try again.");

@@ -20,6 +20,7 @@ const sendOtpEmail = (_a) => __awaiter(void 0, [_a], void 0, function* ({ to, na
     const transporter = nodemailer_1.default.createTransport({
         host: config_1.default.mail.smtp_host,
         port: Number(config_1.default.mail.smtp_port),
+        secure: true,
         auth: {
             user: config_1.default.mail.smtp_user,
             pass: config_1.default.mail.smtp_pass,

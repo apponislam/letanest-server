@@ -28,7 +28,8 @@ const generateHostSingleInvoicePDF = (req, res) => __awaiter(void 0, void 0, voi
         }
         // Type assertions for populated fields
         const populatedPayment = payment;
-        const templatePath = path_1.default.join(__dirname, "../../../../public/templates/HostSingleinvoiceTemplate.html");
+        // const templatePath = path.join(__dirname, "../../../../public/templates/HostSingleinvoiceTemplate.html");
+        const templatePath = path_1.default.resolve(process.cwd(), "public/templates/HostSingleinvoiceTemplate.html");
         if (!fs_1.default.existsSync(templatePath)) {
             throw new Error(`Template file not found at: ${templatePath}`);
         }
@@ -141,7 +142,8 @@ const generateHostPaymentsPDF = (req, res) => __awaiter(void 0, void 0, void 0, 
             res.status(404).json({ error: "No payments found for the selected date range" });
             return;
         }
-        const templatePath = path_1.default.join(__dirname, "../../../../public/templates/HostInvoicesTemplate.html");
+        // const templatePath = path.join(__dirname, "../../../../public/templates/HostInvoicesTemplate.html");
+        const templatePath = path_1.default.resolve(process.cwd(), "public/templates/HostInvoicesTemplate.html");
         if (!fs_1.default.existsSync(templatePath)) {
             throw new Error(`Template file not found at: ${templatePath}`);
         }
@@ -258,7 +260,8 @@ const generatePaymentsPDF = (req, res) => __awaiter(void 0, void 0, void 0, func
             totalTransactions: 0,
         });
         // Read HTML template
-        const templatePath = path_1.default.join(__dirname, "../../../../public/templates/AdminPaymentsReport.html");
+        // const templatePath = path.join(__dirname, "../../../../public/templates/AdminPaymentsReport.html");
+        const templatePath = path_1.default.resolve(process.cwd(), "public/templates/AdminPaymentsReport.html");
         if (!fs_1.default.existsSync(templatePath)) {
             throw new Error(`Template file not found at: ${templatePath}`);
         }

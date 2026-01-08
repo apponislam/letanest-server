@@ -117,6 +117,10 @@ const loginUser = async (data: LoginInput) => {
     const user = await UserModel.findOne({ email: data.email }).select("+password");
     if (!user) throw new ApiError(httpStatus.UNAUTHORIZED, "Incorrect email or password. Please try again.");
 
+    if (!user.isActive) {
+        throw new ApiError(httpStatus.FORBIDDEN, "Your account has been deactivated. Please contact support.");
+    }
+
     const isMatch = await bcrypt.compare(data.password, user.password);
     if (!isMatch) throw new ApiError(httpStatus.UNAUTHORIZED, "Incorrect email or password. Please try again.");
 

@@ -27,16 +27,6 @@ const createBankDetails = (0, catchAsync_1.default)((req, res) => __awaiter(void
         data: bankDetails,
     });
 }));
-// const getMyBankDetails = catchAsync(async (req, res) => {
-//     const userId = req.user._id;
-//     const bankDetails = await bankDetailsServices.getMyBankDetails(userId);
-//     sendResponse(res, {
-//         success: true,
-//         statusCode: httpStatus.OK,
-//         message: "Bank details retrieved successfully",
-//         data: bankDetails,
-//     });
-// });
 const getMyBankDetails = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const userId = req.user._id;
     const bankDetails = yield bankDetails_services_1.bankDetailsServices.getMyBankDetails(userId);

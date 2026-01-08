@@ -551,7 +551,7 @@ const getAllPublishedPropertiesService = (query) => __awaiter(void 0, void 0, vo
 const getAllNonPublishedPropertiesService = (query) => __awaiter(void 0, void 0, void 0, function* () {
     const { page = 1, limit = 10, search, status } = query;
     const filter = {
-        status: { $ne: "published" },
+        status: { $nin: ["published", "hidden"] },
         isDeleted: false,
     };
     if (search) {

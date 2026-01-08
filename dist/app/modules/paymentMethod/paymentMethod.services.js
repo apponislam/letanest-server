@@ -1,17 +1,4 @@
 "use strict";
-// import httpStatus from "http-status";
-// import { Types } from "mongoose";
-// import { IPaymentMethodCreate } from "./paymentMethod.interface";
-// import { IPaymentMethodDocument, PaymentMethod } from "./paymentMethod.model";
-// import ApiError from "../../../errors/ApiError";
-// /**
-//  * Create a new payment method
-//  */
-// const createPaymentMethod = async (paymentMethodData: IPaymentMethodCreate): Promise<IPaymentMethodDocument> => {
-//     // If this is set as default, unset any existing default for this user
-//     if (paymentMethodData.isDefault) {
-//         await PaymentMethod.updateMany({ userId: paymentMethodData.userId, isDefault: true }, { isDefault: false });
-//     }
 var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
@@ -26,100 +13,6 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.paymentMethodServices = void 0;
-//     const paymentMethod = new PaymentMethod(paymentMethodData);
-//     return await paymentMethod.save();
-// };
-// /**
-//  * Get payment methods by user ID with user details populated
-//  */
-// const getPaymentMethodsByUserId = async (userId: Types.ObjectId): Promise<IPaymentMethodDocument[]> => {
-//     return await PaymentMethod.find({ userId }).populate("userId", "name email profileImg").sort({ isDefault: -1, createdAt: -1 });
-// };
-// /**
-//  * Get payment method by ID with user populated
-//  */
-// const getPaymentMethodById = async (paymentMethodId: string): Promise<IPaymentMethodDocument> => {
-//     if (!Types.ObjectId.isValid(paymentMethodId)) {
-//         throw new ApiError(httpStatus.BAD_REQUEST, "Invalid payment method ID");
-//     }
-//     const paymentMethod = await PaymentMethod.findById(paymentMethodId).populate("userId", "name email profileImg");
-//     if (!paymentMethod) {
-//         throw new ApiError(httpStatus.NOT_FOUND, "Payment method not found");
-//     }
-//     return paymentMethod;
-// };
-// /**
-//  * Get payment method by Stripe payment method ID
-//  */
-// const getPaymentMethodByStripeId = async (stripePaymentMethodId: string): Promise<IPaymentMethodDocument | null> => {
-//     return await PaymentMethod.findOne({ paymentMethodId: stripePaymentMethodId }).populate("userId", "name email profileImg");
-// };
-// /**
-//  * Set payment method as default
-//  */
-// const setDefaultPaymentMethod = async (userId: Types.ObjectId, paymentMethodId: string): Promise<IPaymentMethodDocument> => {
-//     const session = await PaymentMethod.startSession();
-//     session.startTransaction();
-//     try {
-//         // Unset all default payment methods for this user
-//         await PaymentMethod.updateMany({ userId, isDefault: true }, { isDefault: false }, { session });
-//         // Set the specified payment method as default
-//         const updatedPaymentMethod = await PaymentMethod.findOneAndUpdate({ _id: paymentMethodId, userId }, { isDefault: true }, { new: true, session }).populate("userId", "name email profileImg");
-//         if (!updatedPaymentMethod) {
-//             throw new ApiError(httpStatus.NOT_FOUND, "Payment method not found");
-//         }
-//         await session.commitTransaction();
-//         return updatedPaymentMethod;
-//     } catch (error) {
-//         await session.abortTransaction();
-//         throw error;
-//     } finally {
-//         session.endSession();
-//     }
-// };
-// /**
-//  * Delete payment method
-//  */
-// const deletePaymentMethod = async (userId: Types.ObjectId, paymentMethodId: string): Promise<void> => {
-//     const paymentMethod = await PaymentMethod.findOne({ _id: paymentMethodId, userId });
-//     if (!paymentMethod) {
-//         throw new ApiError(httpStatus.NOT_FOUND, "Payment method not found");
-//     }
-//     // If deleting the default payment method, set another one as default
-//     if (paymentMethod.isDefault) {
-//         const otherPaymentMethod = await PaymentMethod.findOne({
-//             userId,
-//             _id: { $ne: paymentMethodId },
-//         }).sort({ createdAt: -1 });
-//         if (otherPaymentMethod) {
-//             await PaymentMethod.findByIdAndUpdate(otherPaymentMethod._id, { isDefault: true });
-//         }
-//     }
-//     await PaymentMethod.findByIdAndDelete(paymentMethodId);
-// };
-// /**
-//  * Get default payment method for user
-//  */
-// const getDefaultPaymentMethod = async (userId: Types.ObjectId): Promise<IPaymentMethodDocument | null> => {
-//     return await PaymentMethod.findOne({ userId, isDefault: true }).populate("userId", "name email profileImg");
-// };
-// /**
-//  * Check if user owns the payment method
-//  */
-// const validatePaymentMethodOwnership = async (userId: Types.ObjectId, paymentMethodId: string): Promise<boolean> => {
-//     const paymentMethod = await PaymentMethod.findOne({ _id: paymentMethodId, userId });
-//     return !!paymentMethod;
-// };
-// export const paymentMethodServices = {
-//     createPaymentMethod,
-//     getPaymentMethodsByUserId,
-//     getPaymentMethodById,
-//     getPaymentMethodByStripeId,
-//     setDefaultPaymentMethod,
-//     deletePaymentMethod,
-//     getDefaultPaymentMethod,
-//     validatePaymentMethodOwnership,
-// };
 const http_status_1 = __importDefault(require("http-status"));
 const mongoose_1 = require("mongoose");
 const paymentMethod_model_1 = require("./paymentMethod.model");
@@ -264,15 +157,12 @@ const deletePaymentMethod = (userId, paymentMethodId) => __awaiter(void 0, void 
     const session = yield paymentMethod_model_1.PaymentMethod.startSession();
     session.startTransaction();
     try {
-        // Detach from Stripe using your enhanced service
         try {
             yield stripe_services_1.stripeService.detachPaymentMethod(paymentMethod.paymentMethodId);
         }
         catch (error) {
             console.error("Error detaching payment method from Stripe:", error);
-            // Continue with deletion even if Stripe detach fails
         }
-        // If deleting the default payment method, set another one as default
         if (paymentMethod.isDefault) {
             const otherPaymentMethod = yield paymentMethod_model_1.PaymentMethod.findOne({
                 userId,
@@ -280,7 +170,6 @@ const deletePaymentMethod = (userId, paymentMethodId) => __awaiter(void 0, void 
             }).sort({ createdAt: -1 });
             if (otherPaymentMethod) {
                 yield paymentMethod_model_1.PaymentMethod.findByIdAndUpdate(otherPaymentMethod._id, { isDefault: true });
-                // Update Stripe default using your enhanced service
                 try {
                     yield stripe_services_1.stripeService.setDefaultPaymentMethod(paymentMethod.stripeCustomerId, otherPaymentMethod.paymentMethodId);
                 }
@@ -289,13 +178,9 @@ const deletePaymentMethod = (userId, paymentMethodId) => __awaiter(void 0, void 
                 }
             }
             else {
-                // No other payment methods - we can't remove default payment method from Stripe
-                // because your StripeService doesn't have removeDefaultPaymentMethod method
-                // Stripe will automatically handle this when the default payment method is detached
                 console.log("No other payment methods found. Stripe will handle default payment method automatically.");
             }
         }
-        // Delete from our database
         yield paymentMethod_model_1.PaymentMethod.findByIdAndDelete(paymentMethodId, { session });
         yield session.commitTransaction();
     }
