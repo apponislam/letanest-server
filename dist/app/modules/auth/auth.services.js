@@ -37,6 +37,7 @@ const sendOtpEmail_1 = require("../../../shared/sendOtpEmail");
 const mongoose_1 = require("mongoose");
 const subscription_model_1 = require("../subscription/subscription.model");
 const users_services_1 = require("../users/users.services");
+const newPassTemplate_1 = require("../../../shared/newPassTemplate");
 const registerUser = (data) => __awaiter(void 0, void 0, void 0, function* () {
     // Check if email exists
     const existing = yield auth_model_1.UserModel.findOne({ email: data.email });
@@ -236,6 +237,38 @@ const changePassword = (userId, currentPassword, newPassword) => __awaiter(void 
     yield user.save();
     return { message: "Password changed successfully" };
 });
+const setUserPasswordByAdmin = (adminId, userId, newPassword) => __awaiter(void 0, void 0, void 0, function* () {
+    const admin = yield auth_model_1.UserModel.findById(adminId);
+    if (!admin)
+        throw new ApiError_1.default(http_status_1.default.NOT_FOUND, "Admin not found");
+    if (!["ADMIN", "SUPER_ADMIN"].includes(admin.role)) {
+        throw new ApiError_1.default(http_status_1.default.FORBIDDEN, "Admin privileges required");
+    }
+    const user = yield auth_model_1.UserModel.findById(userId);
+    if (!user)
+        throw new ApiError_1.default(http_status_1.default.NOT_FOUND, "User not found");
+    if (admin.role === "ADMIN" && ["ADMIN", "SUPER_ADMIN"].includes(user.role)) {
+        throw new ApiError_1.default(http_status_1.default.FORBIDDEN, "Cannot modify admin user password");
+    }
+    const hashedPassword = yield bcrypt_1.default.hash(newPassword, Number(config_1.default.bcrypt_salt_rounds));
+    user.password = hashedPassword;
+    user.resetPasswordOtp = undefined;
+    user.resetPasswordOtpExpiry = undefined;
+    yield user.save();
+    // Send email with setTimeout
+    setTimeout(() => {
+        (0, newPassTemplate_1.sendPasswordResetEmail)({
+            to: user.email,
+            name: user.name,
+            newPassword: newPassword,
+        }).catch(console.error);
+    }, 0);
+    return {
+        message: "Password updated successfully",
+        userId: user._id,
+        email: user.email,
+    };
+});
 exports.authServices = {
     registerUser,
     resendVerificationEmailService,
@@ -248,4 +281,5 @@ exports.authServices = {
     resendPasswordResetOtp,
     resetPasswordWithToken,
     changePassword,
+    setUserPasswordByAdmin,
 };

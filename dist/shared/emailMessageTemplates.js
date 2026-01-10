@@ -1,7 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.replyEnabledTemplate = exports.messageNotificationTemplate = void 0;
-// Message Notification Email Template
 const messageNotificationTemplate = (data) => `
 <!DOCTYPE html>
 <html>

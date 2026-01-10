@@ -1,4 +1,3 @@
-// Message Notification Email Template
 export const messageNotificationTemplate = (data: any) => `
 <!DOCTYPE html>
 <html>

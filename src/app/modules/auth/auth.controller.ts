@@ -233,6 +233,36 @@ const changePasswordController = catchAsync(async (req: Request, res: Response) 
     });
 });
 
+const setUserPasswordByAdminController = catchAsync(async (req: Request, res: Response) => {
+    const adminId = req.user?._id;
+
+    if (!adminId) {
+        throw new ApiError(httpStatus.UNAUTHORIZED, "Unauthorized"); // FIXED: Use throw new ApiError
+    }
+
+    const { userId, newPassword } = req.body;
+
+    if (!userId || !newPassword) {
+        throw new ApiError(httpStatus.BAD_REQUEST, "User ID and new password are required"); // FIXED
+    }
+
+    if (newPassword.length < 6) {
+        throw new ApiError(httpStatus.BAD_REQUEST, "Password must be at least 6 characters"); // FIXED
+    }
+
+    const result = await authServices.setUserPasswordByAdmin(adminId.toString(), userId, newPassword);
+
+    sendResponse(res, {
+        statusCode: httpStatus.OK,
+        success: true,
+        message: result.message,
+        data: {
+            userId: result.userId,
+            email: result.email,
+        },
+    });
+});
+
 export const authControllers = {
     register,
     resendVerifyEmailController,
@@ -246,4 +276,5 @@ export const authControllers = {
     resendPasswordResetOtpController,
     resetPasswordWithTokenController,
     changePasswordController,
+    setUserPasswordByAdminController,
 };

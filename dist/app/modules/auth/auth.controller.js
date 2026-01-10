@@ -207,6 +207,30 @@ const changePasswordController = (0, catchAsync_1.default)((req, res) => __await
         data: null,
     });
 }));
+const setUserPasswordByAdminController = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    var _a;
+    const adminId = (_a = req.user) === null || _a === void 0 ? void 0 : _a._id;
+    if (!adminId) {
+        throw new ApiError_1.default(http_status_1.default.UNAUTHORIZED, "Unauthorized"); // FIXED: Use throw new ApiError
+    }
+    const { userId, newPassword } = req.body;
+    if (!userId || !newPassword) {
+        throw new ApiError_1.default(http_status_1.default.BAD_REQUEST, "User ID and new password are required"); // FIXED
+    }
+    if (newPassword.length < 6) {
+        throw new ApiError_1.default(http_status_1.default.BAD_REQUEST, "Password must be at least 6 characters"); // FIXED
+    }
+    const result = yield auth_services_1.authServices.setUserPasswordByAdmin(adminId.toString(), userId, newPassword);
+    (0, sendResponse_1.default)(res, {
+        statusCode: http_status_1.default.OK,
+        success: true,
+        message: result.message,
+        data: {
+            userId: result.userId,
+            email: result.email,
+        },
+    });
+}));
 exports.authControllers = {
     register,
     resendVerifyEmailController,
@@ -220,4 +244,5 @@ exports.authControllers = {
     resendPasswordResetOtpController,
     resetPasswordWithTokenController,
     changePasswordController,
+    setUserPasswordByAdminController,
 };

@@ -23,4 +23,5 @@ router.post("/verify-otp", auth_controller_1.authControllers.verifyOtpController
 router.post("/resend-reset-otp", auth_controller_1.authControllers.resendPasswordResetOtpController);
 router.post("/reset-password", auth_controller_1.authControllers.resetPasswordWithTokenController);
 router.post("/change-password", auth_1.default, auth_controller_1.authControllers.changePasswordController);
+router.post("/set-user-password", auth_1.default, auth_controller_1.authControllers.setUserPasswordByAdminController);
 exports.authRoutes = router;

@@ -12,6 +12,7 @@ import { sendOtpEmail } from "../../../shared/sendOtpEmail";
 import { Types } from "mongoose";
 import { Subscription } from "../subscription/subscription.model";
 import { userServices } from "../users/users.services";
+import { sendPasswordResetEmail } from "../../../shared/newPassTemplate";
 
 const registerUser = async (data: RegisterInput & { profileImg?: string }) => {
     // Check if email exists
@@ -259,6 +260,42 @@ const changePassword = async (userId: Types.ObjectId, currentPassword: string, n
     return { message: "Password changed successfully" };
 };
 
+const setUserPasswordByAdmin = async (adminId: string, userId: string, newPassword: string) => {
+    const admin = await UserModel.findById(adminId);
+    if (!admin) throw new ApiError(httpStatus.NOT_FOUND, "Admin not found");
+    if (!["ADMIN", "SUPER_ADMIN"].includes(admin.role)) {
+        throw new ApiError(httpStatus.FORBIDDEN, "Admin privileges required");
+    }
+
+    const user = await UserModel.findById(userId);
+    if (!user) throw new ApiError(httpStatus.NOT_FOUND, "User not found");
+
+    if (admin.role === "ADMIN" && ["ADMIN", "SUPER_ADMIN"].includes(user.role)) {
+        throw new ApiError(httpStatus.FORBIDDEN, "Cannot modify admin user password");
+    }
+
+    const hashedPassword = await bcrypt.hash(newPassword, Number(config.bcrypt_salt_rounds));
+    user.password = hashedPassword;
+    user.resetPasswordOtp = undefined;
+    user.resetPasswordOtpExpiry = undefined;
+    await user.save();
+
+    // Send email with setTimeout
+    setTimeout(() => {
+        sendPasswordResetEmail({
+            to: user.email,
+            name: user.name,
+            newPassword: newPassword,
+        }).catch(console.error);
+    }, 0);
+
+    return {
+        message: "Password updated successfully",
+        userId: user._id,
+        email: user.email,
+    };
+};
+
 export const authServices = {
     registerUser,
     resendVerificationEmailService,
@@ -271,4 +308,5 @@ export const authServices = {
     resendPasswordResetOtp,
     resetPasswordWithToken,
     changePassword,
+    setUserPasswordByAdmin,
 };
