@@ -93,6 +93,7 @@ export interface ICreateConversationDto {
     propertyId?: string;
     isReplyAllowed?: boolean;
     bot?: boolean;
+    receiverId?: string;
 }
 
 export interface IMarkAsReadDto {

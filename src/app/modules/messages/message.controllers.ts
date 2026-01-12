@@ -6,9 +6,11 @@ import ApiError from "../../../errors/ApiError";
 
 const createConversation = catchAsync(async (req, res) => {
     const userId = req.user._id;
+    const receiverId = req.body.participants[0];
     const conversation = await messageServices.createConversation({
         ...req.body,
         participants: [...req.body.participants, userId.toString()],
+        receiverId: receiverId,
     });
 
     sendResponse(res, {

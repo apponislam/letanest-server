@@ -241,6 +241,44 @@ const deleteUserController = catchAsync(async (req: Request, res: Response) => {
     });
 });
 
+const getReceiveEmailsController = catchAsync(async (req: Request, res: Response) => {
+    const userId = req.user?._id;
+
+    if (!userId) {
+        throw new ApiError(httpStatus.UNAUTHORIZED, "User not authenticated");
+    }
+
+    const emailPreference = await userServices.getReceiveEmailsService(userId);
+
+    sendResponse(res, {
+        statusCode: httpStatus.OK,
+        success: true,
+        message: "Email notification preference retrieved successfully",
+        data: {
+            receiveEmails: emailPreference,
+        },
+    });
+});
+
+const toggleReceiveEmailsController = catchAsync(async (req: Request, res: Response) => {
+    const userId = req.user?._id;
+
+    if (!userId) {
+        throw new ApiError(httpStatus.UNAUTHORIZED, "User not authenticated");
+    }
+
+    const updatedUser = await userServices.toggleReceiveEmailsService(userId);
+
+    sendResponse(res, {
+        statusCode: httpStatus.OK,
+        success: true,
+        message: `Email notifications ${updatedUser.receiveEmails ? "enabled" : "disabled"} successfully`,
+        data: {
+            receiveEmails: updatedUser.receiveEmails,
+        },
+    });
+});
+
 export const userControllers = {
     getAllUsersController,
     getSingleUserController,
@@ -262,4 +300,7 @@ export const userControllers = {
 
     //delete user
     deleteUserController,
+    // receiveEmails
+    getReceiveEmailsController,
+    toggleReceiveEmailsController,
 };

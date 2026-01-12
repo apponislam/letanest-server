@@ -8,6 +8,7 @@ import { UserModel } from "../auth/auth.model";
 import { sanitizeMessageText } from "../../../utils/contentFilter";
 import { IUser } from "../auth/auth.interface";
 import { ISubscription } from "../subscription/subscription.interface";
+import { sendNewConversationEmail } from "../../../shared/emailMessages";
 
 const createConversation = async (conversationData: ICreateConversationDto) => {
     const existingConversation = await Conversation.findOne({
@@ -30,6 +31,20 @@ const createConversation = async (conversationData: ICreateConversationDto) => {
     }
 
     const conversation = await Conversation.create(conversationData);
+
+    const receiver = await UserModel.findById(conversationData.receiverId).select("email receiveEmails name isActive");
+    console.log(receiver);
+    console.log(receiver?.email);
+    console.log(receiver?.isActive);
+    console.log(receiver?.receiveEmails);
+    if (receiver?.email && receiver.isActive && receiver.receiveEmails) {
+        process.nextTick(() => {
+            sendNewConversationEmail({
+                to: receiver.email,
+                name: receiver.name,
+            }).catch(console.error);
+        });
+    }
 
     const io = getIO();
     const populatedConversation = await Conversation.findById(conversation._id).populate("participants", "name profileImg email phone role");

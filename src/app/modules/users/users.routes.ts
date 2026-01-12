@@ -36,4 +36,7 @@ router.get("/random/admin", auth, userControllers.getRandomAdminController);
 router.patch("/change-role", auth, authorize([roles.ADMIN]), userControllers.changeUserRoleController);
 router.patch("/delete", auth, authorize([roles.ADMIN]), userControllers.deleteUserController);
 
+router.get("/me/receive-emails", auth, userControllers.getReceiveEmailsController);
+router.patch("/me/receive-emails", auth, userControllers.toggleReceiveEmailsController);
+
 export const userRoutes = router;

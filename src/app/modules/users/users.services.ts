@@ -399,6 +399,26 @@ const deleteUserService = async (userId: string, adminId: string) => {
     return userWithoutPassword;
 };
 
+const getReceiveEmailsService = async (userId: Types.ObjectId) => {
+    const user = await UserModel.findById(userId).select("receiveEmails");
+
+    if (!user) {
+        throw new ApiError(httpStatus.NOT_FOUND, "User not found");
+    }
+
+    return user.receiveEmails;
+};
+
+const toggleReceiveEmailsService = async (userId: Types.ObjectId) => {
+    const user = await UserModel.findById(userId);
+    if (!user) {
+        throw new ApiError(httpStatus.NOT_FOUND, "User not found");
+    }
+    user.receiveEmails = !user.receiveEmails;
+    await user.save();
+    return user;
+};
+
 export const userServices = {
     getAllUsersService,
     getSingleUserService,
@@ -422,4 +442,7 @@ export const userServices = {
 
     //delete user
     deleteUserService,
+    // receiveEmails
+    getReceiveEmailsService,
+    toggleReceiveEmailsService,
 };
