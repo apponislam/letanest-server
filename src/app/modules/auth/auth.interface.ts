@@ -81,6 +81,9 @@ export interface IUser {
     // Bot identification
     isBot?: boolean;
 
+    // Email settings
+    receiveEmails?: boolean;
+
     // Audit
     createdAt?: Date;
     updatedAt?: Date;

@@ -97,6 +97,11 @@ const userSchema = new Schema<IUser>(
 
         isBot: { type: Boolean },
 
+        receiveEmails: {
+            type: Boolean,
+            default: true,
+        },
+
         // OTP / password reset
         resetPasswordOtp: { type: String, default: undefined },
         resetPasswordOtpExpiry: { type: Date, default: undefined },

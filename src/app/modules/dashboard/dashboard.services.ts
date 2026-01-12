@@ -13,8 +13,11 @@ const getDashboardStats = async () => {
     yesterday.setDate(yesterday.getDate() - 1);
 
     // Total Users
-    const totalUsers = await UserModel.countDocuments();
+    const totalUsers = await UserModel.countDocuments({
+        isActive: true,
+    });
     const yesterdayUsers = await UserModel.countDocuments({
+        isActive: true,
         createdAt: { $lt: yesterday },
     });
     const userGrowth = yesterdayUsers > 0 ? ((totalUsers - yesterdayUsers) / yesterdayUsers) * 100 : 0;
