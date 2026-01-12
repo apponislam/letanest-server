@@ -33,10 +33,6 @@ const createConversation = async (conversationData: ICreateConversationDto) => {
     const conversation = await Conversation.create(conversationData);
 
     const receiver = await UserModel.findById(conversationData.receiverId).select("email receiveEmails name isActive");
-    console.log(receiver);
-    console.log(receiver?.email);
-    console.log(receiver?.isActive);
-    console.log(receiver?.receiveEmails);
     if (receiver?.email && receiver.isActive && receiver.receiveEmails) {
         process.nextTick(() => {
             sendNewConversationEmail({

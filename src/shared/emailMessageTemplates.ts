@@ -71,7 +71,7 @@ export const newConversationTemplate = ({ name }: { name: string }) => {
                 <p>A new conversation has been started with you.</p>
                 <p>Please check your messages to respond.</p>
                 <p style="text-align: center;">
-                    <a href="${config.client_url}/messages" class="button">View Conversation</a>
+                    <a href="${config.client_url}/messages" class="button" style="display: inline-block; padding: 14px 32px; background: #C9A94D; color: white !important; text-decoration: none !important; border-radius: 8px; margin: 20px 0; font-weight: 600; font-size: 16px; text-align: center; border: none;">View Conversation</a>
                 </p>
             </div>
             <div class="footer">
