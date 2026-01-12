@@ -1,5 +1,5 @@
 import httpStatus from "http-status";
-import { ICreateConversationDto, ICreateMessageDto } from "./messages.interface";
+import { ICreateConversationDto, ICreateMessageDto, MESSAGE_TYPES } from "./messages.interface";
 import { Conversation, Message } from "./messages.model";
 import ApiError from "../../../errors/ApiError";
 import { getIO } from "../../../socket/socket";
@@ -8,7 +8,8 @@ import { UserModel } from "../auth/auth.model";
 import { sanitizeMessageText } from "../../../utils/contentFilter";
 import { IUser } from "../auth/auth.interface";
 import { ISubscription } from "../subscription/subscription.interface";
-import { sendNewConversationEmail } from "../../../shared/emailMessages";
+import { sendMessageNotificationEmail, sendNewConversationEmail } from "../../../shared/emailMessages";
+import { newMakeOfferTemplate, newOfferTemplate, newRequestTemplate } from "../../../shared/emailMessageTemplates";
 
 const createConversation = async (conversationData: ICreateConversationDto) => {
     const existingConversation = await Conversation.findOne({
@@ -51,40 +52,6 @@ const createConversation = async (conversationData: ICreateConversationDto) => {
 
     return populatedConversation;
 };
-
-// const getUserConversations = async (userId: string) => {
-//     const conversations = await Conversation.find({
-//         participants: userId,
-//         isActive: true,
-//     })
-//         .populate("participants", "name profileImg email phone role isVerifiedByAdmin")
-//         .populate({
-//             path: "lastMessage",
-//             populate: {
-//                 path: "propertyId",
-//                 select: "title images location price propertyNumber _id createdBy",
-//             },
-//         })
-//         .sort({ updatedAt: -1 });
-
-//     // NEW: Calculate unread count for each conversation
-//     const conversationsWithUnread = await Promise.all(
-//         conversations.map(async (conversation) => {
-//             const unreadCount = await Message.countDocuments({
-//                 conversationId: conversation._id,
-//                 sender: { $ne: userId }, // Messages from other users
-//                 isRead: false,
-//             });
-
-//             return {
-//                 ...conversation.toObject(),
-//                 unreadCount, // Add calculated unread count
-//             };
-//         })
-//     );
-
-//     return conversationsWithUnread;
-// };
 
 const getUserConversations = async (userId: string) => {
     const conversations = await Conversation.find({
@@ -159,8 +126,40 @@ const createMessage = async (messageData: ICreateMessageDto) => {
     if (!conversation) {
         throw new ApiError(httpStatus.FORBIDDEN, "Cannot send message to this conversation");
     }
+    const sender = await UserModel.findById(messageData.sender).select("role name isActive email receiveEmails").lean();
+    const mailUser = await conversation.participants.find((p) => p.toString() !== messageData.sender.toString());
+    const mailReceiver = await UserModel.findById(mailUser).select("email receiveEmails name isActive");
 
-    const sender = await UserModel.findById(messageData.sender).select("role").lean();
+    if (mailReceiver?.email && mailReceiver.isActive && mailReceiver.receiveEmails) {
+        // Determine which template to use based on message type
+        let emailSubject = "";
+        let emailTemplate = null;
+
+        if (messageData.type === MESSAGE_TYPES.OFFER) {
+            emailSubject = `New Offer Received from ${sender?.name || "a host"} - Letanest`;
+            emailTemplate = newOfferTemplate;
+        } else if (messageData.type === MESSAGE_TYPES.REQUEST) {
+            emailSubject = `New Booking Request from ${sender?.name || "a guest"} - Letanest`;
+            emailTemplate = newRequestTemplate;
+        } else if (messageData.type === MESSAGE_TYPES.MAKEOFFER) {
+            emailSubject = `New Offer Made by ${sender?.name || "a guest"} - Letanest`;
+            emailTemplate = newMakeOfferTemplate;
+        }
+
+        if (emailTemplate && sender) {
+            process.nextTick(() => {
+                sendMessageNotificationEmail({
+                    to: mailReceiver.email,
+                    receiverName: mailReceiver.name,
+                    senderName: sender.name,
+                    messageType: messageData.type,
+                    subject: emailSubject,
+                    template: emailTemplate,
+                }).catch(console.error);
+            });
+        }
+    }
+
     if (sender?.role === "HOST" || sender?.role === "ADMIN") {
         await Conversation.findByIdAndUpdate(messageData.conversationId, {
             isReplyAllowed: true,
