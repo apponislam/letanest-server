@@ -2,13 +2,17 @@ import nodemailer from "nodemailer";
 import config from "../app/config";
 
 export const sendPasswordResetEmail = async ({ to, name, newPassword }: { to: string; name: string; newPassword: string }) => {
+    const isProduction = config.node_env === "production";
     const transporter = nodemailer.createTransport({
         host: config.mail.smtp_host,
         port: Number(config.mail.smtp_port),
-        secure: true,
+        secure: isProduction && Number(config.mail.smtp_port) === 465,
         auth: {
             user: config.mail.smtp_user,
             pass: config.mail.smtp_pass,
+        },
+        tls: {
+            rejectUnauthorized: false,
         },
     });
 

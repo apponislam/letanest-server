@@ -8,13 +8,17 @@ interface NewConversationMailOptions {
 }
 
 export const sendNewConversationEmail = async ({ to, name }: NewConversationMailOptions) => {
+    const isProduction = config.node_env === "production";
     const transporter = nodemailer.createTransport({
         host: config.mail.smtp_host,
         port: Number(config.mail.smtp_port),
-        secure: true,
+        secure: isProduction && Number(config.mail.smtp_port) === 465,
         auth: {
             user: config.mail.smtp_user,
             pass: config.mail.smtp_pass,
+        },
+        tls: {
+            rejectUnauthorized: false,
         },
     });
 
@@ -38,13 +42,17 @@ interface MessageNotificationOptions {
 }
 
 export const sendMessageNotificationEmail = async ({ to, receiverName, senderName, messageType, subject, template }: MessageNotificationOptions) => {
+    const isProduction = config.node_env === "production";
     const transporter = nodemailer.createTransport({
         host: config.mail.smtp_host,
         port: Number(config.mail.smtp_port),
-        secure: true,
+        secure: isProduction && Number(config.mail.smtp_port) === 465,
         auth: {
             user: config.mail.smtp_user,
             pass: config.mail.smtp_pass,
+        },
+        tls: {
+            rejectUnauthorized: false,
         },
     });
 

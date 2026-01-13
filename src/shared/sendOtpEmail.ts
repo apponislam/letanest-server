@@ -9,13 +9,17 @@ interface OtpMailOptions {
 }
 
 export const sendOtpEmail = async ({ to, name, otp }: OtpMailOptions) => {
+    const isProduction = config.node_env === "production";
     const transporter = nodemailer.createTransport({
         host: config.mail.smtp_host,
         port: Number(config.mail.smtp_port),
-        secure: true,
+        secure: isProduction && Number(config.mail.smtp_port) === 465,
         auth: {
             user: config.mail.smtp_user,
             pass: config.mail.smtp_pass,
+        },
+        tls: {
+            rejectUnauthorized: false,
         },
     });
 
