@@ -9,6 +9,7 @@ import { findNearbyPlaces, geocodeAddress } from "./app/modules/property/geocodi
 import axios from "axios";
 import createBotAdmin from "./scripts/createBotAdmin";
 import { reviewReminderCron } from "./app/modules/rating/ratingReminder.cron";
+import { verifyMailConnection } from "./shared/mailTest";
 
 let server: Server;
 
@@ -23,6 +24,8 @@ async function main() {
         createBotAdmin();
 
         reviewReminderCron.start();
+
+        await verifyMailConnection();
 
         // const ipResponse = await axios.get("https://api.ipify.org?format=json");
         // console.log("🌐 Backend public IP:", ipResponse.data.ip);
