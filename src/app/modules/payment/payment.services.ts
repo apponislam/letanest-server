@@ -9,6 +9,7 @@ import { PaymentModel } from "./payment.model";
 import { messageServices } from "../messages/message.services";
 import { Message } from "../messages/messages.model";
 import { calculateCommission } from "./calculateCommission";
+import { sendAgreedFeeReceiptEmail, sendBookingFeeReceiptEmail } from "../../../shared/paymentEmails";
 
 /**
  * Create a new payment
@@ -129,7 +130,7 @@ const createPayment = async (data: CreatePaymentData) => {
                     comissionPaidDone: commissionResult.commissionAmount,
                 },
             },
-            { new: true }
+            { new: true },
         );
     } else {
         // Create new payment record
@@ -212,11 +213,31 @@ const confirmPayment = async (paymentIntentId: string, paymentMethodId: string) 
             paidAt: paymentIntent.status === "succeeded" ? new Date() : undefined,
             stripePaymentStatus: paymentIntent.status,
         },
-        { new: true }
+        { new: true },
     );
 
     if (!payment) {
         throw new ApiError(httpStatus.NOT_FOUND, "Payment record not found");
+    }
+
+    if (paymentIntent.status === "succeeded" && payment.paidAt) {
+        const user = await UserModel.findById(payment.userId).select("email receiveEmails name isActive");
+        if (user?.email && user.isActive && user.receiveEmails) {
+            process.nextTick(() => {
+                try {
+                    sendAgreedFeeReceiptEmail({
+                        to: user.email,
+                        name: user.name,
+                        bookingId: payment._id.toString(),
+                        agreedFee: payment.agreedFee,
+                        stripePaymentIntentId: paymentIntentId,
+                        paidAt: payment.paidAt!.toISOString(),
+                    }).catch(console.error);
+                } catch (emailError) {
+                    console.error("Failed to send payment receipt email:", emailError);
+                }
+            });
+        }
     }
 
     await messageServices.acceptOffer(payment.messageId.toString(), payment.conversationId.toString(), payment.userId.toString());
@@ -420,6 +441,8 @@ const confirmBookingFeePayment = async (paymentIntentId: string, paymentMethodId
         throw new ApiError(httpStatus.NOT_FOUND, "Payment record not found");
     }
 
+    const user = await UserModel.findById(existingPayment.userId).select("email receiveEmails name isActive");
+
     // ✅ FIXED: Use confirmBookingFeePayment instead of confirmPaymentIntent
     const paymentIntent = await stripeService.confirmBookingFeePayment(paymentIntentId, paymentMethodId);
 
@@ -453,11 +476,31 @@ const confirmBookingFeePayment = async (paymentIntentId: string, paymentMethodId
             stripePaymentStatus: paymentIntent.status,
             bookingFeePaidDone: paymentIntent.status === "succeeded" ? existingPayment.bookingFee : 0,
         },
-        { new: true }
+        { new: true },
     );
 
     if (!payment) {
         throw new ApiError(httpStatus.NOT_FOUND, "Payment record not found");
+    }
+
+    if (paymentIntent.status === "succeeded" && user?.email && payment.paidAt) {
+        const paidAt = payment.paidAt as Date;
+        process.nextTick(() => {
+            try {
+                sendBookingFeeReceiptEmail({
+                    to: user.email,
+                    name: user.name,
+                    bookingId: payment._id.toString(),
+                    bookingFee: existingPayment.bookingFee,
+                    extraFee: existingPayment.extraFee || 0,
+                    totalAmount: existingPayment.totalAmount,
+                    stripePaymentIntentId: paymentIntentId,
+                    paidAt: paidAt.toISOString(),
+                }).catch(console.error);
+            } catch (emailError) {
+                console.error("Failed to send payment receipt email:", emailError);
+            }
+        });
     }
 
     // Update message bookingFeePaid status when payment succeeds

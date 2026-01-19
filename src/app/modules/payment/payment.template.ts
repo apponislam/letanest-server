@@ -95,7 +95,7 @@ const generateHostSingleInvoicePDF = async (req: Request, res: Response): Promis
                     year: "numeric",
                     month: "long",
                     day: "numeric",
-                })
+                }),
             )
             .replace(
                 "{{paymentDate}}",
@@ -103,7 +103,7 @@ const generateHostSingleInvoicePDF = async (req: Request, res: Response): Promis
                     year: "numeric",
                     month: "long",
                     day: "numeric",
-                })
+                }),
             )
             .replace(
                 "{{invoiceDate}}",
@@ -111,7 +111,7 @@ const generateHostSingleInvoicePDF = async (req: Request, res: Response): Promis
                     year: "numeric",
                     month: "long",
                     day: "numeric",
-                })
+                }),
             )
             .replace("{{status}}", payment.status.charAt(0).toUpperCase() + payment.status.slice(1))
             .replace("{{statusClass}}", statusClass)
@@ -331,11 +331,9 @@ export const generatePaymentsPDF = async (req: Request, res: Response): Promise<
                 totalPlatformTotal: 0,
                 totalHostEarnings: 0,
                 totalTransactions: 0,
-            }
+            },
         );
 
-        // Read HTML template
-        // const templatePath = path.join(__dirname, "../../../../public/templates/AdminPaymentsReport.html");
         const templatePath = path.resolve(process.cwd(), "public/templates/AdminPaymentsReport.html");
         if (!fs.existsSync(templatePath)) {
             throw new Error(`Template file not found at: ${templatePath}`);
