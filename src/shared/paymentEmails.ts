@@ -30,7 +30,7 @@ export const sendBookingFeeReceiptEmail = async ({ to, name, bookingId, bookingF
     await transporter.sendMail({
         from: `"Letanest" <${config.mail.smtp_user}>`,
         to,
-        subject: "Payment Receipt - Booking Fee & Peace of Mind Fee",
+        subject: "Payment Receipt - Booking Fee & Peace of Mind Fee  - Letanest",
         html,
     });
 };
@@ -61,7 +61,7 @@ export const sendAgreedFeeReceiptEmail = async ({ to, name, bookingId, agreedFee
     await transporter.sendMail({
         from: `"Letanest" <${config.mail.smtp_user}>`,
         to,
-        subject: "Payment Receipt - Property Fee",
+        subject: "Payment Receipt - Property Fee - Letanest",
         html,
     });
 };
