@@ -6,6 +6,13 @@ const stripe = new Stripe(config.stripe_secret_key!, {
     apiVersion: "2025-07-30.basil" as any,
 });
 
+const stripe2 = config.stripe_platform_account_id
+    ? new Stripe(config.stripe_secret_key!, {
+          apiVersion: "2025-07-30.basil" as any,
+          stripeAccount: config.stripe_platform_account_id,
+      })
+    : null;
+
 export interface CreateProductData {
     name: string;
     description: string;
@@ -33,6 +40,9 @@ export interface CheckoutSessionMetadata {
 }
 
 export class StripeService {
+    private stripe = stripe;
+    private stripeConnect = stripe2;
+
     // Create subscription product in Stripe
     async createSubscriptionProduct(data: CreateProductData): Promise<StripeProductResponse> {
         try {
@@ -563,10 +573,9 @@ export class StripeService {
      */
     async createConnectAccount(userId: string, email: string, name: string) {
         try {
-            console.log("🔍 config.client_url:", config.client_url);
-            // const businessUrl = config.client_url && config.client_url.startsWith("http") ? config.client_url : "https://your-app-domain.com"; // Fallback URL
+            const stripeInstance = this.stripeConnect || this.stripe;
 
-            const account = await stripe.accounts.create({
+            const account = await stripeInstance.accounts.create({
                 type: "express",
                 country: "GB",
                 email: email,
@@ -577,7 +586,7 @@ export class StripeService {
                 },
                 business_profile: {
                     name: name,
-                    url: "https://your-app-domain.com",
+                    url: "https://letanest.com",
                 },
                 metadata: {
                     userId: userId,
