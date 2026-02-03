@@ -117,7 +117,7 @@ const activateFreeTierService = async (userId: Types.ObjectId, subscriptionId: s
             freeTireSub: new Types.ObjectId(subscriptionId),
             freeTireData, // save the optional numeric data
         },
-        { new: true }
+        { new: true },
     ).populate("freeTireSub");
 
     return {
@@ -369,6 +369,24 @@ const changeUserRoleService = async (userId: string, newRole: Role, adminId: str
     }
     user.role = newRole;
     await user.save();
+
+    // ✅ If role changed to HOST or GUEST → assign free tier
+    if (newRole === roles.HOST || newRole === roles.GUEST) {
+        const subscription = await Subscription.findOne({
+            type: newRole,
+            isActive: true,
+            isDeleted: false,
+            paymentLink: { $regex: "^free-tier" },
+        })
+            .select("_id")
+            .lean();
+
+        if (subscription?._id) {
+            const updatedUserId = new Types.ObjectId(user._id);
+
+            await userServices.activateFreeTierService(updatedUserId, subscription._id);
+        }
+    }
 
     const { password, ...userWithoutPassword } = user.toObject();
     return userWithoutPassword;
