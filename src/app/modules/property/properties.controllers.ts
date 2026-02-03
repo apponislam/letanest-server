@@ -55,7 +55,9 @@ const updatePropertyController = catchAsync(async (req: Request, res: Response) 
         ...mediaData,
     };
 
-    console.log(req.body);
+    // console.log(req.body);
+
+    console.log(propertyData);
 
     const property = await propertyServices.updatePropertyService(req.params.id, propertyData);
 
