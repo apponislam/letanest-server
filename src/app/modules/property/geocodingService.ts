@@ -44,10 +44,10 @@ export const geocodeAddress = async (location: string, postCode: string): Promis
             };
         }
 
-        console.log("No coordinates found for:", location, postCode);
+        // console.log("No coordinates found for:", location, postCode);
         return null;
     } catch (error) {
-        console.error("Geocoding error:", error);
+        // console.error("Geocoding error:", error);
         return null;
     }
 };
@@ -106,7 +106,7 @@ export const findNearbyPlaces = async (lat: number, lng: number): Promise<Nearby
                 // Small delay to avoid rate limiting
                 await new Promise((resolve) => setTimeout(resolve, 200));
             } catch (typeError) {
-                console.error(`Error searching for ${placeType}:`, typeError);
+                // console.error(`Error searching for ${placeType}:`, typeError);
                 continue;
             }
         }
@@ -114,7 +114,7 @@ export const findNearbyPlaces = async (lat: number, lng: number): Promise<Nearby
         // Sort by distance and return
         return nearbyPlaces.sort((a, b) => a.distance - b.distance);
     } catch (error) {
-        console.error("Nearby places search error:", error);
+        // console.error("Nearby places search error:", error);
         return [];
     }
 };

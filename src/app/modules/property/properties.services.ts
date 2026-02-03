@@ -65,12 +65,12 @@ const updatePropertyService = async (id: string, data: Partial<IProperty>): Prom
                         lat: geocodedData.lat,
                         lng: geocodedData.lng,
                     };
-                    console.log(geocodedData);
+                    // console.log(geocodedData);
                     // Update nearby places when location changes
                     const nearbyPlaces = await findNearbyPlaces(geocodedData.lat, geocodedData.lng);
                     updateData.nearbyPlaces = nearbyPlaces;
-                    console.log(`Updated ${nearbyPlaces.length} nearby places for property ${id}`);
-                    console.log(nearbyPlaces);
+                    // console.log(`Updated ${nearbyPlaces.length} nearby places for property ${id}`);
+                    // console.log(nearbyPlaces);
                 }
             }
         }

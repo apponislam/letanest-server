@@ -148,3 +148,8 @@ export interface IPropertyListResponse {
     properties: IProperty[];
     meta: IPropertyMeta;
 }
+
+export interface UpdatePropertyRequest extends Partial<IProperty> {
+    removeCoverPhoto?: string;
+    existingPhotos?: string[];
+}

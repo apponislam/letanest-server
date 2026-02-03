@@ -3,7 +3,7 @@ import catchAsync from "../../../utils/catchAsync";
 import httpStatus from "http-status";
 import sendResponse from "../../../utils/sendResponse.";
 import { propertyServices } from "./properties.services";
-import { IProperty, IPropertyQuery } from "./properties.interface";
+import { IProperty, IPropertyQuery, UpdatePropertyRequest } from "./properties.interface";
 import ApiError from "../../../errors/ApiError";
 
 interface MulterFiles {
@@ -41,23 +41,61 @@ const createPropertyController = catchAsync(async (req: Request, res: Response) 
 });
 
 const updatePropertyController = catchAsync(async (req: Request, res: Response) => {
+    // const files = req.files as MulterFiles;
+    // const coverPhotoFile = files?.coverPhoto?.[0];
+    // const photosFiles = files?.photos || [];
+
+    // const mediaData: Partial<IProperty> = {};
+
+    // if (coverPhotoFile) mediaData.coverPhoto = `/uploads/photos/${coverPhotoFile.filename}`;
+    // if (photosFiles.length > 0) mediaData.photos = photosFiles.map((file) => `/uploads/photos/${file.filename}`);
+
+    // const propertyData: Partial<IProperty> = {
+    //     ...req.body,
+    //     ...mediaData,
+    // };
+
+    // console.log(mediaData);
+
     const files = req.files as MulterFiles;
     const coverPhotoFile = files?.coverPhoto?.[0];
     const photosFiles = files?.photos || [];
 
+    // Cast req.body to UpdatePropertyRequest
+    const body = req.body as UpdatePropertyRequest;
+    const { removeCoverPhoto, existingPhotos, ...propertyFields } = body;
+
     const mediaData: Partial<IProperty> = {};
 
-    if (coverPhotoFile) mediaData.coverPhoto = `/uploads/photos/${coverPhotoFile.filename}`;
-    if (photosFiles.length > 0) mediaData.photos = photosFiles.map((file) => `/uploads/photos/${file.filename}`);
+    // Handle cover photo
+    if (coverPhotoFile) {
+        mediaData.coverPhoto = `/uploads/photos/${coverPhotoFile.filename}`;
+    } else if (removeCoverPhoto === "true") {
+        mediaData.coverPhoto = undefined;
+    }
 
+    // Handle photos - combine existing and new
+    const photos: string[] = [];
+
+    // Add existing photos that should be kept
+    if (existingPhotos && Array.isArray(existingPhotos)) {
+        photos.push(...existingPhotos);
+    }
+
+    // Add new photos
+    if (photosFiles.length > 0) {
+        photos.push(...photosFiles.map((file) => `/uploads/photos/${file.filename}`));
+    }
+
+    mediaData.photos = photos;
+
+    // Combine all data - propertyFields doesn't include the temporary fields
     const propertyData: Partial<IProperty> = {
-        ...req.body,
+        ...propertyFields,
         ...mediaData,
     };
 
-    // console.log(req.body);
-
-    console.log(mediaData);
+    console.log(propertyData);
 
     const property = await propertyServices.updatePropertyService(req.params.id, propertyData);
 
