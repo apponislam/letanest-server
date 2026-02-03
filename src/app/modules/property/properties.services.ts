@@ -48,7 +48,9 @@ const updatePropertyService = async (id: string, data: Partial<IProperty>): Prom
         status: "pending" as const,
     };
 
-    console.log(data.location, data.postCode);
+    console.log(updateData);
+
+    // console.log(data.location, data.postCode);
 
     if (data.location || data.postCode) {
         const existingProperty = await PropertyModel.findById(id);
@@ -491,7 +493,7 @@ const getAllPropertiesService = async (query: IPropertyQuery): Promise<IProperty
                 pipeline: [{ $project: { name: 1, email: 1, isVerifiedByAdmin: 1, profileImg: 1, verificationStatus: 1 } }],
             },
         },
-        { $unwind: { path: "$createdBy", preserveNullAndEmptyArrays: true } }
+        { $unwind: { path: "$createdBy", preserveNullAndEmptyArrays: true } },
     );
 
     // Count pipeline
@@ -558,7 +560,7 @@ const getAllPropertiesService = async (query: IPropertyQuery): Promise<IProperty
                       averageRating: properties[0].averageRating,
                       ratingsCount: properties[0].ratingsCount,
                   }
-                : "No properties found"
+                : "No properties found",
         );
 
         const total = totalResult.length > 0 ? totalResult[0].total : 0;
@@ -730,7 +732,7 @@ const deleteHostPropertyService = async (hostId: string, propertyId: string) => 
             isDeleted: true,
             status: "hidden", // Optionally change status to hidden when deleted
         },
-        { new: true }
+        { new: true },
     );
 
     if (!result) {
@@ -763,7 +765,7 @@ const searchMyPublishedPropertiesService = async (
         page?: number;
         limit?: number;
         search?: string;
-    }
+    },
 ) => {
     if (!hostId) {
         throw new Error("Host ID is required");
@@ -805,7 +807,7 @@ const getMaxRoundedPriceService = async (): Promise<number> => {
             isDeleted: false,
             status: "published",
         },
-        { price: 1 }
+        { price: 1 },
     )
         .sort({ price: -1 })
         .limit(1);
