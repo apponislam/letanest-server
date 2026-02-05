@@ -6,12 +6,12 @@ const stripe = new Stripe(config.stripe_secret_key!, {
     apiVersion: "2025-07-30.basil" as any,
 });
 
-const stripe2 = config.stripe_platform_account_id
-    ? new Stripe(config.stripe_secret_key!, {
-          apiVersion: "2025-07-30.basil" as any,
-          stripeAccount: config.stripe_platform_account_id,
-      })
-    : null;
+// const stripe2 = config.stripe_platform_account_id
+//     ? new Stripe(config.stripe_secret_key!, {
+//           apiVersion: "2025-07-30.basil" as any,
+//           stripeAccount: config.stripe_platform_account_id,
+//       })
+//     : null;
 
 export interface CreateProductData {
     name: string;
@@ -40,8 +40,8 @@ export interface CheckoutSessionMetadata {
 }
 
 export class StripeService {
-    private stripe = stripe;
-    private stripeConnect = stripe2;
+    // private stripe = stripe;
+    // private stripeConnect = stripe2;
 
     // Create subscription product in Stripe
     async createSubscriptionProduct(data: CreateProductData): Promise<StripeProductResponse> {
@@ -573,9 +573,9 @@ export class StripeService {
      */
     async createConnectAccount(userId: string, email: string, name: string) {
         try {
-            const stripeInstance = this.stripeConnect || this.stripe;
+            // const stripeInstance = this.stripeConnect || this.stripe;
 
-            const account = await stripeInstance.accounts.create({
+            const account = await stripe.accounts.create({
                 type: "express",
                 country: "GB",
                 email: email,
