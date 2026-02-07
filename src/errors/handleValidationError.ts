@@ -18,15 +18,28 @@ import { TErrorSources, TGenericErrorResponse } from "../app/interfaces/error";
 //     };
 // };
 
+// const handleValidationError = (err: mongoose.Error.ValidationError): TGenericErrorResponse => {
+//     const errorSources: TErrorSources = Object.values(err.errors).map((val: mongoose.Error.ValidatorError | mongoose.Error.CastError) => ({
+//         path: val?.path,
+//         message: val?.message,
+//     }));
+
+//     return {
+//         statusCode: 400,
+//         message: err.message,
+//         errorSources,
+//     };
+// };
+
 const handleValidationError = (err: mongoose.Error.ValidationError): TGenericErrorResponse => {
     const errorSources: TErrorSources = Object.values(err.errors).map((val: mongoose.Error.ValidatorError | mongoose.Error.CastError) => ({
-        path: val?.path,
-        message: val?.message,
+        path: val.path,
+        message: val.message,
     }));
 
     return {
         statusCode: 400,
-        message: err.message,
+        message: errorSources[0]?.message || "Validation Error",
         errorSources,
     };
 };
