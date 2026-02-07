@@ -63,32 +63,35 @@ const bankDetailsSchema = new Schema<IBankDetails>(
         },
         accountHolderName: {
             type: String,
-            required: true,
+            required: [true, "Account holder name is required"],
             trim: true,
         },
         accountNumber: {
             type: String,
-            required: true,
+            required: [true, "Account number is required"],
             trim: true,
         },
         sortCode: {
             type: String,
-            required: true,
+            required: [true, "Sort code is required"],
             trim: true,
         },
         bankName: {
             type: String,
-            required: true,
+            required: [true, "Bank name is required"],
             trim: true,
         },
         accountType: {
             type: String,
-            enum: ["personal", "business"],
-            required: true,
+            enum: {
+                values: ["personal", "business"],
+                message: "Account type must be personal or business",
+            },
+            required: [true, "Account type is required"],
         },
         country: {
             type: String,
-            required: true,
+            required: [true, "Country is required"],
         },
         iban: {
             type: String,
