@@ -73,7 +73,7 @@ const bankDetailsSchema = new Schema<IBankDetails>(
         },
         sortCode: {
             type: String,
-            required: true, // REQUIRED for UK transfers
+            required: true,
             trim: true,
         },
         bankName: {
@@ -112,7 +112,7 @@ const bankDetailsSchema = new Schema<IBankDetails>(
     },
     {
         timestamps: true,
-    }
+    },
 );
 
 export const BankDetails = model<IBankDetails>("BankDetails", bankDetailsSchema);
