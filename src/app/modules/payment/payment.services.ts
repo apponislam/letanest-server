@@ -860,7 +860,7 @@ const getPaymentsByHost = async (hostId: string, query: { page?: number; limit?:
     if (!search) {
         const [payments, total, totalAmountResult] = await Promise.all([
             PaymentModel.find({ hostId: new Types.ObjectId(hostId) })
-                .populate("userId", "name email profileImg")
+                .populate("userId", "name email profileImg phone")
                 .populate("propertyId", "title location coverPhoto propertyType")
                 .populate("messageId", "checkInDate checkOutDate")
                 .sort({ createdAt: -1 })
