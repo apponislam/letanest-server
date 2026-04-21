@@ -81,7 +81,7 @@ const getUserConversations = async (userId: string) => {
                 ...conversation.toObject(),
                 unreadCount,
             };
-        })
+        }),
     );
 
     // NEW: Separate bot conversation and sort the rest
@@ -415,7 +415,7 @@ const rejectOffer = async (messageId: string, conversationId: string, userId: st
         {
             type: "rejected",
         },
-        { new: true }
+        { new: true },
     )
         .populate("sender", "name profileImg email phone role")
         .populate({
@@ -472,7 +472,7 @@ const convertRequestToOffer = async (messageId: string, conversationId: string, 
         {
             type: "offer",
         },
-        { new: true }
+        { new: true },
     )
         .populate("sender", "name profileImg email phone role")
         .populate({
@@ -491,6 +491,7 @@ const convertRequestToOffer = async (messageId: string, conversationId: string, 
     await Conversation.findByIdAndUpdate(conversationId, {
         lastMessage: updatedMessage._id,
         updatedAt: new Date(),
+        isReplyAllowed: true,
     });
 
     emitToConversation(conversationId, "message:new", updatedMessage);
@@ -513,7 +514,7 @@ const convertMakeOfferToRequest = async (
         checkOutDate: string;
         agreedFee: number;
         guestNo: string;
-    }
+    },
 ) => {
     const message = await Message.findById(messageId);
     if (!message) {
@@ -563,7 +564,7 @@ const convertMakeOfferToRequest = async (
             bookingFee: bookingFee,
             bookingFeePaid: false,
         },
-        { new: true }
+        { new: true },
     )
         .populate("sender", "name profileImg email phone role")
         .populate({
@@ -621,7 +622,7 @@ const acceptOffer = async (messageId: string, conversationId: string, userId: st
             hostFeePaid: true,
             type: "accepted",
         },
-        { new: true }
+        { new: true },
     )
         .populate("sender", "name profileImg email phone role")
         .populate({
@@ -677,7 +678,7 @@ const updateBookingFeePaid = async (messageId: string, conversationId: string, u
         {
             bookingFeePaid: true,
         },
-        { new: true }
+        { new: true },
     )
         .populate("sender", "name profileImg email phone role")
         .populate({
@@ -717,7 +718,7 @@ const reviewDone = async (messageId: string) => {
         {
             reviewed: true,
         },
-        { new: true }
+        { new: true },
     )
         .populate("sender", "name profileImg email phone role")
         .populate({
@@ -766,7 +767,7 @@ const markConversationAsRead = async (conversationId: string, userId: string) =>
         },
         {
             isRead: true,
-        }
+        },
     );
 
     // Get the updated conversation with recalculated unread count
@@ -872,7 +873,7 @@ const getConversationsByUserId = async (userId: string, page: number = 1, limit:
                 ...conversation.toObject(),
                 unreadCount,
             };
-        })
+        }),
     );
 
     return {
@@ -970,7 +971,7 @@ const searchUserConversations = async (searchTerm: string, page: number = 1, lim
                 },
                 conversations: conversations,
             };
-        })
+        }),
     );
 
     return {
