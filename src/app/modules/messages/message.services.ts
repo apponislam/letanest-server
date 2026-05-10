@@ -202,9 +202,13 @@ const createMessage = async (messageData: ICreateMessageDto) => {
                     const checkIn = new Date(messageData.checkInDate);
                     const checkOut = new Date(messageData.checkOutDate);
 
+                    // Normalize dates to midnight to avoid time component issues
+                    const normalizedCheckIn = new Date(checkIn.getFullYear(), checkIn.getMonth(), checkIn.getDate());
+                    const normalizedCheckOut = new Date(checkOut.getFullYear(), checkOut.getMonth(), checkOut.getDate());
+
                     // Calculate days difference
-                    const timeDiff = checkOut.getTime() - checkIn.getTime();
-                    const numberOfDays = Math.ceil(timeDiff / (1000 * 3600 * 24)) + 1;
+                    const timeDiff = normalizedCheckOut.getTime() - normalizedCheckIn.getTime();
+                    const numberOfDays = Math.max(1, Math.ceil(timeDiff / (1000 * 3600 * 24)));
 
                     // Minimum $10 per day
                     const minimumFee = numberOfDays * 10;
@@ -222,8 +226,12 @@ const createMessage = async (messageData: ICreateMessageDto) => {
                 const checkIn = new Date(messageData.checkInDate);
                 const checkOut = new Date(messageData.checkOutDate);
 
-                const timeDiff = checkOut.getTime() - checkIn.getTime();
-                const numberOfDays = Math.ceil(timeDiff / (1000 * 3600 * 24)) + 1;
+                // Normalize dates to midnight to avoid time component issues
+                const normalizedCheckIn = new Date(checkIn.getFullYear(), checkIn.getMonth(), checkIn.getDate());
+                const normalizedCheckOut = new Date(checkOut.getFullYear(), checkOut.getMonth(), checkOut.getDate());
+
+                const timeDiff = normalizedCheckOut.getTime() - normalizedCheckIn.getTime();
+                const numberOfDays = Math.max(1, Math.ceil(timeDiff / (1000 * 3600 * 24)));
                 const minimumFee = numberOfDays * 10;
 
                 if (bookingFee < minimumFee) {
@@ -1034,9 +1042,13 @@ const editOffer = async (messageId: string, conversationId: string, userId: stri
                         const checkIn = new Date(message.checkInDate);
                         const checkOut = new Date(message.checkOutDate);
 
+                        // Normalize dates to midnight to avoid time component issues
+                        const normalizedCheckIn = new Date(checkIn.getFullYear(), checkIn.getMonth(), checkIn.getDate());
+                        const normalizedCheckOut = new Date(checkOut.getFullYear(), checkOut.getMonth(), checkOut.getDate());
+
                         // Calculate days difference
-                        const timeDiff = checkOut.getTime() - checkIn.getTime();
-                        const numberOfDays = Math.ceil(timeDiff / (1000 * 3600 * 24)) + 1;
+                        const timeDiff = normalizedCheckOut.getTime() - normalizedCheckIn.getTime();
+                        const numberOfDays = Math.max(1, Math.ceil(timeDiff / (1000 * 3600 * 24)));
 
                         // Minimum $10 per day
                         const minimumFee = numberOfDays * 10;
@@ -1054,8 +1066,12 @@ const editOffer = async (messageId: string, conversationId: string, userId: stri
                     const checkIn = new Date(message.checkInDate);
                     const checkOut = new Date(message.checkOutDate);
 
-                    const timeDiff = checkOut.getTime() - checkIn.getTime();
-                    const numberOfDays = Math.ceil(timeDiff / (1000 * 3600 * 24)) + 1;
+                    // Normalize dates to midnight to avoid time component issues
+                    const normalizedCheckIn = new Date(checkIn.getFullYear(), checkIn.getMonth(), checkIn.getDate());
+                    const normalizedCheckOut = new Date(checkOut.getFullYear(), checkOut.getMonth(), checkOut.getDate());
+
+                    const timeDiff = normalizedCheckOut.getTime() - normalizedCheckIn.getTime();
+                    const numberOfDays = Math.max(1, Math.ceil(timeDiff / (1000 * 3600 * 24)));
                     const minimumFee = numberOfDays * 10;
 
                     if (bookingFee < minimumFee) {
