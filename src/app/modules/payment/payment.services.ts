@@ -187,23 +187,28 @@ const confirmPayment = async (paymentIntentId: string, paymentMethodId: string) 
     // Update payment status based on Stripe status
     let status = "pending";
 
-    switch (paymentIntent.status) {
-        case "succeeded":
-            status = "completed";
-            break;
-        case "requires_action":
-        case "requires_confirmation":
-        case "requires_payment_method":
-            status = "requires_action";
-            break;
-        case "canceled":
-            status = "canceled";
-            break;
-        case "processing":
-            status = "processing";
-            break;
-        default:
-            status = "pending";
+    // switch (paymentIntent.status) {
+    //     case "succeeded":
+    //         status = "completed";
+    //         break;
+    //     case "requires_action":
+    //     case "requires_confirmation":
+    //     case "requires_payment_method":
+    //         status = "requires_action";
+    //         break;
+    //     case "canceled":
+    //         status = "canceled";
+    //         break;
+    //     case "processing":
+    //         status = "processing";
+    //         break;
+    //     default:
+    //         status = "pending";
+
+    if (paymentIntent.status === "succeeded") {
+        status = "completed";
+    } else if (paymentIntent.status !== "processing") {
+        status = "failed";
     }
 
     const payment = await PaymentModel.findOneAndUpdate(
@@ -238,9 +243,8 @@ const confirmPayment = async (paymentIntentId: string, paymentMethodId: string) 
                 }
             });
         }
+        await messageServices.acceptOffer(payment.messageId.toString(), payment.conversationId.toString(), payment.userId.toString());
     }
-
-    await messageServices.acceptOffer(payment.messageId.toString(), payment.conversationId.toString(), payment.userId.toString());
 
     return payment;
 };
@@ -449,23 +453,31 @@ const confirmBookingFeePayment = async (paymentIntentId: string, paymentMethodId
     // Update payment status based on Stripe status
     let status = "pending";
 
-    switch (paymentIntent.status) {
-        case "succeeded":
-            status = "completed";
-            break;
-        case "requires_action":
-        case "requires_confirmation":
-        case "requires_payment_method":
-            status = "requires_action";
-            break;
-        case "canceled":
-            status = "canceled";
-            break;
-        case "processing":
-            status = "processing";
-            break;
-        default:
-            status = "pending";
+
+    // switch (paymentIntent.status) {
+    //     case "succeeded":
+    //         status = "completed";
+    //         break;
+    //     case "requires_action":
+    //     case "requires_confirmation":
+    //     case "requires_payment_method":
+    //         status = "requires_action";
+    //         break;
+    //     case "canceled":
+    //         status = "canceled";
+    //         break;
+    //     case "processing":
+    //         status = "processing";
+    //         break;
+    //     default:
+    //         status = "pending";
+
+    
+
+    if (paymentIntent.status === "succeeded") {
+        status = "completed";
+    } else if (paymentIntent.status !== "processing") {
+        status = "failed";
     }
 
     const payment = await PaymentModel.findOneAndUpdate(
@@ -503,7 +515,7 @@ const confirmBookingFeePayment = async (paymentIntentId: string, paymentMethodId
         });
     }
 
-    // Update message bookingFeePaid status when payment succeeds
+    // Only update message and call services when payment succeeds
     if (paymentIntent.status === "succeeded") {
         const updateData: any = {
             bookingFeePaid: true,
@@ -516,9 +528,8 @@ const confirmBookingFeePayment = async (paymentIntentId: string, paymentMethodId
         }
 
         await Message.findByIdAndUpdate(payment.messageId, updateData);
+        await messageServices.updateBookingFeePaid(payment.messageId.toString(), payment.conversationId.toString(), payment.userId.toString());
     }
-
-    await messageServices.updateBookingFeePaid(payment.messageId.toString(), payment.conversationId.toString(), payment.userId.toString());
 
     return payment;
 };

@@ -19,7 +19,8 @@ export interface IPayment {
     conversationId: Types.ObjectId;
     messageId: Types.ObjectId;
     hostId: Types.ObjectId;
-    status: "pending" | "completed" | "failed" | "canceled" | "processing" | "requires_action";
+    status: "pending" | "completed" | "failed";
+    // status: "pending" | "completed" | "failed" | "canceled" | "processing" | "requires_action";
     reviewedSend?: boolean;
     stripePaymentStatus?: string;
     paymentType?: "Stripe" | "Bank";
